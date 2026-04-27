@@ -36,8 +36,8 @@
                     <p class="text-[#A0A0A0] text-sm leading-relaxed mb-5 line-clamp-3">{{ Str::limit(app()->getLocale() === 'sr' ? $location->description_sr : $location->description, 140) }}</p>
 
                     <div class="flex items-center gap-3">
-                        <a href="{{ route($lp . 'booking.index', ['slug' => $location->slug]) }}" class="btn-primary flex-1 text-center text-sm">{{ __('Book Now') }}</a>
-                        <a href="{{ route($lp . 'locations.show', ['slug' => $location->slug]) }}" class="text-sm text-[#A0A0A0] hover:text-[#F59E0B] transition px-3">{{ __('View Details') }} &rarr;</a>
+                        <a href="{{ route($lp . 'booking.index', ['slug' => $location->slug]) }}" class="btn-primary flex-1 text-center inline-flex items-center justify-center gap-2">{{ __('Book Now') }} <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg></a>
+                        <a href="{{ route($lp . 'locations.show', ['slug' => $location->slug]) }}" class="btn-outline flex-1 text-center">{{ __('View Details') }}</a>
                     </div>
                 </div>
             </div>

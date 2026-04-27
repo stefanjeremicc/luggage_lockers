@@ -44,7 +44,7 @@
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
         <h2 class="text-3xl sm:text-4xl font-bold">{{ __('Ready to Explore Belgrade?') }}</h2>
         <p class="mt-4 text-lg text-[#A0A0A0]">{{ __('Drop your bags and enjoy the city hands-free. Book in 60 seconds.') }}</p>
-        <a href="{{ route($lp . 'locations.index') }}" class="btn-primary text-lg px-10 py-4 mt-8 inline-block">{{ __('Book Your Locker') }}</a>
+        <a href="{{ route($lp . 'locations.index') }}" class="btn-primary mt-8">{{ __('Book Your Locker') }}</a>
     </div>
 </section>
 @endsection

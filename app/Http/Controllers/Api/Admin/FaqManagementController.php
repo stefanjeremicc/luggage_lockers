@@ -11,32 +11,63 @@ class FaqManagementController extends Controller
 {
     public function index(): JsonResponse
     {
-        return response()->json(Faq::orderBy('sort_order')->get());
+        return response()->json(
+            Faq::with('category')->orderBy('sort_order')->orderBy('id')->get()
+        );
     }
 
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'locale' => 'required|in:en,sr',
-            'question' => 'required|string|max:500',
-            'answer' => 'required|string',
-            'category' => 'nullable|string|max:100',
-            'sort_order' => 'integer',
-        ]);
+        $validated = $this->validatePayload($request);
+        $validated['sort_order'] = (int) Faq::max('sort_order') + 1;
 
         return response()->json(Faq::create($validated), 201);
+    }
+
+    public function show(int $id): JsonResponse
+    {
+        return response()->json(Faq::with('category')->findOrFail($id));
     }
 
     public function update(Request $request, int $id): JsonResponse
     {
         $faq = Faq::findOrFail($id);
-        $faq->update($request->all());
-        return response()->json($faq);
+        $validated = $this->validatePayload($request, updating: true);
+        $faq->update($validated);
+        return response()->json($faq->load('category'));
     }
 
     public function destroy(int $id): JsonResponse
     {
         Faq::findOrFail($id)->delete();
         return response()->json(['message' => 'Deleted']);
+    }
+
+    public function reorder(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer|exists:faqs,id',
+        ]);
+
+        foreach ($validated['ids'] as $position => $id) {
+            Faq::where('id', $id)->update(['sort_order' => $position]);
+        }
+
+        return response()->json(['message' => 'Reordered']);
+    }
+
+    private function validatePayload(Request $request, bool $updating = false): array
+    {
+        $required = $updating ? 'sometimes|required' : 'required';
+
+        return $request->validate([
+            'question' => "{$required}|string|max:500",
+            'question_sr' => 'nullable|string|max:500',
+            'answer' => "{$required}|string",
+            'answer_sr' => 'nullable|string',
+            'faq_category_id' => 'nullable|integer|exists:faq_categories,id',
+            'is_active' => 'boolean',
+        ]);
     }
 }

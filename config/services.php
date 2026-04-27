@@ -41,6 +41,7 @@ return [
         'username' => env('TTLOCK_USERNAME'),
         'password' => env('TTLOCK_PASSWORD'),
         'base_url' => env('TTLOCK_BASE_URL', 'https://euapi.ttlock.com'),
+        'ca_bundle' => env('TTLOCK_CA_BUNDLE'),
     ],
 
     'whatsapp' => [

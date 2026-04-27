@@ -4,6 +4,8 @@ namespace App\Services\Booking;
 
 use App\Enums\BookingStatus;
 use App\Enums\PaymentStatus;
+use App\Jobs\SendBookingCancelled;
+use App\Jobs\SendBookingConfirmation;
 use App\Models\Booking;
 use App\Models\BookingLocker;
 use App\Models\Locker;
@@ -90,7 +92,11 @@ class BookingService
                 ]);
             }
 
-            return $booking->load('lockers', 'location', 'customer');
+            $booking->load('lockers', 'location', 'customer');
+
+            SendBookingConfirmation::dispatch($booking->id)->afterCommit();
+
+            return $booking;
         });
     }
 
@@ -125,6 +131,8 @@ class BookingService
             'cancelled_at' => now(),
             'cancel_reason' => $reason,
         ]);
+
+        SendBookingCancelled::dispatch($booking->id)->afterCommit();
 
         return $booking;
     }

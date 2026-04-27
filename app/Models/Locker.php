@@ -13,7 +13,7 @@ class Locker extends Model
     protected $fillable = [
         'location_id', 'ttlock_lock_id', 'uuid', 'number', 'size', 'status',
         'battery_level', 'is_online', 'dimensions_cm', 'sort_order',
-        'is_active', 'last_synced_at',
+        'is_active', 'last_synced_at', 'is_published_on_site', 'site_sort_order',
     ];
 
     protected function casts(): array
@@ -23,6 +23,7 @@ class Locker extends Model
             'status' => LockerStatus::class,
             'is_online' => 'boolean',
             'is_active' => 'boolean',
+            'is_published_on_site' => 'boolean',
             'dimensions_cm' => 'array',
             'last_synced_at' => 'datetime',
         ];

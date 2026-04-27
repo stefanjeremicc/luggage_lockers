@@ -52,9 +52,12 @@ class TTLockService implements LockServiceInterface
 
         $url = $this->baseUrl . $endpoint;
 
+        $caBundle = config('services.ttlock.ca_bundle') ?: (is_file('C:\\php\\cacert.pem') ? 'C:\\php\\cacert.pem' : true);
+        $client = Http::withOptions(['verify' => $caBundle]);
+
         $response = match ($method) {
-            'POST' => Http::asForm()->post($url, $params),
-            default => Http::get($url, $params),
+            'POST' => $client->asForm()->post($url, $params),
+            default => $client->get($url, $params),
         };
 
         $durationMs = (int)((microtime(true) - $startTime) * 1000);
@@ -145,5 +148,41 @@ class TTLockService implements LockServiceInterface
             'pageNo' => 1,
             'pageSize' => 100,
         ]);
+    }
+
+    public function createPasscode(int $lockId, string $code, int $type, ?Carbon $start, ?Carbon $end, ?string $name): array
+    {
+        $params = [
+            'lockId' => $lockId,
+            'keyboardPwd' => $code,
+            'keyboardPwdType' => $type,
+        ];
+        if ($name !== null && $name !== '') {
+            $params['keyboardPwdName'] = $name;
+        }
+        if ($type === 1 || $type === 3) {
+            $params['startDate'] = ($start ?? Carbon::now())->getTimestampMs();
+            $params['endDate'] = ($end ?? Carbon::now()->addDay())->getTimestampMs();
+        }
+        return $this->request('POST', '/v3/keyboardPwd/add', $params);
+    }
+
+    public function getPasscodes(int $lockId, int $page = 1, int $pageSize = 100): array
+    {
+        return $this->request('GET', '/v3/lock/listKeyboardPwd', [
+            'lockId' => $lockId,
+            'pageNo' => $page,
+            'pageSize' => $pageSize,
+            'orderBy' => 1,
+        ]);
+    }
+
+    public function renameLockAlias(int $lockId, string $alias): bool
+    {
+        $response = $this->request('POST', '/v3/lock/rename', [
+            'lockId' => $lockId,
+            'lockAlias' => $alias,
+        ]);
+        return ($response['errcode'] ?? -1) === 0;
     }
 }

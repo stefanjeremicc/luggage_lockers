@@ -6,6 +6,7 @@ use App\Http\Controllers\Public\FaqController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\LocationController;
 use App\Http\Controllers\Public\PageController;
+use App\Http\Controllers\Public\ReviewController as PublicReviewController;
 use App\Http\Middleware\SetLocale;
 use Illuminate\Support\Facades\Route;
 
@@ -38,11 +39,15 @@ Route::middleware(SetLocale::class)->group(function () {
     Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
 
     Route::get('/faq', [FaqController::class, 'index'])->name('faq');
+    Route::post('/reviews', [PublicReviewController::class, 'store'])->name('reviews.store');
     Route::get('/about', [PageController::class, 'about'])->name('about');
     Route::get('/pricing', [PageController::class, 'pricing'])->name('pricing');
     Route::get('/contact', [PageController::class, 'contact'])->name('contact');
     Route::get('/terms', [PageController::class, 'terms'])->name('terms');
     Route::get('/privacy', [PageController::class, 'privacy'])->name('privacy');
+
+    // SEO landing pages targeting points of interest
+    Route::get('/near/{slug}', [PageController::class, 'near'])->name('near');
 });
 
 // Serbian routes with /sr prefix and Serbian slugs
@@ -60,9 +65,13 @@ Route::prefix('sr')->middleware(SetLocale::class)->name('sr.')->group(function (
     Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
 
     Route::get('/cesta-pitanja', [FaqController::class, 'index'])->name('faq');
+    Route::post('/recenzije', [PublicReviewController::class, 'store'])->name('reviews.store');
     Route::get('/o-nama', [PageController::class, 'about'])->name('about');
     Route::get('/cenovnik', [PageController::class, 'pricing'])->name('pricing');
     Route::get('/kontakt', [PageController::class, 'contact'])->name('contact');
     Route::get('/uslovi', [PageController::class, 'terms'])->name('terms');
     Route::get('/privatnost', [PageController::class, 'privacy'])->name('privacy');
+
+    // SEO landing pages (SR)
+    Route::get('/blizu/{slug}', [PageController::class, 'near'])->name('near');
 });

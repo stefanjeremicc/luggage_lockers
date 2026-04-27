@@ -20,3 +20,123 @@ body {
     background-color: var(--color-bg-primary);
     color: var(--color-text-primary);
 }
+
+button:not(:disabled),
+a,
+select,
+[role="button"],
+input[type="submit"],
+input[type="button"],
+input[type="checkbox"],
+input[type="radio"],
+label[for],
+summary {
+    cursor: pointer;
+}
+
+button:disabled {
+    cursor: not-allowed;
+}
+
+.dp__theme_dark {
+    --dp-background-color: #1A1A1A !important;
+    --dp-text-color: #FFFFFF !important;
+    --dp-hover-color: #2A2A2A !important;
+    --dp-hover-text-color: #FFFFFF !important;
+    --dp-hover-icon-color: #F59E0B !important;
+    --dp-primary-color: #F59E0B !important;
+    --dp-primary-disabled-color: #2A2A2A !important;
+    --dp-primary-text-color: #0A0A0A !important;
+    --dp-secondary-color: #A0A0A0 !important;
+    --dp-border-color: #2A2A2A !important;
+    --dp-menu-border-color: #2A2A2A !important;
+    --dp-border-color-hover: #3A3A3A !important;
+    --dp-border-color-focus: #F59E0B !important;
+    --dp-disabled-color: #1F1F1F !important;
+    --dp-disabled-color-text: #555 !important;
+    --dp-success-color: #10B981 !important;
+    --dp-icon-color: #A0A0A0 !important;
+    --dp-danger-color: #EF4444 !important;
+    --dp-marker-color: #F59E0B !important;
+    --dp-highlight-color: rgba(245, 158, 11, 0.15) !important;
+    --dp-range-between-dates-background-color: rgba(245, 158, 11, 0.15) !important;
+    --dp-border-radius: 12px !important;
+    --dp-cell-border-radius: 8px !important;
+}
+.dp__input {
+    background: #111 !important;
+    border-color: #2A2A2A !important;
+    color: #fff !important;
+    border-radius: 6px !important;
+    padding: 8px 35px 8px 36px !important;
+    font-size: 0.875rem !important;
+}
+.dp__input:hover { border-color: #3A3A3A !important; }
+.dp__input:focus, .dp__input:focus-within { border-color: #F59E0B !important; }
+.dp__input_icon {
+    color: #A0A0A0 !important;
+    left: 10px !important;
+    opacity: 0.9;
+}
+.dp__clear_icon { right: 8px !important; }
+.dp__menu {
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5) !important;
+    border: 1px solid #2A2A2A !important;
+}
+
+/* Action bar — Cancel / Select */
+.dp__action_row {
+    padding: 10px !important;
+    border-top: 1px solid #2A2A2A !important;
+}
+.dp__action_buttons { gap: 8px !important; }
+.dp__action_button {
+    border-radius: 6px !important;
+    font-size: 0.8125rem !important;
+    font-weight: 500 !important;
+    padding: 6px 14px !important;
+    height: auto !important;
+    transition: all 0.15s ease !important;
+    cursor: pointer !important;
+}
+.dp__action_cancel {
+    background: transparent !important;
+    color: #A0A0A0 !important;
+    border: 1px solid #2A2A2A !important;
+}
+.dp__action_cancel:hover {
+    color: #FFFFFF !important;
+    border-color: #3A3A3A !important;
+    background: #1A1A1A !important;
+}
+.dp__action_select {
+    background: #F59E0B !important;
+    color: #0A0A0A !important;
+    border: 1px solid #F59E0B !important;
+}
+.dp__action_select:hover {
+    background: #D97706 !important;
+    border-color: #D97706 !important;
+}
+.dp__action_select:disabled {
+    background: #2A2A2A !important;
+    border-color: #2A2A2A !important;
+    color: #555 !important;
+    cursor: not-allowed !important;
+}
+
+/* Disabled day cells (out of min/max range) */
+.dp__cell_disabled {
+    color: #444 !important;
+    opacity: 0.4 !important;
+    cursor: not-allowed !important;
+}
+
+/* Today marker border */
+.dp__today { border-color: #F59E0B !important; }
+/* Selected day */
+.dp__active_date {
+    background: #F59E0B !important;
+    color: #0A0A0A !important;
+    border-color: #F59E0B !important;
+}

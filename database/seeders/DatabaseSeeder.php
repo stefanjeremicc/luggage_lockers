@@ -15,6 +15,8 @@ class DatabaseSeeder extends Seeder
             PricingRuleSeeder::class,
             SettingsSeeder::class,
             FaqSeeder::class,
+            ReviewSeeder::class,
+            NotificationTemplateSeeder::class,
         ]);
     }
 }

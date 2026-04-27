@@ -1,3 +1,5 @@
+import allCountries from './countries.js';
+
 export default () => ({
     step: 1,
     date: 'today',
@@ -24,49 +26,8 @@ export default () => ({
     },
     formErrors: {},
 
-    // Phone countries with flags and dial codes
-    phoneCountries: [
-        { code: 'RS', name: 'Serbia', flag: '🇷🇸', dial: '+381' },
-        { code: 'US', name: 'United States', flag: '🇺🇸', dial: '+1' },
-        { code: 'GB', name: 'United Kingdom', flag: '🇬🇧', dial: '+44' },
-        { code: 'DE', name: 'Germany', flag: '🇩🇪', dial: '+49' },
-        { code: 'FR', name: 'France', flag: '🇫🇷', dial: '+33' },
-        { code: 'IT', name: 'Italy', flag: '🇮🇹', dial: '+39' },
-        { code: 'ES', name: 'Spain', flag: '🇪🇸', dial: '+34' },
-        { code: 'NL', name: 'Netherlands', flag: '🇳🇱', dial: '+31' },
-        { code: 'AT', name: 'Austria', flag: '🇦🇹', dial: '+43' },
-        { code: 'CH', name: 'Switzerland', flag: '🇨🇭', dial: '+41' },
-        { code: 'TR', name: 'Turkey', flag: '🇹🇷', dial: '+90' },
-        { code: 'GR', name: 'Greece', flag: '🇬🇷', dial: '+30' },
-        { code: 'HR', name: 'Croatia', flag: '🇭🇷', dial: '+385' },
-        { code: 'BA', name: 'Bosnia & Herzegovina', flag: '🇧🇦', dial: '+387' },
-        { code: 'ME', name: 'Montenegro', flag: '🇲🇪', dial: '+382' },
-        { code: 'MK', name: 'North Macedonia', flag: '🇲🇰', dial: '+389' },
-        { code: 'BG', name: 'Bulgaria', flag: '🇧🇬', dial: '+359' },
-        { code: 'RO', name: 'Romania', flag: '🇷🇴', dial: '+40' },
-        { code: 'HU', name: 'Hungary', flag: '🇭🇺', dial: '+36' },
-        { code: 'CZ', name: 'Czech Republic', flag: '🇨🇿', dial: '+420' },
-        { code: 'PL', name: 'Poland', flag: '🇵🇱', dial: '+48' },
-        { code: 'SE', name: 'Sweden', flag: '🇸🇪', dial: '+46' },
-        { code: 'NO', name: 'Norway', flag: '🇳🇴', dial: '+47' },
-        { code: 'DK', name: 'Denmark', flag: '🇩🇰', dial: '+45' },
-        { code: 'FI', name: 'Finland', flag: '🇫🇮', dial: '+358' },
-        { code: 'PT', name: 'Portugal', flag: '🇵🇹', dial: '+351' },
-        { code: 'IE', name: 'Ireland', flag: '🇮🇪', dial: '+353' },
-        { code: 'BE', name: 'Belgium', flag: '🇧🇪', dial: '+32' },
-        { code: 'AL', name: 'Albania', flag: '🇦🇱', dial: '+355' },
-        { code: 'UA', name: 'Ukraine', flag: '🇺🇦', dial: '+380' },
-        { code: 'RU', name: 'Russia', flag: '🇷🇺', dial: '+7' },
-        { code: 'IL', name: 'Israel', flag: '🇮🇱', dial: '+972' },
-        { code: 'AE', name: 'UAE', flag: '🇦🇪', dial: '+971' },
-        { code: 'JP', name: 'Japan', flag: '🇯🇵', dial: '+81' },
-        { code: 'CN', name: 'China', flag: '🇨🇳', dial: '+86' },
-        { code: 'KR', name: 'South Korea', flag: '🇰🇷', dial: '+82' },
-        { code: 'AU', name: 'Australia', flag: '🇦🇺', dial: '+61' },
-        { code: 'CA', name: 'Canada', flag: '🇨🇦', dial: '+1' },
-        { code: 'BR', name: 'Brazil', flag: '🇧🇷', dial: '+55' },
-        { code: 'IN', name: 'India', flag: '🇮🇳', dial: '+91' },
-    ],
+    // All world countries with flags and dial codes
+    phoneCountries: allCountries,
 
     // Duration pricing — populated based on locker size
     _standardPrices: {
@@ -118,13 +79,17 @@ export default () => ({
         ];
     },
 
+    get allDurationOptions() {
+        return [...this.durationOptions, ...this.moreDurationOptions];
+    },
+
     get canContinueStep1() {
-        return this.date && this.lockerSize && this.qty > 0
+        return this.date && this.time
             && (this.date !== 'custom' || this.customDate);
     },
 
     get canContinueStep2() {
-        return this.duration && this.time;
+        return this.lockerSize && this.duration && this.qty > 0;
     },
 
     get canContinueStep3() {
@@ -232,7 +197,7 @@ export default () => ({
                 this.availability = await res.json();
                 if (this.lockerSize && this.qty > this.maxQty) this.qty = Math.max(1, this.maxQty);
             }
-        } catch (e) { console.error('Availability fetch failed:', e); }
+        } catch { /* availability will retry on next param change */ }
         finally { this.loading = false; }
     },
 
@@ -242,7 +207,7 @@ export default () => ({
             const params = new URLSearchParams({ size: this.lockerSize, duration: this.duration, qty: this.qty });
             const res = await fetch(`/api/locations/${this.locationId}/pricing?${params}`);
             if (res.ok) this.pricing = await res.json();
-        } catch (e) { console.error('Pricing fetch failed:', e); }
+        } catch { /* pricing will retry on next param change */ }
     },
 
     incrementQty() { if (this.qty < this.maxQty) this.qty++; },
@@ -252,6 +217,11 @@ export default () => ({
         this.error = null;
         this.step = s;
         window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        // Fetch availability when entering step 3 (all params known)
+        if (s === 3 && this.resolvedDate && this.time && this.duration) {
+            this.fetchAvailability();
+        }
     },
 
     async submitGuestForm() {

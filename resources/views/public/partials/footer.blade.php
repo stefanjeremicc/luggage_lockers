@@ -10,8 +10,9 @@
             <div>
                 <h4 class="text-sm font-semibold text-white mb-3">{{ __('Locations') }}</h4>
                 <ul class="space-y-2 text-sm text-[#A0A0A0]">
-                    <li><a href="{{ route($fp . 'locations.show', ['slug' => 'city-center']) }}" class="hover:text-white transition">City Center</a></li>
-                    <li><a href="{{ route($fp . 'locations.show', ['slug' => 'kralja-milana']) }}" class="hover:text-white transition">Kralja Milana</a></li>
+                    @foreach($footerLocations as $loc)
+                    <li><a href="{{ route($fp . 'locations.show', ['slug' => $loc->slug]) }}" class="hover:text-white transition">{{ $loc->name }}</a></li>
+                    @endforeach
                 </ul>
             </div>
 
@@ -32,14 +33,18 @@
                     <li><a href="{{ route($fp . 'privacy') }}" class="hover:text-white transition">{{ __('Privacy Policy') }}</a></li>
                 </ul>
                 <div class="mt-4 text-sm text-[#A0A0A0]">
-                    <p>+381 65 332 2319</p>
-                    <p>info@belgradeluggagelocker.com</p>
+                    @if(\App\Helpers\SiteSettings::phoneDisplay())
+                        <p><a href="tel:{{ \App\Helpers\SiteSettings::phoneTel() }}" class="hover:text-white transition">{{ \App\Helpers\SiteSettings::phoneDisplay() }}</a></p>
+                    @endif
+                    @if($email = \App\Helpers\SiteSettings::email())
+                        <p><a href="mailto:{{ $email }}" class="hover:text-white transition">{{ $email }}</a></p>
+                    @endif
                 </div>
             </div>
         </div>
 
         <div class="mt-12 pt-6 border-t border-[#2A2A2A] text-center text-xs text-[#A0A0A0]">
-            &copy; {{ date('Y') }} Belgrade Luggage Locker. All rights reserved.
+            &copy; {{ date('Y') }} {{ $settings['site_name'] ?? 'Belgrade Luggage Locker' }}. All rights reserved.
         </div>
     </div>
 </footer>

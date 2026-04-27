@@ -11,7 +11,7 @@ class Location extends Model
         'name', 'slug', 'address', 'city', 'lat', 'lng',
         'description', 'description_sr', 'opening_time', 'closing_time',
         'is_24h', 'timezone', 'phone', 'whatsapp', 'email',
-        'google_maps_url', 'meta_title', 'meta_description', 'og_image',
+        'google_maps_url', 'meta_title', 'meta_description', 'og_image', 'image_url',
         'settings', 'sort_order', 'is_active',
     ];
 

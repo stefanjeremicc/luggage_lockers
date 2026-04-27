@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "flag-icons/css/flag-icons.min.css";
 
 @theme {
     --color-bg-primary: #0A0A0A;
@@ -21,6 +22,79 @@ body {
     color: var(--color-text-primary);
 }
 
+/* Site header — must sit above Leaflet controls (z-index 1000) */
+.site-header {
+    z-index: 9999;
+}
+
+/* Header background layer */
+.header-bg {
+    position: absolute;
+    inset: 0;
+    background: transparent;
+    border-bottom: 1px solid transparent;
+}
+
+.header-bg--scrolled {
+    background: rgba(10, 10, 10, 0.85);
+    backdrop-filter: blur(24px);
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+/* Mobile hamburger animated lines */
+.mobile-hamburger-line {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: #fff;
+    border-radius: 2px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Mobile slide-in drawer */
+.mobile-drawer {
+    background: var(--color-bg-primary);
+    border-right: 1px solid var(--color-border-card);
+}
+
+.mobile-drawer-divider {
+    height: 1px;
+    background: var(--color-border-card);
+    margin: 0 16px;
+}
+
+/* Mobile nav link */
+.mobile-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    color: var(--color-text-secondary);
+    font-size: 15px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.mobile-nav-link:hover,
+.mobile-nav-link:active {
+    color: var(--color-text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Map stacking context — contain Leaflet's internal z-indexes */
+.contact-map {
+    isolation: isolate;
+}
+
+/* Contact page ambient gradient */
+.contact-section {
+    background:
+        radial-gradient(ellipse 60% 50% at 85% 15%, rgba(245, 158, 11, 0.06) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 60% at 10% 75%, rgba(217, 119, 6, 0.04) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 50% 100%, rgba(245, 158, 11, 0.03) 0%, transparent 70%);
+}
+
 .card {
     background-color: var(--color-bg-card);
     border: 1px solid var(--color-border-card);
@@ -32,7 +106,9 @@ body {
     background-color: var(--color-accent);
     color: #000;
     font-weight: 600;
-    padding: 12px 24px;
+    height: 45px;
+    min-width: 180px;
+    padding: 0 24px;
     border-radius: 12px;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     display: inline-flex;
@@ -41,15 +117,12 @@ body {
 }
 
 .btn-primary:hover {
-    background-color: #fff;
-    color: #000;
+    background-color: #D4A017;
     transform: translateY(-1px);
-    box-shadow: 0 4px 20px rgba(255, 255, 255, 0.15);
 }
 
 .btn-primary:active {
     transform: translateY(0);
-    box-shadow: none;
 }
 
 .btn-primary:disabled {
@@ -63,9 +136,11 @@ body {
     background-color: transparent;
     color: #fff;
     font-weight: 500;
-    padding: 12px 24px;
+    height: 45px;
+    min-width: 180px;
+    padding: 0 24px;
     border-radius: 12px;
-    border: 1px solid var(--color-border-card);
+    border: 1.5px solid rgba(255, 255, 255, 0.5);
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     display: inline-flex;
     align-items: center;
@@ -77,7 +152,26 @@ body {
     color: #000;
     border-color: #fff;
     transform: translateY(-1px);
-    box-shadow: 0 4px 20px rgba(255, 255, 255, 0.15);
+}
+
+/* Mobile button sizing */
+@media (max-width: 639px) {
+    .btn-primary,
+    .btn-outline {
+        height: 40px;
+        min-width: 0;
+        padding: 0 16px;
+        font-size: 0.875rem;
+        border-radius: 10px;
+    }
+}
+
+/* Button size modifiers — work with .btn-primary and .btn-outline */
+.btn-sm {
+    height: 40px;
+    min-width: 140px;
+    padding: 0 20px;
+    font-size: 0.875rem;
 }
 
 .pill {
@@ -215,8 +309,8 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 2px;
-    padding: 12px 8px;
-    border-radius: 12px;
+    padding: 10px 6px;
+    border-radius: 10px;
     border: 1px solid var(--color-border-card);
     background-color: transparent;
     cursor: pointer;
@@ -311,6 +405,135 @@ body {
         background: rgba(10, 10, 10, 0.92);
         padding: 16px;
     }
+}
+
+/* Pricing cards */
+.pricing-card {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border-card);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.pricing-card:hover {
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
+.pricing-card--featured {
+    border-color: var(--color-accent);
+}
+
+.pricing-card--featured:hover {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 40px rgba(245, 158, 11, 0.1);
+}
+
+.pricing-card-badge {
+    position: absolute;
+    top: 0;
+    right: 20px;
+    background: var(--color-accent);
+    color: #000;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 0 0 6px 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.pricing-table {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--color-border-card);
+}
+
+.pricing-table-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+}
+
+.pricing-table-row:nth-child(odd) {
+    background: var(--color-bg-subtle);
+}
+
+.pricing-table-row:nth-child(even) {
+    background: var(--color-bg-card);
+}
+
+.pricing-table-row span:last-child {
+    color: var(--color-accent);
+}
+
+/* Step cards — How It Works section */
+.step-card {
+    position: relative;
+    background: var(--color-bg-card);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.step-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+.step-card-accent {
+    height: 3px;
+    background: linear-gradient(90deg, var(--color-accent), var(--color-accent-hover));
+    opacity: 0.4;
+    transition: opacity 0.3s;
+}
+
+.step-card:hover .step-card-accent {
+    opacity: 1;
+}
+
+.step-card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: rgba(245, 158, 11, 0.08);
+    color: var(--color-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+}
+
+.step-card:hover .step-card-icon {
+    background: var(--color-accent);
+    color: #000;
+}
+
+/* Hero section — full viewport height, stats bar pinned to bottom */
+.hero-section {
+    min-height: 100svh;
+}
+
+/* Hero marquee — mobile scrolling stats bar */
+.hero-marquee {
+    overflow: hidden;
+    mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);
+}
+
+.hero-marquee-track {
+    display: flex;
+    align-items: center;
+    width: max-content;
+    animation: hero-marquee 20s linear infinite;
+}
+
+@keyframes hero-marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
 }
 
 /* Leaflet popup styling */
@@ -472,10 +695,34 @@ summary {
 
 /* Custom checkbox styling */
 input[type="checkbox"] {
-    accent-color: var(--color-accent);
-    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
     width: 18px;
     height: 18px;
+    border: 1.5px solid var(--color-border-card);
+    border-radius: 5px;
+    background: transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+    position: relative;
+    transition: all 0.15s ease;
+}
+
+input[type="checkbox"]:checked {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+}
+
+input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 2px;
+    width: 5px;
+    height: 9px;
+    border: solid #000;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
 }
 
 /* Phone input composite */

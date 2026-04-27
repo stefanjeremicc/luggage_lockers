@@ -31,6 +31,7 @@
     @include('public.partials.schema-markup')
 
     @yield('scripts')
+    @stack('scripts')
     <script>
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js');
