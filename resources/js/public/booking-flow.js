@@ -5,9 +5,11 @@ export default () => ({
     date: 'today',
     customDate: null,
     time: null,
-    // Multi-size cart: how many of each locker size are selected.
+    // Multi-size cart: each size has its own qty AND its own duration. Replacing
+    // the previous global `duration` lets the customer book e.g. 1× standard for
+    // 6h and 2× large for 2 days in a single transaction.
     qtys: { standard: 0, large: 0 },
-    duration: null,
+    itemDurations: { standard: null, large: null },
     showMoreDurations: false,
     availability: { standard: { total: 0, booked: 0, available: 0 }, large: { total: 0, booked: 0, available: 0 } },
     pricing: null,
@@ -70,7 +72,8 @@ export default () => ({
         this.$watch('time', () => this.onParamsChange());
         this.$watch('qtys.standard', () => this.onParamsChange());
         this.$watch('qtys.large', () => this.onParamsChange());
-        this.$watch('duration', () => this.onParamsChange());
+        this.$watch('itemDurations.standard', () => this.onParamsChange());
+        this.$watch('itemDurations.large', () => this.onParamsChange());
 
         this.$el.addEventListener('custom-date-picked', (e) => {
             this.customDate = e.detail;
@@ -103,8 +106,25 @@ export default () => ({
         return found ? found.price : '';
     },
 
+    // Returns the duration KEY currently selected for a size, or null.
+    durationFor(size) {
+        return this.itemDurations[size] || null;
+    },
+
+    setDurationFor(size, key) {
+        this.itemDurations[size] = key;
+    },
+
+    durationLabelFor(size) {
+        const key = this.itemDurations[size];
+        if (!key) return '';
+        const found = this._allDurations.find(d => d.key === key);
+        return found ? found.label : key;
+    },
+
     availabilityLabelFor(size) {
         const a = this.availability[size]?.available;
+        if (a === undefined || a === null) return '';
         if (!a || a <= 0) return this.i18n.no_lockers;
         return this.i18n.lockers_available.replace(':count', a);
     },
@@ -120,19 +140,40 @@ export default () => ({
     get cartItems() {
         return ['standard', 'large']
             .filter(s => (this.qtys[s] || 0) > 0)
-            .map(s => ({ size: s, qty: this.qtys[s] }));
+            .map(s => ({ size: s, qty: this.qtys[s], duration: this.itemDurations[s] }));
+    },
+
+    // True when every selected size has a duration set. Drives Continue button
+    // and the order summary "complete" state.
+    get cartItemsReady() {
+        const sel = this.cartItems;
+        return sel.length > 0 && sel.every(l => !!l.duration);
+    },
+
+    // True when all selected sizes share one duration (UI can collapse the
+    // duration display in summary). False when mixed → render per-line.
+    get sharedDurationKey() {
+        const sel = this.cartItems;
+        if (!sel.length) return null;
+        const first = sel[0].duration;
+        return sel.every(l => l.duration === first) ? first : null;
     },
 
     incrementSize(size) {
-        // If availability hasn't been fetched yet (no date+time+duration), allow user to
-        // increment anyway up to a sane fallback. Backend re-validates at booking time.
+        // If availability hasn't been fetched yet (no date+time+duration for this size),
+        // allow user to increment up to a sane fallback. Backend re-validates at booking.
         const max = (this.availability[size]?.total > 0)
             ? (this.availability[size].available || 0)
             : 10;
         if ((this.qtys[size] || 0) < max) this.qtys[size]++;
     },
     decrementSize(size) {
-        if ((this.qtys[size] || 0) > 0) this.qtys[size]--;
+        if ((this.qtys[size] || 0) > 0) {
+            this.qtys[size]--;
+            // Drop the duration when qty drops to 0 so a stale selection doesn't
+            // bleed into the next add.
+            if (this.qtys[size] === 0) this.itemDurations[size] = null;
+        }
     },
 
     get canContinueStep1() {
@@ -141,7 +182,7 @@ export default () => ({
     },
 
     get canContinueStep2() {
-        return this.totalQty > 0 && this.duration;
+        return this.cartItemsReady;
     },
 
     get canContinueStep3() {
@@ -174,7 +215,8 @@ export default () => ({
             serviceFee: this.pricing.service_fee_eur,
             total: this.pricing.total_eur,
             totalRsd: this.pricing.total_rsd,
-            durationLabel: this.pricing.duration_label,
+            durationLabel: this.pricing.duration_label, // null when items have mixed durations
+            sharedDuration: this.pricing.shared_duration,
         };
     },
 
@@ -229,10 +271,10 @@ export default () => ({
         this.error = null;
         clearTimeout(this._availabilityTimer);
         this._availabilityTimer = setTimeout(async () => {
-            if (this.resolvedDate && this.time && this.duration) {
+            if (this.resolvedDate && this.time && this.cartItems.some(l => l.duration)) {
                 await this.fetchAvailability();
             }
-            if (this.totalQty > 0 && this.duration) {
+            if (this.cartItemsReady) {
                 await this.fetchPricing();
             } else {
                 this.pricing = null;
@@ -241,14 +283,25 @@ export default () => ({
     },
 
     async fetchAvailability() {
-        if (!this.resolvedDate || !this.time || !this.duration) return;
+        if (!this.resolvedDate || !this.time) return;
+        // Build per-item availability request — one entry per size with a duration.
+        const items = this.cartItems.filter(l => l.duration).map(l => ({ size: l.size, duration: l.duration }));
+        if (!items.length) return;
         this.loading = true;
         try {
-            const params = new URLSearchParams({ date: this.resolvedDate, time: this.time, duration: this.duration });
+            const params = new URLSearchParams({ date: this.resolvedDate, time: this.time });
+            items.forEach((it, i) => {
+                params.append(`items[${i}][size]`, it.size);
+                params.append(`items[${i}][duration]`, it.duration);
+            });
             const res = await fetch(`/api/locations/${this.locationId}/availability?${params}`);
             if (res.ok) {
-                this.availability = await res.json();
-                // Clamp each size to availability after refresh.
+                const data = await res.json();
+                // Merge per-size availability — leave untouched sizes intact.
+                for (const s of ['standard', 'large']) {
+                    if (data[s]) this.availability[s] = data[s];
+                }
+                // Clamp each size to its available count.
                 for (const s of ['standard', 'large']) {
                     const max = this.availability[s]?.available ?? 0;
                     if (this.qtys[s] > max) this.qtys[s] = max;
@@ -259,12 +312,18 @@ export default () => ({
     },
 
     async fetchPricing() {
-        if (!this.totalQty || !this.duration) return;
+        if (!this.cartItemsReady) return;
         try {
             const res = await fetch(`/api/locations/${this.locationId}/pricing`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify({ duration: this.duration, items: this.cartItems }),
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    // Locale isn't in the URL for /api/* — pass via header so the
+                    // backend's translated duration_label comes back in the right language.
+                    'X-Locale': document.documentElement.lang || 'en',
+                },
+                body: JSON.stringify({ items: this.cartItems }),
             });
             if (res.ok) this.pricing = await res.json();
         } catch { /* pricing will retry on next param change */ }
@@ -275,8 +334,7 @@ export default () => ({
         this.step = s;
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
-        // Fetch availability when entering step 3 (all params known)
-        if (s === 3 && this.resolvedDate && this.time && this.duration) {
+        if (s === 3 && this.resolvedDate && this.time && this.cartItemsReady) {
             this.fetchAvailability();
         }
     },
@@ -292,7 +350,6 @@ export default () => ({
         this.loading = true;
         try {
             const payload = { ...this.guestForm };
-            // Prepend dial code to phone
             payload.phone = this.selectedDialCode() + ' ' + payload.phone;
 
             const res = await fetch('/api/auth/guest', {
@@ -320,10 +377,9 @@ export default () => ({
                 },
                 body: JSON.stringify({
                     location_id: this.locationId,
-                    items: this.cartItems,
+                    items: this.cartItems, // each item carries its own duration
                     date: this.resolvedDate,
                     time: this.time,
-                    duration: this.duration,
                     payment_method: 'cash',
                 }),
             });
@@ -354,15 +410,15 @@ export default () => ({
         const [h, m] = time.split(':');
         return `${String(parseInt(h)).padStart(2, '0')}:${m}`;
     },
+    // Numeric d.m.Y format for the Serbian latin / EN summary (matches App\Helpers\Dates).
     formatSummaryDate() {
         if (!this.resolvedDate) return '';
-        const d = new Date(this.resolvedDate + 'T00:00:00');
-        return d.toLocaleDateString(this._locale(), { weekday: 'short', month: 'short', day: 'numeric' });
+        const [y, m, d] = this.resolvedDate.split('-');
+        return `${d}.${m}.${y}`;
     },
     formatConfirmDate() {
         if (!this.resolvedDate) return '';
-        const d = new Date(this.resolvedDate + 'T00:00:00');
-        const dateStr = d.toLocaleDateString(this._locale(), { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+        const dateStr = this.formatSummaryDate();
         return this.time ? `${dateStr} ${this.formatTime(this.time)}` : dateStr;
     },
     generateTimeSlots() {

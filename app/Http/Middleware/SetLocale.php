@@ -10,14 +10,21 @@ class SetLocale
 {
     public function handle(Request $request, Closure $next)
     {
-        // Check if the URL starts with /sr
+        // Public pages live under /sr or /, so the segment-1 prefix is the
+        // primary signal. API routes carry no locale prefix — they pick up the
+        // locale from the X-Locale header sent by the booking flow JS, which
+        // mirrors document.documentElement.lang on the page that issued the call.
         $prefix = $request->segment(1);
+        $header = $request->header('X-Locale');
 
+        $locale = 'en';
         if ($prefix === 'sr') {
-            App::setLocale('sr');
-        } else {
-            App::setLocale('en');
+            $locale = 'sr';
+        } elseif ($header && in_array($header, ['sr', 'en'], true)) {
+            $locale = $header;
         }
+
+        App::setLocale($locale);
 
         return $next($request);
     }

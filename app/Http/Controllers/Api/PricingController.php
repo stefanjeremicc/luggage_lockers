@@ -19,10 +19,11 @@ class PricingController extends Controller
 
         if (is_array($rawItems) && count($rawItems)) {
             $request->validate([
-                'duration' => 'required|string|in:6h,24h,2_days,3_days,4_days,5_days,1_week,2_weeks,1_month',
+                'duration' => 'nullable|string|in:6h,24h,2_days,3_days,4_days,5_days,1_week,2_weeks,1_month',
                 'items' => 'required|array|min:1',
                 'items.*.size' => 'required|in:standard,large',
                 'items.*.qty' => 'required|integer|min:1|max:20',
+                'items.*.duration' => 'nullable|string|in:6h,24h,2_days,3_days,4_days,5_days,1_week,2_weeks,1_month',
             ]);
             $items = $rawItems;
         } else {

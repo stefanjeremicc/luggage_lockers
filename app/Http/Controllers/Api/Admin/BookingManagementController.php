@@ -19,7 +19,7 @@ class BookingManagementController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Booking::with(['customer', 'location', 'lockers'])
+        $query = Booking::with(['customer', 'location', 'lockers', 'items'])
             ->orderByDesc('created_at');
 
         if ($request->has('status')) {
@@ -80,7 +80,7 @@ class BookingManagementController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $booking = Booking::with(['customer', 'location', 'lockers', 'notificationLogs'])->findOrFail($id);
+        $booking = Booking::with(['customer', 'location', 'lockers', 'items', 'notificationLogs'])->findOrFail($id);
         $booking->setAttribute('pins', $this->decryptedPins($booking->id));
         return response()->json($booking);
     }

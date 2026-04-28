@@ -20,7 +20,9 @@ class BookingApiController extends Controller
             'location_id' => 'required|exists:locations,id',
             'date' => 'required|date',
             'time' => 'required|date_format:H:i',
-            'duration' => 'required|in:6h,24h,2_days,3_days,4_days,5_days,1_week,2_weeks,1_month',
+            // Top-level duration is now optional — required only when items[] don't
+            // each carry their own duration. Validated below depending on payload shape.
+            'duration' => 'nullable|in:6h,24h,2_days,3_days,4_days,5_days,1_week,2_weeks,1_month',
             'payment_method' => 'required|in:cash,stripe',
         ]);
 
@@ -29,12 +31,24 @@ class BookingApiController extends Controller
                 'items' => 'required|array|min:1',
                 'items.*.size' => 'required|in:standard,large',
                 'items.*.qty' => 'required|integer|min:1|max:20',
+                'items.*.duration' => 'nullable|in:6h,24h,2_days,3_days,4_days,5_days,1_week,2_weeks,1_month',
             ]);
-            $base['items'] = $request->input('items');
+            $items = $request->input('items');
+            // Every item must end up with a duration — its own or the global fallback.
+            foreach ($items as $i => $it) {
+                if (empty($it['duration']) && empty($base['duration'])) {
+                    return response()->json([
+                        'error' => 'validation',
+                        'message' => "Item {$i} missing duration and no global duration provided.",
+                    ], 422);
+                }
+            }
+            $base['items'] = $items;
         } else {
             $request->validate([
                 'locker_size' => 'required|in:standard,large',
                 'locker_qty' => 'required|integer|min:1|max:20',
+                'duration' => 'required|in:6h,24h,2_days,3_days,4_days,5_days,1_week,2_weeks,1_month',
             ]);
             $base['items'] = [[
                 'size' => $request->input('locker_size'),

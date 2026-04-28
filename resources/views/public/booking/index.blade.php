@@ -241,18 +241,18 @@
                                         <p class="text-sm text-[#A0A0A0] mt-1">{{ $card['info']['capacity'] ?: __($card['fallbackCap']) }}</p>
                                     </div>
 
-                                    {{-- Per-card duration grid — only renders when this size has qty > 0,
-                                         so the inactive card looks visibly "off" and there's no confusing
-                                         dual highlight. --}}
+                                    {{-- Per-card duration grid — only renders when this size has qty > 0.
+                                         Each card's selection is independent (itemDurations[size]) so a
+                                         booking can mix e.g. 1× standard for 6h with 2× large for 2 days. --}}
                                     <div x-show="qtys.{{ $card['size'] }} > 0" x-cloak>
                                         <p class="text-[10px] uppercase tracking-wider text-[#6B7280] mb-2">{{ __('Duration') }}</p>
                                         <div class="grid grid-cols-3 gap-1.5">
                                             @foreach(($durationsForJs[$card['size']] ?? collect()) as $opt)
-                                            <button type="button" @click="duration = '{{ $opt['key'] }}'"
+                                            <button type="button" @click="setDurationFor('{{ $card['size'] }}', '{{ $opt['key'] }}')"
                                                 class="duration-pill !py-2 !px-1"
-                                                :class="duration === '{{ $opt['key'] }}' ? 'duration-pill--active' : ''">
+                                                :class="itemDurations['{{ $card['size'] }}'] === '{{ $opt['key'] }}' ? 'duration-pill--active' : ''">
                                                 <span class="text-[11px] sm:text-xs font-medium leading-tight">{{ __($opt['label']) }}</span>
-                                                <span class="text-[10px] sm:text-[11px]" :class="duration === '{{ $opt['key'] }}' ? 'text-black/70' : 'text-[#F59E0B]'">{{ $opt['price'] }}</span>
+                                                <span class="text-[10px] sm:text-[11px]" :class="itemDurations['{{ $card['size'] }}'] === '{{ $opt['key'] }}' ? 'text-black/70' : 'text-[#F59E0B]'">{{ $opt['price'] }}</span>
                                             </button>
                                             @endforeach
                                         </div>
@@ -266,10 +266,10 @@
                                     {{-- Quantity stepper + availability --}}
                                     <div class="flex items-center justify-between pt-3 border-t border-[#2A2A2A]">
                                         <div class="text-xs">
-                                            <span x-show="resolvedDate && time && duration"
+                                            <span x-show="resolvedDate && time && itemDurations['{{ $card['size'] }}']"
                                                   :class="availability['{{ $card['size'] }}']?.available > 3 ? 'text-[#10B981]' : (availability['{{ $card['size'] }}']?.available > 0 ? 'text-[#F59E0B]' : 'text-[#EF4444]')"
                                                   x-text="availabilityLabelFor('{{ $card['size'] }}')"></span>
-                                            <span x-show="!(resolvedDate && time && duration)" class="text-[#6B7280]">{{ __('How many?') }}</span>
+                                            <span x-show="!(resolvedDate && time && itemDurations['{{ $card['size'] }}'])" class="text-[#6B7280]">{{ __('How many?') }}</span>
                                         </div>
                                         <div class="flex items-center gap-2">
                                             <button type="button" @click="decrementSize('{{ $card['size'] }}')" :disabled="qtys.{{ $card['size'] }} <= 0"
@@ -403,11 +403,29 @@
                                 <div class="w-9 h-9 rounded-xl bg-[#F59E0B]/10 flex items-center justify-center shrink-0">
                                     <svg class="w-4 h-4 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                                 </div>
-                                <div>
-                                    <template x-for="line in cartItems" :key="line.size">
-                                        <p class="font-medium text-white"><span x-text="line.qty"></span> × <span x-text="sizeLabelFor(line.size)"></span></p>
+                                <div class="flex-1">
+                                    {{-- Lines from server pricing (one per size+duration). Falls back to
+                                         cartItems while pricing is still loading. --}}
+                                    <template x-if="orderSummary && orderSummary.lines.length">
+                                        <div class="space-y-0.5">
+                                            <template x-for="line in orderSummary.lines" :key="line.size + '|' + line.duration">
+                                                <div class="flex items-baseline justify-between gap-3">
+                                                    <p class="font-medium text-white">
+                                                        <span x-text="line.qty"></span> × <span x-text="sizeLabelFor(line.size)"></span>
+                                                        <span class="text-[#A0A0A0] text-xs">— <span x-text="line.duration_label"></span></span>
+                                                    </p>
+                                                    <span class="text-xs text-[#A0A0A0]" x-text="formatPrice(line.subtotal_eur)"></span>
+                                                </div>
+                                            </template>
+                                        </div>
                                     </template>
-                                    <p class="text-[#A0A0A0] text-xs" x-text="orderSummary ? orderSummary.durationLabel : ''"></p>
+                                    <template x-if="!orderSummary || !orderSummary.lines.length">
+                                        <div>
+                                            <template x-for="line in cartItems" :key="line.size">
+                                                <p class="font-medium text-white"><span x-text="line.qty"></span> × <span x-text="sizeLabelFor(line.size)"></span></p>
+                                            </template>
+                                        </div>
+                                    </template>
                                 </div>
                             </div>
                             <div class="flex items-center gap-4 text-sm">
@@ -484,16 +502,31 @@
                             </div>
                         </div>
 
-                        {{-- Lockers (multi-size cart) --}}
+                        {{-- Lockers (multi-size cart with per-item duration) --}}
                         <div class="flex items-start gap-3" x-show="totalQty > 0" x-transition x-cloak>
                             <div class="w-8 h-8 rounded-lg bg-[#F59E0B]/10 flex items-center justify-center shrink-0">
                                 <svg class="w-4 h-4 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                             </div>
-                            <div class="text-sm flex-1">
-                                <template x-for="line in cartItems" :key="line.size">
-                                    <p class="text-white font-medium"><span x-text="line.qty"></span> × <span x-text="sizeLabelFor(line.size)"></span></p>
+                            <div class="text-sm flex-1 space-y-1">
+                                {{-- Pricing-derived lines (preferred — they include duration_label) --}}
+                                <template x-if="orderSummary && orderSummary.lines.length">
+                                    <div class="space-y-1">
+                                        <template x-for="line in orderSummary.lines" :key="line.size + '|' + line.duration">
+                                            <div class="flex items-baseline justify-between gap-2">
+                                                <p class="text-white font-medium text-sm">
+                                                    <span x-text="line.qty"></span> × <span x-text="sizeLabelFor(line.size)"></span>
+                                                </p>
+                                                <span class="text-[#A0A0A0] text-xs whitespace-nowrap" x-text="line.duration_label"></span>
+                                            </div>
+                                        </template>
+                                    </div>
                                 </template>
-                                <p class="text-[#A0A0A0] text-xs mt-0.5" x-text="orderSummary ? orderSummary.durationLabel : ''"></p>
+                                {{-- Fallback while pricing is loading --}}
+                                <template x-if="!orderSummary || !orderSummary.lines.length">
+                                    <template x-for="line in cartItems" :key="line.size">
+                                        <p class="text-white font-medium"><span x-text="line.qty"></span> × <span x-text="sizeLabelFor(line.size)"></span></p>
+                                    </template>
+                                </template>
                             </div>
                         </div>
                     </div>
@@ -519,8 +552,8 @@
                         </div>
                     </div>
 
-                    {{-- Empty state --}}
-                    <div x-show="!totalQty || !duration" x-cloak class="px-6 py-6 text-center border-t border-[#2A2A2A]">
+                    {{-- Empty state — show until every selected size has a duration. --}}
+                    <div x-show="!cartItemsReady" x-cloak class="px-6 py-6 text-center border-t border-[#2A2A2A]">
                         <p class="text-sm text-[#A0A0A0]">{{ __('Select options to see pricing') }}</p>
                     </div>
 

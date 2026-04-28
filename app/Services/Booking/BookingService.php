@@ -28,7 +28,9 @@ class BookingService
     {
         return DB::transaction(function () use ($data) {
             // Normalise legacy (locker_size + locker_qty) → items[]. Multi-size bookings
-            // come in as $data['items'] = [{size, qty}, ...].
+            // come in as $data['items'] = [{size, qty, duration?}, ...]. Each item may
+            // optionally specify its own duration; otherwise the global $data['duration']
+            // applies to all items (legacy single-window mode).
             $items = $data['items'] ?? [[
                 'size' => $data['locker_size'] ?? 'standard',
                 'qty' => (int) ($data['locker_qty'] ?? 1),
@@ -41,48 +43,55 @@ class BookingService
                 throw new \RuntimeException('No locker items selected.');
             }
 
-            // User enters local (Belgrade) date+time; parse in display_timezone, then convert
-            // to UTC before storing — Eloquent serializes the Carbon's wall-clock string
-            // without applying any timezone conversion, so the conversion must be explicit.
-            $checkIn = Carbon::parse("{$data['date']} {$data['time']}", config('app.display_timezone'))
+            $globalDuration = $data['duration'] ?? null;
+
+            // User enters local (Belgrade) date+time; parse in display_timezone, then
+            // convert to UTC. Each item gets its own check_in/check_out based on its
+            // duration; the parent booking row stores the earliest/latest as legacy
+            // aggregates so range queries on `bookings` keep working.
+            $baseCheckIn = Carbon::parse("{$data['date']} {$data['time']}", config('app.display_timezone'))
                 ->setTimezone('UTC');
-            $checkOut = $this->availabilityService->calculateCheckOut($checkIn, $data['duration']);
+
+            $itemWindows = [];
+            foreach ($items as $i => $item) {
+                $itemDuration = $item['duration'] ?? $globalDuration;
+                if (!$itemDuration) {
+                    throw new \RuntimeException("Missing duration for {$item['size']}");
+                }
+                $itemWindows[$i] = [
+                    'duration' => $itemDuration,
+                    'check_in' => $baseCheckIn->copy(),
+                    'check_out' => $this->availabilityService->calculateCheckOut($baseCheckIn, $itemDuration),
+                ];
+            }
 
             $pricing = $this->pricingService->calculateForItems(
                 $data['location_id'],
                 $items,
-                $data['duration']
+                $globalDuration
             );
             if (isset($pricing['error'])) {
                 throw new \RuntimeException($pricing['error']);
             }
 
-            // Per-size availability check + locker selection — must hold a row lock on the
-            // locker rows we intend to take, so concurrent bookings can't race us.
-            $availability = $this->availabilityService->check(
-                $data['location_id'],
-                $data['date'],
-                $data['time'],
-                $data['duration']
-            );
-
+            // Per-item availability + locker selection. Each item is checked in its own
+            // window; we hold a lock on the locker rows we intend to take so concurrent
+            // bookings can't race us.
             $totalQty = 0;
             $primarySize = null;
             $primaryQty = 0;
-            $perSizeFreeLockers = [];
+            $earliestCheckIn = null;
+            $latestCheckOut = null;
+            $resolvedItems = []; // per-item: [size, qty, duration, check_in, check_out, free_lockers]
 
-            foreach ($items as $item) {
+            foreach ($items as $i => $item) {
                 $size = $item['size'];
                 $qty = (int) $item['qty'];
                 $totalQty += $qty;
+                $w = $itemWindows[$i];
 
-                $availableCount = $availability[$size]['available'] ?? 0;
-                if ($availableCount < $qty) {
-                    throw new \App\Exceptions\NotAvailableException(
-                        "Sorry, only {$availableCount} {$size} locker(s) are available for this slot.",
-                        $availability
-                    );
-                }
+                $earliestCheckIn = $earliestCheckIn ? $earliestCheckIn->min($w['check_in']) : $w['check_in']->copy();
+                $latestCheckOut = $latestCheckOut ? $latestCheckOut->max($w['check_out']) : $w['check_out']->copy();
 
                 $candidates = Locker::where('location_id', $data['location_id'])
                     ->where('size', $size)
@@ -93,33 +102,43 @@ class BookingService
                     ->lockForUpdate()
                     ->get();
 
-                $bookedLockerIds = $this->getBookedLockerIds($data['location_id'], $size, $checkIn, $checkOut);
+                $bookedLockerIds = $this->getBookedLockerIds(
+                    $data['location_id'], $size, $w['check_in'], $w['check_out']
+                );
                 $free = $candidates->reject(fn($l) => in_array($l->id, $bookedLockerIds))->take($qty);
 
                 if ($free->count() < $qty) {
+                    $availableCount = $candidates->count() - count($bookedLockerIds);
                     throw new \App\Exceptions\NotAvailableException(
-                        "Sorry, the selected {$size} lockers are no longer available.",
-                        $availability
+                        "Sorry, only {$availableCount} {$size} locker(s) are available for this slot.",
+                        []
                     );
                 }
 
-                $perSizeFreeLockers[$size] = ($perSizeFreeLockers[$size] ?? collect())->merge($free);
+                $resolvedItems[] = [
+                    'size' => $size,
+                    'qty' => $qty,
+                    'duration' => $w['duration'],
+                    'check_in' => $w['check_in'],
+                    'check_out' => $w['check_out'],
+                    'lockers' => $free,
+                ];
 
                 if ($qty > $primaryQty) { $primaryQty = $qty; $primarySize = $size; }
             }
 
             // Booking row keeps a "primary" size for legacy display (size with the most
-            // lockers). The full per-locker breakdown lives on the booking_lockers pivot
-            // joined to lockers.size.
+            // lockers). check_in/check_out store the earliest start / latest end across
+            // all items so existing date-range queries remain meaningful.
             $booking = Booking::create([
                 'uuid' => Str::uuid(),
                 'customer_id' => $data['customer_id'],
                 'location_id' => $data['location_id'],
                 'locker_size' => $primarySize ?: 'standard',
                 'locker_qty' => $totalQty,
-                'check_in' => $checkIn,
-                'check_out' => $checkOut,
-                'duration_label' => $data['duration'],
+                'check_in' => $earliestCheckIn,
+                'check_out' => $latestCheckOut,
+                'duration_label' => $globalDuration ?: $resolvedItems[0]['duration'],
                 'price_eur' => $pricing['subtotal_eur'],
                 'price_rsd' => $pricing['total_rsd'],
                 'service_fee_eur' => $pricing['service_fee_eur'],
@@ -131,31 +150,28 @@ class BookingService
                 'user_agent' => request()->userAgent(),
             ]);
 
-            // Persist per-item rows (booking_items) and link booking_lockers to them.
-            // For now all items share check_in/check_out/duration_key from the request;
-            // schema is ready for per-item durations once the UI surfaces that.
-            $bookingItemIds = [];
-            $priceLines = collect($pricing['lines'] ?? [])->keyBy('size');
-
+            // Persist per-item rows (booking_items) with their own windows; link each
+            // booking_locker to its parent item so reschedules and per-item operations
+            // stay scoped correctly.
+            $priceLines = collect($pricing['lines'] ?? []);
             $bookingLockerIds = [];
-            foreach ($perSizeFreeLockers as $size => $lockers) {
-                $line = $priceLines->get($size);
+
+            foreach ($resolvedItems as $r) {
+                $line = $priceLines->first(fn($l) => $l['size'] === $r['size'] && $l['duration'] === $r['duration']);
                 $unit = (float) ($line['unit_price_eur'] ?? 0);
-                $qty = $lockers->count();
 
                 $item = BookingItem::create([
                     'booking_id' => $booking->id,
-                    'locker_size' => $size,
-                    'qty' => $qty,
-                    'duration_key' => $data['duration'],
-                    'check_in' => $checkIn,
-                    'check_out' => $checkOut,
+                    'locker_size' => $r['size'],
+                    'qty' => $r['qty'],
+                    'duration_key' => $r['duration'],
+                    'check_in' => $r['check_in'],
+                    'check_out' => $r['check_out'],
                     'unit_price_eur' => $unit,
-                    'line_total_eur' => $unit * $qty,
+                    'line_total_eur' => $unit * $r['qty'],
                 ]);
-                $bookingItemIds[$size] = $item->id;
 
-                foreach ($lockers as $locker) {
+                foreach ($r['lockers'] as $locker) {
                     $pin = $this->generatePin();
                     $bl = BookingLocker::create([
                         'booking_id' => $booking->id,
@@ -180,15 +196,28 @@ class BookingService
         });
     }
 
+    /**
+     * Find locker IDs already taken at the given location, size, and time window.
+     * Source of truth is now booking_items (post-Block-A migration backfilled all
+     * legacy bookings). Each item carries its own check_in/check_out, so per-size
+     * + per-window overlap detection is exact even when a booking mixes sizes
+     * with different durations.
+     */
     private function getBookedLockerIds(int $locationId, string $size, Carbon $checkIn, Carbon $checkOut): array
     {
-        return BookingLocker::whereHas('booking', function ($q) use ($locationId, $size, $checkIn, $checkOut) {
-            $q->where('location_id', $locationId)
-                ->where('locker_size', $size)
-                ->whereIn('booking_status', [BookingStatus::Confirmed, BookingStatus::Active])
-                ->where('check_in', '<', $checkOut)
-                ->where('check_out', '>', $checkIn);
-        })->pluck('locker_id')->toArray();
+        return BookingLocker::query()
+            ->whereNotNull('booking_item_id')
+            ->whereHas('bookingItem', function ($q) use ($size, $checkIn, $checkOut) {
+                $q->where('locker_size', $size)
+                    ->where('check_in', '<', $checkOut)
+                    ->where('check_out', '>', $checkIn);
+            })
+            ->whereHas('booking', function ($q) use ($locationId) {
+                $q->where('location_id', $locationId)
+                    ->whereIn('booking_status', [BookingStatus::Confirmed, BookingStatus::Active]);
+            })
+            ->pluck('locker_id')
+            ->toArray();
     }
 
     public function generatePin(): string

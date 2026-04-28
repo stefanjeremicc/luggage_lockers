@@ -152,7 +152,12 @@
       "Bash(php -r ' *)",
       "Bash(grep -n -E '>[A-Z][a-zA-Z ]{3,30}<|placeholder=\"[A-Z]' resources/views/public/booking/index.blade.php)",
       "Bash(curl -s http://[::1]:5175/resources/css/public.css)",
-      "Bash(curl -s \"http://[::1]:5175/resources/js/public/app.js\")"
+      "Bash(curl -s \"http://[::1]:5175/resources/js/public/app.js\")",
+      "Bash(curl -s http://localhost:8002/sr/lokacije/kralja-milana/rezervisi)",
+      "Bash(curl -s http://[::1]:5175/resources/js/public/booking-flow.js)",
+      "Bash(curl -sI \"http://[::1]:5175/resources/js/public/booking-flow.js\")",
+      "Bash(curl -s \"http://[::1]:5175/resources/js/public/booking-flow.js?t=$\\(date +%s\\)\")",
+      "Bash(curl -s \"http://[::1]:5175/resources/js/public/booking-flow.js\")"
     ]
   }
 }

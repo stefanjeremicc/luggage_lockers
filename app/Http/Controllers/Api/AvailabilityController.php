@@ -14,15 +14,29 @@ class AvailabilityController extends Controller
         $request->validate([
             'date' => 'required|date',
             'time' => 'required|date_format:H:i',
-            'duration' => 'required|string|in:6h,24h,2_days,3_days,4_days,5_days,1_week,2_weeks,1_month',
+            'duration' => 'nullable|string|in:6h,24h,2_days,3_days,4_days,5_days,1_week,2_weeks,1_month',
+            'items' => 'nullable|array',
+            'items.*.size' => 'required_with:items|in:standard,large',
+            'items.*.duration' => 'required_with:items|string|in:6h,24h,2_days,3_days,4_days,5_days,1_week,2_weeks,1_month',
         ]);
 
-        $result = $service->check(
-            $id,
-            $request->input('date'),
-            $request->input('time'),
-            $request->input('duration')
-        );
+        // Per-item mode: client sends items[]={size, duration} so each size is
+        // checked in its own window. Falls back to legacy single-window mode
+        // when only `duration` is provided.
+        if (is_array($request->input('items')) && count($request->input('items'))) {
+            $result = $service->checkPerItem(
+                $id,
+                $request->input('date'),
+                $request->input('time'),
+                $request->input('items')
+            );
+        } else {
+            $duration = $request->input('duration');
+            if (!$duration) {
+                return response()->json(['error' => 'duration or items[] required'], 422);
+            }
+            $result = $service->check($id, $request->input('date'), $request->input('time'), $duration);
+        }
 
         return response()->json($result);
     }

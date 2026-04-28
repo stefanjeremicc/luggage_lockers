@@ -56,10 +56,10 @@
                 </div>
 
                 <div class="text-xs flex items-center gap-1.5 flex-wrap mb-2">
-                    <span class="text-[#6B7280] uppercase tracking-wide text-[10px]">Sizes</span>
-                    <span v-for="line in sizeBreakdown(b)" :key="line.size"
+                    <span class="text-[#6B7280] uppercase tracking-wide text-[10px]">Items</span>
+                    <span v-for="(line, i) in sizeBreakdown(b)" :key="i"
                         class="px-2 py-0.5 rounded-full" :class="sizeClass(line.size)">
-                        {{ line.qty }}× {{ line.size }}
+                        {{ line.qty }}× {{ line.size }}<span v-if="line.duration"> · {{ durationLabel(line.duration) }}</span>
                     </span>
                 </div>
 
@@ -141,9 +141,9 @@
                         </td>
                         <td class="px-4 py-3 whitespace-nowrap">
                             <div v-if="sizeBreakdown(b).length" class="flex flex-col gap-0.5">
-                                <span v-for="line in sizeBreakdown(b)" :key="line.size"
+                                <span v-for="(line, i) in sizeBreakdown(b)" :key="i"
                                     class="px-2 py-0.5 rounded-full text-xs inline-block w-fit" :class="sizeClass(line.size)">
-                                    {{ line.qty }}× {{ line.size }}
+                                    {{ line.qty }}× {{ line.size }}<span v-if="line.duration" class="text-[10px] opacity-80"> · {{ durationLabel(line.duration) }}</span>
                                 </span>
                             </div>
                             <span v-else class="px-2 py-0.5 rounded-full text-xs" :class="sizeClass(b.locker_size)">{{ b.locker_qty }}× {{ b.locker_size }}</span>
@@ -407,20 +407,34 @@ const closeMenu = () => { openMenuId.value = null; };
 
 const isFinal = (b) => ['cancelled', 'completed', 'expired'].includes(b.booking_status);
 
-// Group booking_lockers by size so the table shows "1× standard + 2× large" instead of
-// the misleading single primary size from booking.locker_size.
+// Group by booking_items first (authoritative — carries qty + duration + size).
+// Falls back to booking_lockers (b.pins) for old data shapes.
 const sizeBreakdown = (b) => {
+    if (Array.isArray(b.items) && b.items.length) {
+        return b.items.map(it => ({
+            size: it.locker_size,
+            qty: it.qty,
+            duration: it.duration_key,
+            line_total_eur: it.line_total_eur,
+        }));
+    }
     if (!b.pins?.length) return [];
     const map = {};
     for (const p of b.pins) {
         const s = p.size || 'standard';
         map[s] = (map[s] || 0) + 1;
     }
-    // Stable order: standard first, large second.
     return ['standard', 'large']
         .filter(s => map[s])
         .map(s => ({ size: s, qty: map[s] }));
 };
+
+// Friendly label for a duration key. Falls back to the raw key.
+const durationLabels = {
+    '6h': '6h', '24h': '24h', '2_days': '2d', '3_days': '3d', '4_days': '4d',
+    '5_days': '5d', '1_week': '1w', '2_weeks': '2w', '1_month': '1mo',
+};
+const durationLabel = (key) => durationLabels[key] || key || '';
 
 // Numeric pagination with smart ellipsis: 1 … 4 5 [6] 7 8 … 20
 const pageList = computed(() => {
@@ -565,7 +579,14 @@ const copyText = async (text) => {
 };
 const bookingUrl = (b) => `${window.location.origin}/booking/${b.uuid}`;
 
-const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+// Numeric d.m.Y H:i — matches App\Helpers\Dates so admin matches the public site.
+const formatDate = (d) => {
+    if (!d) return '';
+    const dt = new Date(d);
+    if (Number.isNaN(dt.getTime())) return '';
+    const pad = n => String(n).padStart(2, '0');
+    return `${pad(dt.getDate())}.${pad(dt.getMonth() + 1)}.${dt.getFullYear()} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+};
 
 const statusClass = (s) => ({
     confirmed: 'bg-[#10B981]/20 text-[#10B981]',

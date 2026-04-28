@@ -21,13 +21,17 @@ use App\Http\Controllers\Api\Admin\MediaUploadController;
 use App\Http\Controllers\Api\Admin\NotificationTemplateController;
 use App\Http\Controllers\Api\Admin\ReviewController;
 use App\Http\Middleware\CheckRole;
+use App\Http\Middleware\SetLocale;
 use Illuminate\Support\Facades\Route;
 
-// Public API
-Route::get('/locations/{id}/availability', [AvailabilityController::class, 'check']);
-Route::get('/locations/{id}/pricing', [PricingController::class, 'calculate']);
-Route::post('/locations/{id}/pricing', [PricingController::class, 'calculate']);
-Route::post('/bookings', [BookingApiController::class, 'store'])->middleware(['auth:sanctum', 'throttle:10,1']);
+// Public booking API — pick up locale from X-Locale header so duration_label,
+// error messages, and notification copy come back in the user's language.
+Route::middleware(SetLocale::class)->group(function () {
+    Route::get('/locations/{id}/availability', [AvailabilityController::class, 'check']);
+    Route::get('/locations/{id}/pricing', [PricingController::class, 'calculate']);
+    Route::post('/locations/{id}/pricing', [PricingController::class, 'calculate']);
+    Route::post('/bookings', [BookingApiController::class, 'store'])->middleware(['auth:sanctum', 'throttle:10,1']);
+});
 Route::post('/bookings/{uuid}/cancel', [BookingApiController::class, 'cancel'])->middleware('throttle:6,1');
 
 // Auth — rate-limited to defeat brute-force on credentials and password-reset spam

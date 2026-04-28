@@ -51,34 +51,41 @@ class PricingService
 
     /**
      * Multi-size pricing — used when a booking contains lockers of different sizes
-     * (e.g. 2× standard + 1× large in the same cart). Returns per-line breakdown plus
-     * an aggregated total in EUR + RSD.
+     * (e.g. 2× standard + 1× large in the same cart). Each item may carry its own
+     * `duration` key; if absent we fall back to the global $duration argument.
+     * Returns per-line breakdown plus aggregated totals in EUR + RSD.
      *
-     * @param array<int, array{size: string, qty: int}> $items
+     * @param array<int, array{size: string, qty: int, duration?: string}> $items
+     * @param string|null $duration Fallback duration for items without their own.
      */
-    public function calculateForItems(int $locationId, array $items, string $duration): array
+    public function calculateForItems(int $locationId, array $items, ?string $duration = null): array
     {
         $lines = [];
         $totalEur = 0.0;
         $totalQty = 0;
+        $availabilityService = new AvailabilityService();
 
         foreach ($items as $item) {
             $qty = (int) ($item['qty'] ?? 0);
             if ($qty < 1) continue;
             $size = $item['size'];
+            $itemDuration = $item['duration'] ?? $duration;
+            if (!$itemDuration) {
+                return ['error' => "Missing duration for {$size}"];
+            }
 
             $rule = PricingRule::active()
                 ->where('location_id', $locationId)
                 ->where('locker_size', $size)
-                ->where('duration_key', $duration)
+                ->where('duration_key', $itemDuration)
                 ->first()
                 ?? PricingRule::active()->global()
                     ->where('locker_size', $size)
-                    ->where('duration_key', $duration)
+                    ->where('duration_key', $itemDuration)
                     ->first();
 
             if (!$rule) {
-                return ['error' => "No pricing rule found for {$size}/{$duration}"];
+                return ['error' => "No pricing rule found for {$size}/{$itemDuration}"];
             }
 
             $unit = (float) $rule->price_eur;
@@ -88,6 +95,8 @@ class PricingService
             $lines[] = [
                 'size' => $size,
                 'qty' => $qty,
+                'duration' => $itemDuration,
+                'duration_label' => $availabilityService->getDurationLabel($itemDuration),
                 'unit_price_eur' => $unit,
                 'subtotal_eur' => $lineTotal,
             ];
@@ -99,7 +108,10 @@ class PricingService
         $eurRsdRate = (float) Setting::getValue('eur_rsd_rate', 120);
         $totalRsd = (int) (round(($totalEur * $eurRsdRate) / 10) * 10);
 
-        $availabilityService = new AvailabilityService();
+        // Top-level duration_label: shared duration if every line agrees, else null
+        // so the frontend knows to render per-line labels.
+        $uniqueDurations = array_unique(array_column($lines, 'duration'));
+        $sharedDuration = count($uniqueDurations) === 1 ? $uniqueDurations[0] : null;
 
         return [
             'lines' => $lines,
@@ -108,7 +120,8 @@ class PricingService
             'service_fee_eur' => $serviceFee,
             'total_eur' => $totalEur,
             'total_rsd' => $totalRsd,
-            'duration_label' => $availabilityService->getDurationLabel($duration),
+            'duration_label' => $sharedDuration ? $availabilityService->getDurationLabel($sharedDuration) : null,
+            'shared_duration' => $sharedDuration,
         ];
     }
 }
