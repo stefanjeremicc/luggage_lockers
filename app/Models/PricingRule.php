@@ -51,4 +51,9 @@ class PricingRule extends Model
             default => $this->duration_key,
         };
     }
+
+    public function labelFor(string $locale): string
+    {
+        return __($this->label, [], $locale);
+    }
 }

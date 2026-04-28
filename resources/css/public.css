@@ -735,3 +735,139 @@ input[type="checkbox"]:checked::after {
 [x-cloak] {
     display: none !important;
 }
+
+/* Legal pages (Privacy / Terms) — opinionated typography matching the site theme.
+   Uses scoped descendant selectors so admin-edited HTML renders cleanly. */
+.legal-prose {
+    color: #C8C8C8;
+    font-size: 0.9375rem;
+    line-height: 1.7;
+}
+.legal-prose h2 {
+    color: #fff;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+}
+.legal-prose h3 {
+    color: #fff;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+.legal-prose p { margin-bottom: 1rem; }
+.legal-prose ul {
+    list-style: disc;
+    padding-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+.legal-prose ul li { margin-bottom: 0.5rem; }
+.legal-prose strong { color: #fff; font-weight: 600; }
+.legal-prose em { color: #A0A0A0; font-style: italic; }
+.legal-prose a { color: var(--color-accent); text-decoration: underline; }
+.legal-prose a:hover { color: var(--color-accent-hover); }
+.legal-prose hr { border-color: var(--color-border-card); margin: 2rem 0; }
+
+/* =========================================================================
+   MOBILE OVERRIDES — must be at the end so they take precedence.
+   Customer-facing portal is mobile-first; the brief is "perfect on mobile".
+   ========================================================================= */
+@media (max-width: 640px) {
+    /* Inputs at 16px so iOS Safari doesn't zoom on focus. */
+    .input-field,
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="number"],
+    input[type="search"],
+    input[type="date"],
+    input[type="time"],
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+
+    /* Cards: tighter padding so content gets more horizontal room. */
+    .card {
+        padding: 16px;
+        border-radius: 14px;
+    }
+
+    /* Tap-target floor: anything tappable should be ≥44px. */
+    .pill,
+    .duration-pill,
+    .qty-btn,
+    .btn-back,
+    .btn-primary,
+    .btn-outline {
+        min-height: 44px;
+    }
+
+    /* Bigger duration pills with extra vertical breathing room. */
+    .duration-pill {
+        padding: 12px 6px;
+        gap: 4px;
+    }
+    .duration-pill span:first-child { font-size: 0.8125rem; }
+    .duration-pill span:last-child { font-size: 0.75rem; font-weight: 600; }
+
+    /* Quantity buttons larger on mobile. */
+    .qty-btn {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+    }
+
+    /* Step indicator: hide labels, keep numbered dots only. */
+    .step-indicator-label { display: none; }
+
+    /* Locker cards on mobile: keep image on top so the per-card qty stepper has full width. */
+    .locker-card > div:first-child { height: 9rem; }
+    .locker-card > div:last-child { padding: 14px; }
+
+    /* Mobile sticky CTA bar — accommodate iOS home indicator. */
+    .mobile-cta-bar {
+        padding-bottom: max(12px, env(safe-area-inset-bottom));
+    }
+
+    /* Booking flow: more bottom space so the sticky CTA never hides content. */
+    main { padding-bottom: env(safe-area-inset-bottom); }
+
+    /* Hero h1 tighter to avoid awkward 2-line headlines. */
+    .hero-section h1 { line-height: 1.1; }
+
+    /* Hide focus outline glitches on touch interactions. */
+    button:focus-visible, a:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+    button:focus:not(:focus-visible), a:focus:not(:focus-visible) {
+        outline: none;
+    }
+
+    /* Pricing tables: keep horizontal padding so labels/prices don't kiss
+       the card edges on small screens. */
+    .pricing-table-row {
+        padding: 10px 14px;
+        font-size: 0.9rem;
+    }
+}
+
+/* Bottom-sheet pattern for confirmation/cancel modals on mobile. */
+@media (max-width: 640px) {
+    .bottom-sheet {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        max-height: 90vh;
+        border-radius: 18px 18px 0 0;
+        animation: slideUp 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes slideUp {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+    }
+}

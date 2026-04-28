@@ -29,7 +29,7 @@
             <div v-else class="space-y-3">
                 <div v-for="post in filteredPosts" :key="post.id"
                     class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl overflow-hidden hover:border-[#3A3A3A] transition flex flex-col sm:flex-row">
-                    <div class="sm:w-40 shrink-0 bg-[#0F0F0F] aspect-[16/9] sm:aspect-auto">
+                    <div class="shrink-0 bg-[#0F0F0F] w-full h-44 sm:w-40 sm:h-28 overflow-hidden">
                         <img v-if="post.featured_image" :src="post.featured_image" :alt="post.title" class="w-full h-full object-cover">
                         <div v-else class="w-full h-full flex items-center justify-center text-[#3A3A3A]">
                             <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
@@ -45,11 +45,15 @@
                                 <span v-if="post.published_at">· {{ formatDate(post.published_at) }}</span>
                             </div>
                         </div>
+                        <span v-if="post.is_featured" class="text-xs px-2 py-0.5 rounded-full shrink-0 bg-[#F59E0B]/15 text-[#F59E0B]">Featured</span>
                         <span class="text-xs px-2 py-0.5 rounded-full shrink-0"
                             :class="post.is_published ? 'bg-[#10B981]/15 text-[#10B981]' : 'bg-[#2A2A2A] text-[#A0A0A0]'">
                             {{ post.is_published ? 'Published' : 'Draft' }}
                         </span>
                         <div class="flex items-center gap-1 shrink-0">
+                            <IconBtn @click="toggleFeatured(post)" :title="post.is_featured ? 'Unfeature' : 'Feature on home'">
+                                <svg class="w-4 h-4" :class="post.is_featured ? 'text-[#F59E0B]' : 'text-[#6B7280]'" :fill="post.is_featured ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 9.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                            </IconBtn>
                             <IconBtn @click="togglePublished(post)" :title="post.is_published ? 'Unpublish' : 'Publish'">
                                 <svg v-if="post.is_published" class="w-4 h-4 text-[#10B981]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                 <svg v-else class="w-4 h-4 text-[#6B7280]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
@@ -73,7 +77,7 @@
                     <h2 class="text-sm font-semibold text-[#F59E0B] uppercase tracking-wide">Categories</h2>
                     <p class="text-xs text-[#A0A0A0] mt-1">Group related posts.</p>
                 </div>
-                <Btn variant="secondary" size="sm" @click="addCategory">+ Add category</Btn>
+                <Btn variant="primary" size="sm" @click="addCategory">+ Add category</Btn>
             </div>
 
             <div v-if="newCategory" class="mb-3 bg-[#111] border border-[#F59E0B]/40 rounded-lg p-3 grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2">
@@ -242,6 +246,21 @@ const persistCategoryOrder = async () => {
 };
 
 const formatDate = (d) => new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+const toggleFeatured = async (post) => {
+    const next = !post.is_featured;
+    try {
+        const res = await apiFetch(`/api/admin/blog-posts/${post.id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ ...post, is_featured: next }),
+        });
+        if (!res.ok) throw new Error();
+        post.is_featured = next;
+        toast.success(next ? 'Featured on home' : 'Removed from featured');
+    } catch {
+        toast.error('Failed to update');
+    }
+};
 
 const togglePublished = async (post) => {
     const next = !post.is_published;

@@ -16,8 +16,9 @@ h1{color:#10B981;text-align:center}h2{color:#F59E0B;font-size:16px;margin-top:20
 <div class="info">
 <p><strong>Location:</strong> {{ $booking->location->name }}</p>
 <p><strong>Address:</strong> {{ $booking->location->address }}, Belgrade</p>
-<p><strong>Check-in:</strong> {{ $booking->check_in->format('d M Y, h:i A') }}</p>
-<p><strong>Check-out:</strong> {{ $booking->check_out->format('d M Y, h:i A') }}</p>
+@php $tz = config('app.display_timezone'); @endphp
+<p><strong>Check-in:</strong> {{ $booking->check_in->copy()->setTimezone($tz)->format('d M Y, h:i A') }}</p>
+<p><strong>Check-out:</strong> {{ $booking->check_out->copy()->setTimezone($tz)->format('d M Y, h:i A') }}</p>
 <p><strong>Lockers:</strong> {{ $booking->locker_qty }} x {{ ucfirst($booking->locker_size->value) }}</p>
 <p><strong>Total:</strong> &euro;{{ number_format($booking->total_eur, 2) }} — Pay cash on arrival</p>
 </div>

@@ -21,8 +21,13 @@ class HomeController extends Controller
             'question' => $f->questionFor($locale),
             'answer' => $f->answerFor($locale),
         ]);
-        $blogPosts = BlogPost::published()->limit(3)->get()->map(fn ($p) => (object) [
-            'slug' => $p->slug,
+        $blogPosts = BlogPost::published()
+            ->where('is_featured', true)
+            ->orderByDesc('published_at')
+            ->limit(3)
+            ->get()
+            ->map(fn ($p) => (object) [
+            'slug' => $p->slugFor($locale),
             'title' => $p->titleFor($locale),
             'excerpt' => $p->excerptFor($locale),
             'featured_image' => $p->featured_image,

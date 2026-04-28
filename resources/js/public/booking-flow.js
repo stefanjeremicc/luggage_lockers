@@ -5,8 +5,8 @@ export default () => ({
     date: 'today',
     customDate: null,
     time: null,
-    lockerSize: null,
-    qty: 1,
+    // Multi-size cart: how many of each locker size are selected.
+    qtys: { standard: 0, large: 0 },
     duration: null,
     showMoreDurations: false,
     availability: { standard: { total: 0, booked: 0, available: 0 }, large: { total: 0, booked: 0, available: 0 } },
@@ -29,14 +29,25 @@ export default () => ({
     // All world countries with flags and dial codes
     phoneCountries: allCountries,
 
-    // Duration pricing — populated based on locker size
-    _standardPrices: {
-        '6h': '€5', '24h': '€10', '2_days': '€18', '3_days': '€25',
-        '4_days': '€30', '5_days': '€35', '1_week': '€50', '2_weeks': '€85', '1_month': '€150'
-    },
-    _largePrices: {
-        '6h': '€10', '24h': '€15', '2_days': '€27', '3_days': '€38',
-        '4_days': '€45', '5_days': '€52', '1_week': '€75', '2_weeks': '€130', '1_month': '€230'
+    // Duration pricing — hydrated from data-durations on the root element (server-rendered from PricingRule)
+    _durations: { standard: [], large: [] },
+
+    // Translations injected from blade
+    i18n: {
+        lockers_available: ':count lockers available',
+        no_lockers: 'No lockers available',
+        standard: 'Standard',
+        large: 'Large',
+        errors: {
+            full_name: 'Please enter your full name',
+            email_required: 'Email is required',
+            email_invalid: 'Please enter a valid email',
+            phone_invalid: 'Please enter a valid phone number',
+            registration: 'Registration failed.',
+            network: 'Network error. Please try again.',
+            booking: 'Booking failed.',
+        },
+        weekdays: ['Mo','Tu','We','Th','Fr','Sa','Su'],
     },
 
     bookingResult: null,
@@ -45,12 +56,20 @@ export default () => ({
 
     init() {
         this.locationId = this.$el.dataset.locationId;
+        try {
+            const d = this.$el.dataset.durations;
+            if (d) this._durations = JSON.parse(d);
+        } catch { /* keep defaults */ }
+        try {
+            const i = this.$el.dataset.i18n;
+            if (i) this.i18n = { ...this.i18n, ...JSON.parse(i) };
+        } catch { /* keep defaults */ }
 
         this.$watch('date', () => this.onParamsChange());
         this.$watch('customDate', () => { if (this.date === 'custom') this.onParamsChange(); });
         this.$watch('time', () => this.onParamsChange());
-        this.$watch('lockerSize', () => this.onParamsChange());
-        this.$watch('qty', () => this.fetchPricing());
+        this.$watch('qtys.standard', () => this.onParamsChange());
+        this.$watch('qtys.large', () => this.onParamsChange());
         this.$watch('duration', () => this.onParamsChange());
 
         this.$el.addEventListener('custom-date-picked', (e) => {
@@ -58,29 +77,62 @@ export default () => ({
         });
     },
 
+    // Duration list — show standard's price set as the default reference (the cart can mix).
+    // Each card pulls its own per-size prices via durationPriceFor() helper below.
+    get _allDurations() {
+        return this._durations.standard?.length ? this._durations.standard : [];
+    },
+
     get durationOptions() {
-        const prices = this.lockerSize === 'large' ? this._largePrices : this._standardPrices;
-        return [
-            { key: '6h', label: 'Up to 6 hours', price: prices['6h'] },
-            { key: '24h', label: '24 hours', price: prices['24h'] },
-            { key: '2_days', label: '2 days', price: prices['2_days'] },
-            { key: '3_days', label: '3 days', price: prices['3_days'] },
-            { key: '4_days', label: '4 days', price: prices['4_days'] },
-            { key: '5_days', label: '5 days', price: prices['5_days'] },
-        ];
+        const shortKeys = new Set(['6h','24h','2_days','3_days','4_days','5_days']);
+        return this._allDurations.filter(d => shortKeys.has(d.key));
     },
 
     get moreDurationOptions() {
-        const prices = this.lockerSize === 'large' ? this._largePrices : this._standardPrices;
-        return [
-            { key: '1_week', label: '1 week', price: prices['1_week'] },
-            { key: '2_weeks', label: '2 weeks', price: prices['2_weeks'] },
-            { key: '1_month', label: '1 month', price: prices['1_month'] },
-        ];
+        const longKeys = new Set(['1_week','2_weeks','1_month']);
+        return this._allDurations.filter(d => longKeys.has(d.key));
     },
 
     get allDurationOptions() {
-        return [...this.durationOptions, ...this.moreDurationOptions];
+        return this._allDurations;
+    },
+
+    durationPriceFor(size, key) {
+        const list = this._durations[size] || [];
+        const found = list.find(d => d.key === key);
+        return found ? found.price : '';
+    },
+
+    availabilityLabelFor(size) {
+        const a = this.availability[size]?.available;
+        if (!a || a <= 0) return this.i18n.no_lockers;
+        return this.i18n.lockers_available.replace(':count', a);
+    },
+
+    sizeLabelFor(size) {
+        return size === 'large' ? this.i18n.large : this.i18n.standard;
+    },
+
+    get totalQty() {
+        return (this.qtys.standard || 0) + (this.qtys.large || 0);
+    },
+
+    get cartItems() {
+        return ['standard', 'large']
+            .filter(s => (this.qtys[s] || 0) > 0)
+            .map(s => ({ size: s, qty: this.qtys[s] }));
+    },
+
+    incrementSize(size) {
+        // If availability hasn't been fetched yet (no date+time+duration), allow user to
+        // increment anyway up to a sane fallback. Backend re-validates at booking time.
+        const max = (this.availability[size]?.total > 0)
+            ? (this.availability[size].available || 0)
+            : 10;
+        if ((this.qtys[size] || 0) < max) this.qtys[size]++;
+    },
+    decrementSize(size) {
+        if ((this.qtys[size] || 0) > 0) this.qtys[size]--;
     },
 
     get canContinueStep1() {
@@ -89,7 +141,7 @@ export default () => ({
     },
 
     get canContinueStep2() {
-        return this.lockerSize && this.duration && this.qty > 0;
+        return this.totalQty > 0 && this.duration;
     },
 
     get canContinueStep3() {
@@ -108,16 +160,15 @@ export default () => ({
         return this.customDate;
     },
 
-    get maxQty() {
-        if (!this.lockerSize || !this.availability[this.lockerSize]) return 10;
-        const avail = this.availability[this.lockerSize].available;
-        return avail > 0 ? avail : 10;
+    maxQtyFor(size) {
+        const avail = this.availability[size]?.available;
+        return (avail && avail > 0) ? avail : 10;
     },
 
     get orderSummary() {
         if (!this.pricing) return null;
         return {
-            unitPrice: this.pricing.unit_price_eur,
+            lines: this.pricing.lines || [],
             qty: this.pricing.qty,
             subtotal: this.pricing.subtotal_eur,
             serviceFee: this.pricing.service_fee_eur,
@@ -158,16 +209,16 @@ export default () => ({
         const f = this.guestForm;
 
         if (field === 'full_name') {
-            if (f.full_name.length < 2) errors.full_name = 'Please enter your full name';
+            if (f.full_name.length < 2) errors.full_name = this.i18n.errors.full_name;
             else delete errors.full_name;
         }
         if (field === 'email') {
-            if (!f.email) errors.email = 'Email is required';
-            else if (!this.isValidEmail(f.email)) errors.email = 'Please enter a valid email';
+            if (!f.email) errors.email = this.i18n.errors.email_required;
+            else if (!this.isValidEmail(f.email)) errors.email = this.i18n.errors.email_invalid;
             else delete errors.email;
         }
         if (field === 'phone') {
-            if (!this.isValidPhone(f.phone)) errors.phone = 'Please enter a valid phone number';
+            if (!this.isValidPhone(f.phone)) errors.phone = this.i18n.errors.phone_invalid;
             else delete errors.phone;
         }
 
@@ -181,8 +232,10 @@ export default () => ({
             if (this.resolvedDate && this.time && this.duration) {
                 await this.fetchAvailability();
             }
-            if (this.lockerSize && this.duration && this.qty > 0) {
+            if (this.totalQty > 0 && this.duration) {
                 await this.fetchPricing();
+            } else {
+                this.pricing = null;
             }
         }, 300);
     },
@@ -195,23 +248,27 @@ export default () => ({
             const res = await fetch(`/api/locations/${this.locationId}/availability?${params}`);
             if (res.ok) {
                 this.availability = await res.json();
-                if (this.lockerSize && this.qty > this.maxQty) this.qty = Math.max(1, this.maxQty);
+                // Clamp each size to availability after refresh.
+                for (const s of ['standard', 'large']) {
+                    const max = this.availability[s]?.available ?? 0;
+                    if (this.qtys[s] > max) this.qtys[s] = max;
+                }
             }
         } catch { /* availability will retry on next param change */ }
         finally { this.loading = false; }
     },
 
     async fetchPricing() {
-        if (!this.lockerSize || !this.duration || !this.qty) return;
+        if (!this.totalQty || !this.duration) return;
         try {
-            const params = new URLSearchParams({ size: this.lockerSize, duration: this.duration, qty: this.qty });
-            const res = await fetch(`/api/locations/${this.locationId}/pricing?${params}`);
+            const res = await fetch(`/api/locations/${this.locationId}/pricing`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ duration: this.duration, items: this.cartItems }),
+            });
             if (res.ok) this.pricing = await res.json();
         } catch { /* pricing will retry on next param change */ }
     },
-
-    incrementQty() { if (this.qty < this.maxQty) this.qty++; },
-    decrementQty() { if (this.qty > 1) this.qty--; },
 
     goToStep(s) {
         this.error = null;
@@ -245,8 +302,8 @@ export default () => ({
             });
             const data = await res.json();
             if (res.ok) { this.customer = data; this.goToStep(4); }
-            else { this.error = data.message || 'Registration failed.'; }
-        } catch (e) { this.error = 'Network error. Please try again.'; }
+            else { this.error = data.message || this.i18n.errors.registration; }
+        } catch (e) { this.error = this.i18n.errors.network; }
         finally { this.loading = false; }
     },
 
@@ -263,8 +320,7 @@ export default () => ({
                 },
                 body: JSON.stringify({
                     location_id: this.locationId,
-                    locker_size: this.lockerSize,
-                    locker_qty: this.qty,
+                    items: this.cartItems,
                     date: this.resolvedDate,
                     time: this.time,
                     duration: this.duration,
@@ -282,29 +338,32 @@ export default () => ({
                     };
                 }
                 this.goToStep(1);
-            } else { this.error = data.message || 'Booking failed.'; }
-        } catch (e) { this.error = 'Network error. Please try again.'; }
+            } else { this.error = data.message || this.i18n.errors.booking; }
+        } catch (e) { this.error = this.i18n.errors.network; }
         finally { this.loading = false; }
     },
 
+    _locale() {
+        const html = document.documentElement.lang || 'en';
+        return html === 'sr' ? 'sr-RS' : 'en-US';
+    },
     formatPrice(amount) {
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' }).format(amount);
+        return new Intl.NumberFormat(this._locale(), { style: 'currency', currency: 'EUR' }).format(amount);
     },
     formatTime(time) {
         const [h, m] = time.split(':');
-        const hour = parseInt(h);
-        return `${hour % 12 || 12}:${m} ${hour >= 12 ? 'PM' : 'AM'}`;
+        return `${String(parseInt(h)).padStart(2, '0')}:${m}`;
     },
     formatSummaryDate() {
         if (!this.resolvedDate) return '';
         const d = new Date(this.resolvedDate + 'T00:00:00');
-        return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        return d.toLocaleDateString(this._locale(), { weekday: 'short', month: 'short', day: 'numeric' });
     },
     formatConfirmDate() {
         if (!this.resolvedDate) return '';
         const d = new Date(this.resolvedDate + 'T00:00:00');
-        const dateStr = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-        return this.time ? `${dateStr} at ${this.formatTime(this.time)}` : dateStr;
+        const dateStr = d.toLocaleDateString(this._locale(), { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+        return this.time ? `${dateStr} ${this.formatTime(this.time)}` : dateStr;
     },
     generateTimeSlots() {
         const slots = [];

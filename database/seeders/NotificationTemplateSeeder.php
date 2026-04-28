@@ -231,42 +231,116 @@ class NotificationTemplateSeeder extends Seeder
                     '<p style="margin-top:16px">Pitanja? {{ support_phone }}</p></div>'),
             ],
 
-            // ─── locker_pin_delivered ─────────────────────────────────────
+            // ─── locker_pin_delivered (full booking confirmation with PIN) ───────────────
             [
                 'key' => 'locker_pin_delivered', 'channel' => 'email', 'locale' => 'en',
-                'subject' => 'Your locker PIN — Belgrade Luggage Locker',
-                'variables' => array_merge($commonVars, ['pin_code', 'locker_number']),
-                'body' => $this->emailShell('Your Locker PIN', '#F59E0B',
-                    '<div class="highlight">'.
-                    '<p style="color:#A0A0A0;font-size:14px;margin:0 0 8px">Locker {{ locker_number }} at {{ location_name }}</p>'.
-                    '<p style="font-size:32px;color:#F59E0B;font-weight:bold;letter-spacing:6px;margin:0">{{ pin_code }}</p>'.
+                'subject' => 'Your Booking is Confirmed — {{ site_name }}',
+                'variables' => array_merge($commonVars, ['pin_code', 'locker_number', 'entry_door_code', 'duration_label', 'eur_rsd_rate', 'tolerance_minutes']),
+                'body' => $this->emailShell('Booking Confirmed!', '#10B981',
+                    '<p class="info">Hello <strong style="color:#fff">{{ customer_name }}</strong>, your booking is confirmed.</p>'.
+                    '<div class="highlight" style="text-align:left">'.
+                    '<p style="margin:0;color:#fff;font-size:16px"><strong>{{ locker_number }} — {{ locker_size }} Locker — {{ duration_label }}</strong></p>'.
+                    '<p style="margin:8px 0 0;color:#A0A0A0;font-size:14px">{{ check_in_full }} to {{ check_out_full }}</p>'.
+                    '<p style="margin:8px 0 0;color:#A0A0A0;font-size:13px"><em>You\'re welcome to arrive up to {{ tolerance_minutes }} minutes early.</em></p>'.
+                    '<p style="margin:4px 0 0;color:#A0A0A0;font-size:13px"><em>Luggage is fully secured and you can access it 24/7.</em></p>'.
                     '</div>'.
-                    '<div class="info"><p><strong>Valid:</strong> {{ check_in }} → {{ check_out }}</p>'.
-                    '<p>Enter this PIN on the locker keypad. Use the same code when you return.</p>'.
-                    '<p style="margin-top:16px;color:#EF4444">⚠ Do not share this PIN with anyone.</p></div>'),
+
+                    '<h2>Pay Station Information</h2>'.
+                    '<div class="info">'.
+                    '<p>Our pay station is located on the right-hand wall.</p>'.
+                    '<p>Upon your arrival, please place your payment inside the box — our team will securely process it and take care of the rest.</p>'.
+                    '<p><strong style="color:#fff">Total: €{{ total_eur }}</strong></p>'.
+                    '<p style="margin-top:12px"><em>Please note:</em> We accept payments in Euros (€) and Serbian Dinars (RSD) only.<br>The exchange rate is <strong style="color:#fff">1 Euro = {{ eur_rsd_rate }} RSD</strong>.</p>'.
+                    '</div>'.
+
+                    '<h2>Entry Instructions</h2>'.
+                    '<div class="highlight">'.
+                    '<p style="margin:0 0 6px;color:#A0A0A0;font-size:13px">ENTRY DOOR access code</p>'.
+                    '<p style="margin:0;font-size:28px;color:#F59E0B;font-weight:bold;letter-spacing:6px">{{ entry_door_code }}</p>'.
+                    '</div>'.
+                    '<div class="highlight">'.
+                    '<p style="margin:0 0 6px;color:#A0A0A0;font-size:13px">YOUR LOCKER ({{ locker_number }}) access code</p>'.
+                    '<p style="margin:0;font-size:28px;color:#F59E0B;font-weight:bold;letter-spacing:6px">{{ pin_code }}</p>'.
+                    '</div>'.
+
+                    '<h2>How to use lockers</h2>'.
+                    '<div class="info"><ol style="padding-left:20px;margin:8px 0">'.
+                    '<li style="margin-bottom:8px">Locate your locker number ({{ locker_number }}).</li>'.
+                    '<li style="margin-bottom:8px">Press any button to activate the lock — a light will appear to confirm it\'s engaged.</li>'.
+                    '<li style="margin-bottom:8px">Enter your access code — locker will unlock.</li>'.
+                    '<li style="margin-bottom:8px">Place your belongings inside and close the door — the lock will automatically secure without needing to enter a code.</li>'.
+                    '<li>Check if the locker is locked.</li>'.
+                    '</ol></div>'.
+
+                    '<div style="text-align:center;margin:24px 0"><a href="{{ directions_url }}" class="btn">Get Directions</a></div>'.
+
+                    '<div class="info" style="text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid #2A2A2A">'.
+                    '<p>You are all set!</p>'.
+                    '<p>If you have any questions or need help checking in, please let us know.</p>'.
+                    '<p style="margin-top:16px"><strong style="color:#fff">{{ support_phone }}</strong> · <a href="mailto:{{ support_email }}" style="color:#F59E0B">{{ support_email }}</a></p>'.
+                    '<p style="margin-top:16px;color:#6B7280">Enjoy Belgrade!<br>— {{ site_name }}</p>'.
+                    '<p style="margin-top:12px;font-size:12px"><a href="{{ cancel_url }}" style="color:#6B7280">Need to cancel?</a></p>'.
+                    '</div>'),
             ],
             [
                 'key' => 'locker_pin_delivered', 'channel' => 'email', 'locale' => 'sr',
-                'subject' => 'Vaš PIN za ormarić — Belgrade Luggage Locker',
-                'variables' => array_merge($commonVars, ['pin_code', 'locker_number']),
-                'body' => $this->emailShell('Vaš PIN kod', '#F59E0B',
-                    '<div class="highlight">'.
-                    '<p style="color:#A0A0A0;font-size:14px;margin:0 0 8px">Ormarić {{ locker_number }} — {{ location_name }}</p>'.
-                    '<p style="font-size:32px;color:#F59E0B;font-weight:bold;letter-spacing:6px;margin:0">{{ pin_code }}</p>'.
+                'subject' => 'Vaša rezervacija je potvrđena — {{ site_name }}',
+                'variables' => array_merge($commonVars, ['pin_code', 'locker_number', 'entry_door_code', 'duration_label', 'eur_rsd_rate', 'tolerance_minutes']),
+                'body' => $this->emailShell('Rezervacija potvrđena!', '#10B981',
+                    '<p class="info">Zdravo <strong style="color:#fff">{{ customer_name }}</strong>, vaša rezervacija je potvrđena.</p>'.
+                    '<div class="highlight" style="text-align:left">'.
+                    '<p style="margin:0;color:#fff;font-size:16px"><strong>{{ locker_number }} — {{ locker_size }} ormarić — {{ duration_label }}</strong></p>'.
+                    '<p style="margin:8px 0 0;color:#A0A0A0;font-size:14px">{{ check_in_full }} do {{ check_out_full }}</p>'.
+                    '<p style="margin:8px 0 0;color:#A0A0A0;font-size:13px"><em>Možete doći i do {{ tolerance_minutes }} minuta ranije.</em></p>'.
+                    '<p style="margin:4px 0 0;color:#A0A0A0;font-size:13px"><em>Prtljag je potpuno bezbedan i pristup imate 24/7.</em></p>'.
                     '</div>'.
-                    '<div class="info"><p><strong>Važi:</strong> {{ check_in }} → {{ check_out }}</p>'.
-                    '<p>Unesite ovaj PIN na tastaturu ormarića. Koristite isti kod pri povratku.</p>'.
-                    '<p style="margin-top:16px;color:#EF4444">⚠ Ne delite ovaj PIN ni sa kim.</p></div>'),
+
+                    '<h2>Informacije o plaćanju</h2>'.
+                    '<div class="info">'.
+                    '<p>Naš pay station se nalazi na desnom zidu.</p>'.
+                    '<p>Prilikom dolaska, molimo vas da plaćanje stavite u kutiju — naš tim će bezbedno obraditi i pobrinuti se za sve ostalo.</p>'.
+                    '<p><strong style="color:#fff">Ukupno: €{{ total_eur }}</strong></p>'.
+                    '<p style="margin-top:12px"><em>Napomena:</em> Prihvatamo plaćanje u evrima (€) i srpskim dinarima (RSD).<br>Kurs: <strong style="color:#fff">1 Euro = {{ eur_rsd_rate }} RSD</strong>.</p>'.
+                    '</div>'.
+
+                    '<h2>Uputstva za ulaz</h2>'.
+                    '<div class="highlight">'.
+                    '<p style="margin:0 0 6px;color:#A0A0A0;font-size:13px">Šifra ULAZNIH VRATA</p>'.
+                    '<p style="margin:0;font-size:28px;color:#F59E0B;font-weight:bold;letter-spacing:6px">{{ entry_door_code }}</p>'.
+                    '</div>'.
+                    '<div class="highlight">'.
+                    '<p style="margin:0 0 6px;color:#A0A0A0;font-size:13px">Šifra VAŠEG ORMARIĆA ({{ locker_number }})</p>'.
+                    '<p style="margin:0;font-size:28px;color:#F59E0B;font-weight:bold;letter-spacing:6px">{{ pin_code }}</p>'.
+                    '</div>'.
+
+                    '<h2>Kako se koriste ormarići</h2>'.
+                    '<div class="info"><ol style="padding-left:20px;margin:8px 0">'.
+                    '<li style="margin-bottom:8px">Pronađite vaš ormarić ({{ locker_number }}).</li>'.
+                    '<li style="margin-bottom:8px">Pritisnite bilo koje dugme da aktivirate bravu — zasvetleće lampica.</li>'.
+                    '<li style="margin-bottom:8px">Unesite šifru — ormarić će se otključati.</li>'.
+                    '<li style="margin-bottom:8px">Stavite stvari unutra i zatvorite vrata — brava se automatski zaključava.</li>'.
+                    '<li>Proverite da li je ormarić zaključan.</li>'.
+                    '</ol></div>'.
+
+                    '<div style="text-align:center;margin:24px 0"><a href="{{ directions_url }}" class="btn">Uputstva do nas</a></div>'.
+
+                    '<div class="info" style="text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid #2A2A2A">'.
+                    '<p>Spremno!</p>'.
+                    '<p>Ako imate bilo kakvo pitanje, javite nam se.</p>'.
+                    '<p style="margin-top:16px"><strong style="color:#fff">{{ support_phone }}</strong> · <a href="mailto:{{ support_email }}" style="color:#F59E0B">{{ support_email }}</a></p>'.
+                    '<p style="margin-top:16px;color:#6B7280">Uživajte u Beogradu!<br>— {{ site_name }}</p>'.
+                    '<p style="margin-top:12px;font-size:12px"><a href="{{ cancel_url }}" style="color:#6B7280">Treba da otkažete?</a></p>'.
+                    '</div>'),
             ],
             [
                 'key' => 'locker_pin_delivered', 'channel' => 'whatsapp', 'locale' => 'en',
-                'variables' => array_merge($commonVars, ['pin_code', 'locker_number']),
-                'body' => "Your locker PIN: {{ pin_code }}\nLocker {{ locker_number }} at {{ location_name }}\nValid {{ check_in }} → {{ check_out }}\n\n⚠ Do not share this code.",
+                'variables' => array_merge($commonVars, ['pin_code', 'locker_number', 'entry_door_code']),
+                'body' => "Hello {{ customer_name }}, your booking is confirmed!\n\n📍 {{ location_name }} — {{ location_address }}\n🗄 Locker {{ locker_number }} ({{ locker_size }})\n🕒 {{ check_in_full }} → {{ check_out_full }}\n\n🔑 Entry door: *{{ entry_door_code }}*\n🔐 Your locker: *{{ pin_code }}*\n\n💶 Total €{{ total_eur }} — pay cash on arrival (1€ = {{ eur_rsd_rate }} RSD).\n\nNeed help? {{ support_phone }}",
             ],
             [
                 'key' => 'locker_pin_delivered', 'channel' => 'whatsapp', 'locale' => 'sr',
-                'variables' => array_merge($commonVars, ['pin_code', 'locker_number']),
-                'body' => "Vaš PIN: {{ pin_code }}\nOrmarić {{ locker_number }} — {{ location_name }}\nVaži {{ check_in }} → {{ check_out }}\n\n⚠ Ne delite kod ni sa kim.",
+                'variables' => array_merge($commonVars, ['pin_code', 'locker_number', 'entry_door_code']),
+                'body' => "Zdravo {{ customer_name }}, rezervacija potvrđena!\n\n📍 {{ location_name }} — {{ location_address }}\n🗄 Ormarić {{ locker_number }} ({{ locker_size }})\n🕒 {{ check_in_full }} → {{ check_out_full }}\n\n🔑 Ulazna vrata: *{{ entry_door_code }}*\n🔐 Vaš ormarić: *{{ pin_code }}*\n\n💶 Ukupno €{{ total_eur }} — gotovinom na licu mesta (1€ = {{ eur_rsd_rate }} RSD).\n\nPomoć: {{ support_phone }}",
             ],
 
             // ─── password_reset ─────────────────────────────────────

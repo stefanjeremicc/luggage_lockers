@@ -52,7 +52,12 @@ class Booking extends Model
     public function lockers(): BelongsToMany
     {
         return $this->belongsToMany(Locker::class, 'booking_lockers')
-            ->withPivot('pin_code_encrypted', 'ttlock_keyboard_pwd_id', 'assigned_at');
+            ->withPivot('pin_code_encrypted', 'ttlock_keyboard_pwd_id', 'assigned_at', 'booking_item_id');
+    }
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(BookingItem::class);
     }
 
     public function notificationLogs(): HasMany

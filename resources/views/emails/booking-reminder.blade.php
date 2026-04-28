@@ -4,7 +4,7 @@
 <h1>Your Locker Time Ends Soon</h1>
 <div class="info" style="text-align:center">
 <p>Your booking at <strong style="color:#fff">{{ $booking->location->name }}</strong> ends at:</p>
-<p style="font-size:24px;color:#F59E0B;font-weight:bold">{{ $booking->check_out->format('h:i A') }}</p>
+<p style="font-size:24px;color:#F59E0B;font-weight:bold">{{ $booking->check_out->copy()->setTimezone(config('app.display_timezone'))->format('h:i A') }}</p>
 <p>Please collect your belongings before this time.</p>
 <p style="margin-top:16px">Need more time? Contact us:<br><strong style="color:#fff">+381 65 332 2319</strong></p>
 </div>

@@ -11,8 +11,8 @@
             <div class="prose prose-invert max-w-none text-[#A0A0A0]">{!! $page->content !!}</div>
         @else
             <div class="space-y-6 text-[#A0A0A0]">
-                <p>Belgrade Luggage Locker provides secure, 24/7 luggage storage in the heart of Belgrade. Our smart locker system allows travelers to safely store their belongings while exploring the city.</p>
-                <p>With 2 convenient locations — City Center and Savamala — we make it easy for tourists, business travelers, and locals to store their bags at affordable prices.</p>
+                <p>{{ __('Belgrade Luggage Locker provides secure, 24/7 luggage storage in the heart of Belgrade. Our smart locker system allows travelers to safely store their belongings while exploring the city.') }}</p>
+                <p>{{ __('With 2 convenient locations — City Center and Savamala — we make it easy for tourists, business travelers, and locals to store their bags at affordable prices.') }}</p>
 
                 <h2 class="text-2xl font-bold text-white mt-8 mb-4">{{ __('Why Choose Us?') }}</h2>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">

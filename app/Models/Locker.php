@@ -13,7 +13,7 @@ class Locker extends Model
     protected $fillable = [
         'location_id', 'ttlock_lock_id', 'uuid', 'number', 'size', 'status',
         'battery_level', 'is_online', 'dimensions_cm', 'sort_order',
-        'is_active', 'last_synced_at', 'is_published_on_site', 'site_sort_order',
+        'is_active', 'last_synced_at', 'last_used_at', 'is_published_on_site', 'site_sort_order',
     ];
 
     protected function casts(): array
@@ -26,6 +26,7 @@ class Locker extends Model
             'is_published_on_site' => 'boolean',
             'dimensions_cm' => 'array',
             'last_synced_at' => 'datetime',
+            'last_used_at' => 'datetime',
         ];
     }
 
@@ -38,6 +39,21 @@ class Locker extends Model
     {
         return $this->belongsToMany(Booking::class, 'booking_lockers')
             ->withPivot('pin_code_encrypted', 'ttlock_keyboard_pwd_id', 'assigned_at');
+    }
+
+    public function currentBookings(): BelongsToMany
+    {
+        return $this->bookings()
+            ->whereIn('booking_status', [\App\Enums\BookingStatus::Confirmed, \App\Enums\BookingStatus::Active])
+            ->where('check_in', '<=', now())
+            ->where('check_out', '>=', now());
+    }
+
+    public function upcomingBookings(): BelongsToMany
+    {
+        return $this->bookings()
+            ->whereIn('booking_status', [\App\Enums\BookingStatus::Confirmed, \App\Enums\BookingStatus::Active])
+            ->where('check_in', '>', now());
     }
 
     public function scopeActive($query)

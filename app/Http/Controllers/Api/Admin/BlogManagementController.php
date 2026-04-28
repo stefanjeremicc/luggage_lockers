@@ -75,6 +75,7 @@ class BlogManagementController extends Controller
             'meta_description' => "{$required}|string|max:500",
             'meta_description_sr' => 'nullable|string|max:500',
             'is_published' => 'boolean',
+            'is_featured' => 'boolean',
         ]);
     }
 }

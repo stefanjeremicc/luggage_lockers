@@ -15,14 +15,22 @@
                 <h2 class="text-sm font-semibold mb-3 text-[#F59E0B] uppercase tracking-wide">{{ group.label }}</h2>
                 <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl divide-y divide-[#2A2A2A]/60">
                     <div v-for="field in group.fields" :key="field.key" class="p-4 sm:p-5">
-                        <label class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-4">
+                        <label class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
                             <div class="md:flex-1 md:max-w-[40%]">
                                 <div class="text-sm text-white font-medium">{{ field.label }}</div>
-                                <p v-if="field.hint" class="text-xs text-[#6B7280] mt-0.5">{{ field.hint }}</p>
+                                <p v-if="field.hint" class="text-xs text-[#6B7280] mt-0.5 leading-relaxed">{{ field.hint }}</p>
                             </div>
-                            <div class="md:w-[60%] md:max-w-md">
+                            <div class="w-full md:w-[60%] md:max-w-md">
+                                <!-- Bool (toggle) -->
+                                <label v-if="field.type === 'bool'" class="inline-flex items-center gap-2 cursor-pointer select-none">
+                                    <input type="checkbox" :checked="['1', 1, true, 'true'].includes(values[field.key])"
+                                        @change="e => values[field.key] = e.target.checked ? '1' : '0'"
+                                        class="w-4 h-4 rounded border-[#2A2A2A] bg-[#111] accent-[#F59E0B]">
+                                    <span class="text-xs text-[#A0A0A0]">{{ ['1', 1, true, 'true'].includes(values[field.key]) ? 'Enabled' : 'Disabled' }}</span>
+                                </label>
+
                                 <!-- Phone -->
-                                <PhoneInput v-if="field.type === 'phone'"
+                                <PhoneInput v-else-if="field.type === 'phone'"
                                     v-model="values[field.key]"
                                     @valid="v => validity[field.key] = v"
                                     :required="field.required" />
@@ -73,9 +81,9 @@
                 </div>
             </section>
 
-            <div class="flex justify-end sticky bottom-4">
+            <div class="sticky bottom-0 -mx-4 sm:-mx-6 md:-mx-8 -mb-4 sm:-mb-6 md:-mb-8 px-4 sm:px-6 md:px-8 py-3 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A] to-transparent flex justify-end">
                 <button @click="save" :disabled="saving || !isValid"
-                    class="bg-[#F59E0B] text-black px-8 py-3 rounded-lg font-semibold shadow-xl hover:bg-[#D97706] disabled:opacity-50">
+                    class="bg-[#F59E0B] text-black w-full sm:w-auto sm:px-8 py-3 rounded-lg font-semibold shadow-xl hover:bg-[#D97706] disabled:opacity-50">
                     {{ saving ? 'Saving…' : 'Save changes' }}
                 </button>
             </div>
@@ -108,6 +116,10 @@ const groups = [
             { key: 'company_phone', label: 'Phone number', type: 'phone', required: true,
                 hint: 'One number used for call, WhatsApp, and display across the site.' },
             { key: 'company_email', label: 'Email', type: 'email', max: 150, required: true },
+            { key: 'site_address', label: 'Street address', type: 'text', max: 200,
+                hint: 'Used in footer, schema.org, and contact page.' },
+            { key: 'site_city', label: 'City', type: 'text', max: 100 },
+            { key: 'site_country', label: 'Country', type: 'text', max: 100 },
         ],
     },
     {
@@ -126,9 +138,15 @@ const groups = [
     },
     {
         key: 'homepage',
-        label: 'Homepage — Google reviews badge',
+        label: 'Homepage — Hero & Google reviews',
         fields: [
-            { key: 'google_rating', label: 'Rating', type: 'text', max: 3,
+            { key: 'hero_image', label: 'Hero image path', type: 'text', max: 500,
+                hint: 'Path to hero background, e.g. /images/hero-belgrade.webp' },
+            { key: 'hero_headline_en', label: 'Hero headline (EN)', type: 'text', max: 120 },
+            { key: 'hero_headline_sr', label: 'Hero headline (SR)', type: 'text', max: 120 },
+            { key: 'hero_subhead_en', label: 'Hero subheading (EN)', type: 'textarea', max: 300, rows: 2 },
+            { key: 'hero_subhead_sr', label: 'Hero subheading (SR)', type: 'textarea', max: 300, rows: 2 },
+            { key: 'google_rating', label: 'Google rating', type: 'text', max: 3,
                 hint: 'Number between 0 and 5 with one decimal (e.g. 4.9).' },
             { key: 'google_review_count', label: 'Review count label', type: 'text', max: 20,
                 hint: 'Free-form label shown next to rating, e.g. "70+".' },
@@ -137,13 +155,84 @@ const groups = [
         ],
     },
     {
+        key: 'map',
+        label: 'Map defaults',
+        fields: [
+            { key: 'map_default_lat', label: 'Default latitude', type: 'number', min: -90, max: 90, step: 0.0001,
+                hint: 'Center point for locations and contact maps.' },
+            { key: 'map_default_lng', label: 'Default longitude', type: 'number', min: -180, max: 180, step: 0.0001 },
+            { key: 'map_default_zoom', label: 'Default zoom', type: 'number', min: 1, max: 20 },
+        ],
+    },
+    {
+        key: 'social',
+        label: 'Social links',
+        fields: [
+            { key: 'social_facebook_url', label: 'Facebook URL', type: 'url', max: 500 },
+            { key: 'social_instagram_url', label: 'Instagram URL', type: 'url', max: 500 },
+            { key: 'social_tiktok_url', label: 'TikTok URL', type: 'url', max: 500 },
+        ],
+    },
+    {
+        key: 'legal',
+        label: 'Legal & business',
+        fields: [
+            { key: 'legal_company_name', label: 'Company legal name', type: 'text', max: 200,
+                hint: 'Used in footer copyright and Terms.' },
+            { key: 'legal_vat', label: 'VAT / PIB', type: 'text', max: 50 },
+            { key: 'legal_registration_number', label: 'Registration / matični broj', type: 'text', max: 50 },
+        ],
+    },
+    {
+        key: 'access',
+        label: 'Access codes',
+        fields: [
+            { key: 'entry_door_code', label: 'Entry door code', type: 'text', max: 20,
+                hint: 'Code customers use to enter the building (same for everyone). Include "#" if your keypad needs it, e.g. "0717#".' },
+        ],
+    },
+    {
+        key: 'lockers',
+        label: 'Locker sizes — capacity & dimensions',
+        fields: [
+            { key: 'locker_standard_capacity_en', label: 'Standard capacity (EN)', type: 'text', max: 120,
+                hint: 'e.g. "1 suitcase & 1 bag" — shown on pricing & booking pages.' },
+            { key: 'locker_standard_capacity_sr', label: 'Standard capacity (SR)', type: 'text', max: 120 },
+            { key: 'locker_standard_dimensions', label: 'Standard dimensions', type: 'text', max: 60,
+                hint: 'e.g. "50 × 65 × 28 cm".' },
+            { key: 'locker_standard_image', label: 'Standard locker image', type: 'text', max: 500,
+                hint: 'Path or URL.' },
+            { key: 'locker_large_capacity_en', label: 'Large capacity (EN)', type: 'text', max: 120 },
+            { key: 'locker_large_capacity_sr', label: 'Large capacity (SR)', type: 'text', max: 120 },
+            { key: 'locker_large_dimensions', label: 'Large dimensions', type: 'text', max: 60 },
+            { key: 'locker_large_image', label: 'Large locker image', type: 'text', max: 500 },
+        ],
+    },
+    {
         key: 'seo',
         label: 'SEO — Homepage meta',
         fields: [
-            { key: 'home_meta_title', label: 'Meta title', type: 'text', max: 60,
+            { key: 'home_meta_title', label: 'Meta title (EN)', type: 'text', max: 60,
                 hint: 'Up to 60 characters for best Google display.' },
-            { key: 'home_meta_description', label: 'Meta description', type: 'textarea', max: 150, rows: 3,
-                hint: 'Up to 150 characters.' },
+            { key: 'home_meta_description', label: 'Meta description (EN)', type: 'textarea', max: 150, rows: 3 },
+            { key: 'home_meta_title_sr', label: 'Meta title (SR)', type: 'text', max: 60 },
+            { key: 'home_meta_description_sr', label: 'Meta description (SR)', type: 'textarea', max: 150, rows: 3 },
+        ],
+    },
+    {
+        key: 'notifications',
+        label: 'Notifications — Admin & developer routing',
+        fields: [
+            { key: 'notifications_admin_email', label: 'Admin email', type: 'email', max: 150,
+                hint: 'Where booking copies (and dev-mode redirects) go.' },
+            { key: 'notifications_admin_whatsapp', label: 'Admin WhatsApp', type: 'phone',
+                hint: 'International format (e.g. +381649679212).' },
+            { key: 'notifications_dev_mode', label: 'Dev mode — redirect everything to admin', type: 'bool',
+                hint: 'When ON, customer gets NOTHING — all booking emails + WhatsApp go to admin only. Use during testing.' },
+            { key: 'notifications_notify_admin', label: 'Always notify admin (alongside customer)', type: 'bool',
+                hint: 'When ON, admin gets a copy of every booking notification (BCC for email, separate WhatsApp). Ignored if dev mode is also on.' },
+            { key: 'notifications_disabled', label: 'Disable all notifications (kill switch)', type: 'bool',
+                hint: 'When ON, NO emails or WhatsApp are sent — useful when running seeders or imports.' },
         ],
     },
 ];

@@ -3,8 +3,43 @@
 @section('title', "Book Luggage Storage — {$location->name}")
 @section('meta_description', "Book a secure locker at {$location->name}, {$location->address}, Belgrade. Choose size and duration, get instant PIN.")
 
+@php
+    $stdInfo = \App\Helpers\SiteSettings::lockerInfo('standard');
+    $lrgInfo = \App\Helpers\SiteSettings::lockerInfo('large');
+    $durationsForJs = [];
+    foreach (['standard', 'large'] as $size) {
+        $rules = $durations[$size] ?? collect();
+        $durationsForJs[$size] = $rules->map(fn($r) => [
+            'key' => $r->duration_key,
+            'label' => $r->labelFor(app()->getLocale()),
+            'price_eur' => (float) $r->price_eur,
+            'price' => '€' . number_format((float) $r->price_eur, (fmod((float) $r->price_eur, 1) ? 2 : 0)),
+        ])->values();
+    }
+    $minStandard = collect($durationsForJs['standard'])->min('price_eur');
+    $minLarge = collect($durationsForJs['large'])->min('price_eur');
+    $i18nForJs = [
+        'lockers_available' => __(':count lockers available'),
+        'no_lockers' => __('No lockers available'),
+        'standard' => __('Standard'),
+        'large' => __('Large'),
+        'errors' => [
+            'full_name' => __('Please enter your full name'),
+            'email_required' => __('Email is required'),
+            'email_invalid' => __('Please enter a valid email'),
+            'phone_invalid' => __('Please enter a valid phone number'),
+            'registration' => __('Registration failed.'),
+            'network' => __('Network error. Please try again.'),
+            'booking' => __('Booking failed.'),
+        ],
+        'weekdays' => [__('Mo'), __('Tu'), __('We'), __('Th'), __('Fr'), __('Sa'), __('Su')],
+    ];
+@endphp
 @section('content')
-<section class="py-6 lg:py-12" x-data="bookingFlow" data-location-id="{{ $location->id }}">
+<section class="py-6 lg:py-12" x-data="bookingFlow"
+    data-location-id="{{ $location->id }}"
+    data-durations='@json($durationsForJs)'
+    data-i18n='@json($i18nForJs)'>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {{-- Breadcrumb --}}
@@ -21,8 +56,8 @@
             <h1 class="text-2xl lg:text-3xl font-bold">{{ __('Book a Locker') }}</h1>
             <div class="flex items-center gap-3 mt-2">
                 <p class="text-[#A0A0A0] flex items-center gap-1.5 text-sm">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    {{ $location->name }} &mdash; {{ $location->address }}
+                    <svg class="w-4 h-4 flex-shrink-0 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    <span class="text-[#F59E0B] font-medium">{{ $location->address }}@if($location->city), {{ $location->city }}@endif</span>
                 </p>
                 <span class="text-xs text-[#10B981] flex items-center gap-1">
                     <span class="w-1.5 h-1.5 rounded-full bg-[#10B981] inline-block"></span>
@@ -110,7 +145,7 @@
 
                                 {{-- Day of Week Headers --}}
                                 <div class="grid grid-cols-7 gap-1 mb-2">
-                                    <template x-for="day in ['Mo','Tu','We','Th','Fr','Sa','Su']" :key="day">
+                                    <template x-for="day in ['{{ __('Mo') }}','{{ __('Tu') }}','{{ __('We') }}','{{ __('Th') }}','{{ __('Fr') }}','{{ __('Sa') }}','{{ __('Su') }}']" :key="day">
                                         <div class="text-center text-xs text-[#A0A0A0] font-medium py-1" x-text="day"></div>
                                     </template>
                                 </div>
@@ -174,7 +209,7 @@
                 </div>
 
                 {{-- ==================== STEP 2: Locker & Duration ==================== --}}
-                <div x-show="step === 2" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0">
+                <div x-show="step === 2">
 
                     {{-- Locker Type --}}
                     <div class="card mb-6">
@@ -182,91 +217,75 @@
                             <svg class="w-5 h-5 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                             {{ __('Choose your locker') }}
                         </h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {{-- Standard --}}
-                            <button @click="lockerSize = 'standard'" class="locker-card group text-left"
-                                    :class="lockerSize === 'standard' ? 'locker-card--active' : ''">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            @foreach([
+                                ['size'=>'standard','info'=>$stdInfo,'fallbackCap'=>'1 suitcase & 1 bag','fallbackImg'=>'/images/lockers/standard-dimensions.jpg','label'=>'Standard'],
+                                ['size'=>'large','info'=>$lrgInfo,'fallbackCap'=>'2 suitcases & 1 bag','fallbackImg'=>'/images/lockers/large-dimensions.jpg','label'=>'Large'],
+                            ] as $card)
+                            <div class="locker-card group flex flex-col" :class="qtys.{{ $card['size'] }} > 0 ? 'locker-card--active' : ''">
+                                {{-- Image --}}
                                 <div class="relative overflow-hidden rounded-t-xl h-36 bg-[#111111]">
-                                    <img src="/images/lockers/standard-dimensions.jpg" alt="Standard Locker Dimensions"
-                                         class="w-full h-full object-contain bg-[#111111] transition-transform duration-300 group-hover:scale-105">
-                                    <div x-show="lockerSize === 'standard'" x-transition class="absolute inset-0 bg-[#F59E0B]/10 flex items-center justify-center">
-                                        <svg class="w-10 h-10 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                    <img src="{{ $card['info']['image'] ?: $card['fallbackImg'] }}" alt="{{ __($card['label']) }} {{ __('Locker') }}"
+                                         class="w-full h-full object-contain bg-[#111111]">
+                                    {{-- Active corner badge when qty > 0 --}}
+                                    <div x-show="qtys.{{ $card['size'] }} > 0" x-transition class="absolute top-2 right-2 bg-[#F59E0B] text-black text-xs font-bold rounded-full w-7 h-7 flex items-center justify-center" x-text="qtys.{{ $card['size'] }}"></div>
+                                </div>
+
+                                <div class="p-4 flex-1 flex flex-col gap-3">
+                                    {{-- Title + capacity --}}
+                                    <div>
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-lg font-semibold">{{ __($card['label']) }}</span>
+                                            @if($card['info']['dimensions'])<span class="text-xs text-[#A0A0A0]">{{ $card['info']['dimensions'] }}</span>@endif
+                                        </div>
+                                        <p class="text-sm text-[#A0A0A0] mt-1">{{ $card['info']['capacity'] ?: __($card['fallbackCap']) }}</p>
+                                    </div>
+
+                                    {{-- Per-card duration grid — only renders when this size has qty > 0,
+                                         so the inactive card looks visibly "off" and there's no confusing
+                                         dual highlight. --}}
+                                    <div x-show="qtys.{{ $card['size'] }} > 0" x-cloak>
+                                        <p class="text-[10px] uppercase tracking-wider text-[#6B7280] mb-2">{{ __('Duration') }}</p>
+                                        <div class="grid grid-cols-3 gap-1.5">
+                                            @foreach(($durationsForJs[$card['size']] ?? collect()) as $opt)
+                                            <button type="button" @click="duration = '{{ $opt['key'] }}'"
+                                                class="duration-pill !py-2 !px-1"
+                                                :class="duration === '{{ $opt['key'] }}' ? 'duration-pill--active' : ''">
+                                                <span class="text-[11px] sm:text-xs font-medium leading-tight">{{ __($opt['label']) }}</span>
+                                                <span class="text-[10px] sm:text-[11px]" :class="duration === '{{ $opt['key'] }}' ? 'text-black/70' : 'text-[#F59E0B]'">{{ $opt['price'] }}</span>
+                                            </button>
+                                            @endforeach
+                                        </div>
+                                    </div>
+
+                                    {{-- Hint shown only when this card is empty — invites the user to add. --}}
+                                    <p x-show="qtys.{{ $card['size'] }} === 0" x-cloak class="text-xs text-[#6B7280] italic">
+                                        {{ __('Tap + to add and pick duration') }}
+                                    </p>
+
+                                    {{-- Quantity stepper + availability --}}
+                                    <div class="flex items-center justify-between pt-3 border-t border-[#2A2A2A]">
+                                        <div class="text-xs">
+                                            <span x-show="resolvedDate && time && duration"
+                                                  :class="availability['{{ $card['size'] }}']?.available > 3 ? 'text-[#10B981]' : (availability['{{ $card['size'] }}']?.available > 0 ? 'text-[#F59E0B]' : 'text-[#EF4444]')"
+                                                  x-text="availabilityLabelFor('{{ $card['size'] }}')"></span>
+                                            <span x-show="!(resolvedDate && time && duration)" class="text-[#6B7280]">{{ __('How many?') }}</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <button type="button" @click="decrementSize('{{ $card['size'] }}')" :disabled="qtys.{{ $card['size'] }} <= 0"
+                                                    class="qty-btn !w-10 !h-10 !rounded-lg disabled:opacity-30">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M20 12H4"/></svg>
+                                            </button>
+                                            <span class="text-lg font-bold w-7 text-center tabular-nums" x-text="qtys.{{ $card['size'] }}"></span>
+                                            <button type="button" @click="incrementSize('{{ $card['size'] }}')" :disabled="qtys.{{ $card['size'] }} >= maxQtyFor('{{ $card['size'] }}')"
+                                                    class="qty-btn !w-10 !h-10 !rounded-lg disabled:opacity-30">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="p-4">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-lg font-semibold">{{ __('Standard') }}</span>
-                                        <span class="text-[#F59E0B] font-bold text-sm">{{ __('from') }} &euro;5</span>
-                                    </div>
-                                    <p class="text-sm text-[#A0A0A0] mt-1">{{ __('1 suitcase & 1 bag') }}</p>
-                                    <p class="text-xs text-[#A0A0A0] mt-0.5">50 &times; 65 &times; 28 cm</p>
-                                </div>
-                            </button>
-
-                            {{-- Large --}}
-                            <button @click="lockerSize = 'large'" class="locker-card group text-left"
-                                    :class="lockerSize === 'large' ? 'locker-card--active' : ''">
-                                <div class="relative overflow-hidden rounded-t-xl h-36 bg-[#111111]">
-                                    <img src="/images/lockers/large-dimensions.jpg" alt="Large Locker Dimensions"
-                                         class="w-full h-full object-contain bg-[#111111] transition-transform duration-300 group-hover:scale-105">
-                                    <div x-show="lockerSize === 'large'" x-transition class="absolute inset-0 bg-[#F59E0B]/10 flex items-center justify-center">
-                                        <svg class="w-10 h-10 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                    </div>
-                                </div>
-                                <div class="p-4">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-lg font-semibold">{{ __('Large') }}</span>
-                                        <span class="text-[#F59E0B] font-bold text-sm">{{ __('from') }} &euro;10</span>
-                                    </div>
-                                    <p class="text-sm text-[#A0A0A0] mt-1">{{ __('2 suitcases & 1 bag') }}</p>
-                                    <p class="text-xs text-[#A0A0A0] mt-0.5">50 &times; 65 &times; 90 cm</p>
-                                </div>
-                            </button>
-                        </div>
-                    </div>
-
-                    {{-- Duration --}}
-                    <div class="card mb-6">
-                        <h3 class="font-semibold mb-4 flex items-center gap-2">
-                            <svg class="w-5 h-5 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            {{ __('For how long?') }}
-                        </h3>
-                        <div class="grid grid-cols-3 gap-2">
-                            <template x-for="opt in allDurationOptions" :key="opt.key">
-                                <button @click="duration = opt.key" class="duration-pill" :class="{ 'duration-pill--active': duration === opt.key }">
-                                    <span class="text-xs sm:text-sm font-medium" x-text="opt.label"></span>
-                                    <span class="text-[10px] sm:text-xs" :class="duration === opt.key ? 'text-black/70' : 'text-[#F59E0B]'" x-text="opt.price"></span>
-                                </button>
-                            </template>
-                        </div>
-                    </div>
-
-                    {{-- Quantity --}}
-                    <div class="card mb-6">
-                        <h3 class="font-semibold mb-4 flex items-center gap-2">
-                            <svg class="w-5 h-5 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/></svg>
-                            {{ __('How many lockers?') }}
-                        </h3>
-                        <div class="flex items-center gap-4">
-                            <button @click="decrementQty()" class="qty-btn" :disabled="qty <= 1">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M20 12H4"/></svg>
-                            </button>
-                            <span class="text-xl font-bold w-8 text-center tabular-nums" x-text="qty"></span>
-                            <button @click="incrementQty()" class="qty-btn" :disabled="qty >= maxQty">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    {{-- Availability indicator --}}
-                    <div x-show="resolvedDate && time && duration && lockerSize" x-transition x-cloak class="card mb-6 !py-3">
-                        <div class="flex items-center justify-between text-sm">
-                            <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full" :class="availability[lockerSize]?.available > 3 ? 'bg-[#10B981]' : (availability[lockerSize]?.available > 0 ? 'bg-[#F59E0B]' : 'bg-[#EF4444]')"></span>
-                                <span :class="availability[lockerSize]?.available > 3 ? 'text-[#10B981]' : (availability[lockerSize]?.available > 0 ? 'text-[#F59E0B]' : 'text-[#EF4444]')"
-                                      x-text="availability[lockerSize]?.available > 0 ? availability[lockerSize].available + ' lockers available' : 'No lockers available'"></span>
                             </div>
-                            <span class="text-[#A0A0A0]" x-text="lockerSize === 'standard' ? 'Standard' : 'Large'"></span>
+                            @endforeach
                         </div>
                     </div>
 
@@ -385,7 +404,10 @@
                                     <svg class="w-4 h-4 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                                 </div>
                                 <div>
-                                    <p class="font-medium text-white" x-text="qty + ' x ' + (lockerSize === 'standard' ? 'Standard' : 'Large') + ' (' + (orderSummary ? orderSummary.durationLabel : '') + ')'"></p>
+                                    <template x-for="line in cartItems" :key="line.size">
+                                        <p class="font-medium text-white"><span x-text="line.qty"></span> × <span x-text="sizeLabelFor(line.size)"></span></p>
+                                    </template>
+                                    <p class="text-[#A0A0A0] text-xs" x-text="orderSummary ? orderSummary.durationLabel : ''"></p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-4 text-sm">
@@ -462,14 +484,16 @@
                             </div>
                         </div>
 
-                        {{-- Locker --}}
-                        <div class="flex items-center gap-3" x-show="lockerSize" x-transition x-cloak>
+                        {{-- Lockers (multi-size cart) --}}
+                        <div class="flex items-start gap-3" x-show="totalQty > 0" x-transition x-cloak>
                             <div class="w-8 h-8 rounded-lg bg-[#F59E0B]/10 flex items-center justify-center shrink-0">
                                 <svg class="w-4 h-4 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                             </div>
-                            <div class="text-sm">
-                                <p class="text-white font-medium" x-text="qty + ' x ' + (lockerSize === 'standard' ? 'Standard' : 'Large')"></p>
-                                <p class="text-[#A0A0A0] text-xs" x-text="orderSummary ? orderSummary.durationLabel : ''"></p>
+                            <div class="text-sm flex-1">
+                                <template x-for="line in cartItems" :key="line.size">
+                                    <p class="text-white font-medium"><span x-text="line.qty"></span> × <span x-text="sizeLabelFor(line.size)"></span></p>
+                                </template>
+                                <p class="text-[#A0A0A0] text-xs mt-0.5" x-text="orderSummary ? orderSummary.durationLabel : ''"></p>
                             </div>
                         </div>
                     </div>
@@ -496,7 +520,7 @@
                     </div>
 
                     {{-- Empty state --}}
-                    <div x-show="!lockerSize || !duration" x-cloak class="px-6 py-6 text-center border-t border-[#2A2A2A]">
+                    <div x-show="!totalQty || !duration" x-cloak class="px-6 py-6 text-center border-t border-[#2A2A2A]">
                         <p class="text-sm text-[#A0A0A0]">{{ __('Select options to see pricing') }}</p>
                     </div>
 
@@ -511,14 +535,14 @@
     </div>
 
     {{-- Mobile Sticky Summary --}}
-    <div class="fixed bottom-0 left-0 right-0 lg:hidden z-50 bg-[#1A1A1A] border-t border-[#2A2A2A] px-4 py-3"
+    <div class="fixed bottom-0 left-0 right-0 lg:hidden z-50 bg-[#1A1A1A] border-t border-[#2A2A2A] px-4 py-3 mobile-cta-bar"
          x-transition>
         <div class="flex items-center justify-between max-w-7xl mx-auto">
             <div>
                 <p class="text-xs text-[#A0A0A0]" x-show="!pricing">{{ __('Select options for price') }}</p>
                 <div x-show="pricing && orderSummary" x-cloak>
                     <p class="text-lg font-bold text-[#F59E0B]" x-text="orderSummary ? formatPrice(orderSummary.total) : ''"></p>
-                    <p class="text-xs text-[#A0A0A0]" x-text="lockerSize ? qty + 'x ' + (lockerSize === 'standard' ? 'Standard' : 'Large') : ''"></p>
+                    <p class="text-xs text-[#A0A0A0]" x-text="totalQty > 0 ? cartItems.map(l => l.qty + '× ' + sizeLabelFor(l.size)).join(' + ') : ''"></p>
                 </div>
             </div>
             {{-- Step 1 --}}

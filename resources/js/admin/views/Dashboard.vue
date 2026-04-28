@@ -65,9 +65,12 @@
                             'bg-[#F59E0B]/15 border-[#F59E0B]/40 text-[#F59E0B]': l.status === 'maintenance',
                             'bg-[#6B7280]/15 border-[#6B7280]/40 text-[#6B7280]': l.status === 'offline',
                         }"
-                        :title="`${l.number} · ${l.status} · ${l.battery_level ?? '—'}%`">
+                        :title="l.current_booking
+                            ? `${l.number} · BOOKED by ${l.current_booking.customer_name} until ${new Date(l.current_booking.check_out).toLocaleString()}`
+                            : `${l.number} · ${l.status} · ${l.battery_level ?? '—'}%`">
                         <span class="font-bold">{{ l.number }}</span>
                         <span class="text-[10px] mt-0.5 uppercase opacity-70">{{ l.size[0] }}</span>
+                        <span v-if="l.current_booking" class="text-[8px] uppercase font-bold mt-0.5">●</span>
                     </router-link>
                 </div>
             </div>

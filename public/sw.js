@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bll-v1';
+const CACHE_NAME = 'bll-v2';
 const STATIC_ASSETS = ['/', '/faq', '/about', '/contact'];
 
 self.addEventListener('install', event => {
@@ -21,21 +21,16 @@ self.addEventListener('fetch', event => {
     const { request } = event;
     const url = new URL(request.url);
 
-    // API: network only for availability
-    if (url.pathname.includes('/api/locations') && url.pathname.includes('/availability')) {
+    // Never cache anything that contains PII or auth state.
+    // /booking/{uuid}/*  → contains customer name/email/PIN
+    // /api/*             → all API responses are user-scoped
+    // /admin/*           → admin SPA + auth
+    if (
+        url.pathname.startsWith('/api/') ||
+        url.pathname.startsWith('/booking/') ||
+        url.pathname.startsWith('/admin')
+    ) {
         event.respondWith(fetch(request));
-        return;
-    }
-
-    // API: network first for booking details
-    if (url.pathname.includes('/api/bookings') || url.pathname.includes('/booking/')) {
-        event.respondWith(
-            fetch(request).then(response => {
-                const clone = response.clone();
-                caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
-                return response;
-            }).catch(() => caches.match(request))
-        );
         return;
     }
 
@@ -51,7 +46,7 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // HTML: stale while revalidate
+    // HTML: stale while revalidate (only for non-PII, non-API pages above filters)
     event.respondWith(
         caches.match(request).then(cached => {
             const fetchPromise = fetch(request).then(response => {

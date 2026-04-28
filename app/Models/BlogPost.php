@@ -13,7 +13,7 @@ class BlogPost extends Model
         'blog_category_id',
         'tags', 'meta_title', 'meta_title_sr',
         'meta_description', 'meta_description_sr',
-        'author_name', 'is_published', 'published_at',
+        'author_name', 'is_published', 'is_featured', 'published_at',
     ];
 
     protected function casts(): array
@@ -21,6 +21,7 @@ class BlogPost extends Model
         return [
             'tags' => 'array',
             'is_published' => 'boolean',
+            'is_featured' => 'boolean',
             'published_at' => 'datetime',
         ];
     }

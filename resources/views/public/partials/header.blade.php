@@ -12,7 +12,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div class="flex items-center justify-between h-20">
             <a href="{{ route($prefix . 'home') }}" class="flex items-center relative z-50">
-                <img src="/images/logo.png" alt="Belgrade Luggage Locker" class="h-16 w-auto">
+                <img src="/images/logo.png" alt="{{ \App\Helpers\SiteSettings::siteName() }}" class="h-16 w-auto">
             </a>
 
             <nav class="hidden md:flex items-center gap-8">
@@ -26,11 +26,11 @@
             <div class="hidden md:flex items-center gap-4">
                 @if($locale === 'en')
                     <a href="{{ $switchUrl }}" class="flex items-center gap-1.5 text-xs font-medium text-white/40 hover:text-white transition-colors duration-200 uppercase tracking-wider">
-                        <img src="https://www.sodavoda.com/images/icons/soda-voda-vartolomej-srbija.svg" alt="SR" class="w-5 h-5"> SR
+                        <img src="/images/flags/rs.svg" alt="SR" class="w-5 h-5"> SR
                     </a>
                 @else
                     <a href="{{ $switchUrl }}" class="flex items-center gap-1.5 text-xs font-medium text-white/40 hover:text-white transition-colors duration-200 uppercase tracking-wider">
-                        <img src="https://www.sodavoda.com/images/icons/soda-voda-vartolomej-england.svg" alt="EN" class="w-5 h-5"> EN
+                        <img src="/images/flags/gb.svg" alt="EN" class="w-5 h-5"> EN
                     </a>
                 @endif
                 <a href="{{ route($prefix . 'locations.index') }}" class="btn-primary btn-sm">{{ __('Book Now') }}</a>
@@ -71,17 +71,17 @@
         {{-- Drawer header --}}
         <div class="flex items-center justify-between h-20 px-6">
             <a href="{{ route($prefix . 'home') }}" @click="mobileOpen = false" class="flex items-center">
-                <img src="/images/logo.png" alt="Belgrade Luggage Locker" class="h-12 w-auto">
+                <img src="/images/logo.png" alt="{{ \App\Helpers\SiteSettings::siteName() }}" class="h-12 w-auto">
             </a>
             <div class="flex items-center gap-3">
                 {{-- Language switch (only show opposite language) --}}
                 @if($locale === 'en')
                     <a href="{{ $switchUrl }}" class="flex items-center gap-1.5 text-xs text-white/40 hover:text-white transition">
-                        <img src="https://www.sodavoda.com/images/icons/soda-voda-vartolomej-srbija.svg" alt="SR" class="w-4 h-4"> SR
+                        <img src="/images/flags/rs.svg" alt="SR" class="w-4 h-4"> SR
                     </a>
                 @else
                     <a href="{{ $switchUrl }}" class="flex items-center gap-1.5 text-xs text-white/40 hover:text-white transition">
-                        <img src="https://www.sodavoda.com/images/icons/soda-voda-vartolomej-england.svg" alt="EN" class="w-4 h-4"> EN
+                        <img src="/images/flags/gb.svg" alt="EN" class="w-4 h-4"> EN
                     </a>
                 @endif
                 <button @click="mobileOpen = false" class="w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-all" aria-label="Close menu">

@@ -13,32 +13,22 @@
         <div v-if="loading" class="text-sm text-[#A0A0A0]">Loading…</div>
 
         <form v-else @submit.prevent="save" class="space-y-6">
-            <!-- Shared: slug, image, category, author -->
-            <section class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Field label="Slug (English)" required :error="errors.slug" hint="URL: /blog/{slug}">
-                        <input v-model="form.slug"
-                            class="w-full bg-[#111] border rounded-lg px-4 py-2.5 text-white font-mono text-sm focus:outline-none"
-                            :class="errors.slug ? 'border-[#EF4444]' : 'border-[#2A2A2A] focus:border-[#F59E0B]'">
-                    </Field>
-                    <Field label="Slug (Srpski)" :error="errors.slug_sr" hint="URL: /sr/blog/{slug-sr} — leaves blank to fall back to English slug.">
-                        <input v-model="form.slug_sr"
-                            class="w-full bg-[#111] border rounded-lg px-4 py-2.5 text-white font-mono text-sm focus:outline-none"
-                            :class="errors.slug_sr ? 'border-[#EF4444]' : 'border-[#2A2A2A] focus:border-[#F59E0B]'">
-                    </Field>
-                </div>
-
-                <Field label="Featured image" required :error="errors.featured_image">
-                    <ImageUploader v-model="form.featured_image" folder="blog" />
-                </Field>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Field label="Category">
-                        <Select v-model="form.blog_category_id" :options="categoryOptions" placeholder="Uncategorized" />
-                    </Field>
-                    <Field label="Author name">
-                        <input v-model="form.author_name"
-                            class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
+            <!-- Shared: image (right, square), category + author (left) -->
+            <section class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
+                <div class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-start">
+                    <div class="space-y-4">
+                        <Field label="Category">
+                            <Select v-model="form.blog_category_id" :options="categoryOptions" placeholder="Uncategorized" />
+                        </Field>
+                        <Field label="Author name">
+                            <input v-model="form.author_name"
+                                class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
+                        </Field>
+                    </div>
+                    <Field label="Featured image" required :error="errors.featured_image">
+                        <div class="w-[220px] h-[220px]">
+                            <ImageUploader v-model="form.featured_image" folder="blog" square />
+                        </div>
                     </Field>
                 </div>
             </section>
@@ -59,6 +49,11 @@
                     <input v-model="form.title" @input="autoSlug"
                         class="w-full bg-[#111] border rounded-lg px-4 py-2.5 text-white focus:outline-none"
                         :class="errors.title ? 'border-[#EF4444]' : 'border-[#2A2A2A] focus:border-[#F59E0B]'">
+                </Field>
+                <Field label="Slug (English)" required :error="errors.slug" hint="URL: /blog/{slug}">
+                    <input v-model="form.slug" @input="slugTouched = true"
+                        class="w-full bg-[#111] border rounded-lg px-4 py-2.5 text-white font-mono text-sm focus:outline-none"
+                        :class="errors.slug ? 'border-[#EF4444]' : 'border-[#2A2A2A] focus:border-[#F59E0B]'">
                 </Field>
                 <Field label="Excerpt (English)" required :error="errors.excerpt">
                     <textarea v-model="form.excerpt" rows="3"
@@ -88,8 +83,12 @@
             <!-- Serbian -->
             <section v-show="activeTab === 'sr'" class="space-y-4">
                 <Field label="Naslov (Srpski)">
-                    <input v-model="form.title_sr"
+                    <input v-model="form.title_sr" @input="autoSlugSr"
                         class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
+                </Field>
+                <Field label="Slug (Srpski)" :error="errors.slug_sr" hint="URL: /sr/blog/{slug-sr} — ostavite prazno da koristi engleski slug.">
+                    <input v-model="form.slug_sr" @input="slugSrTouched = true"
+                        class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white font-mono text-sm focus:border-[#F59E0B] focus:outline-none">
                 </Field>
                 <Field label="Kratak opis (Srpski)">
                     <textarea v-model="form.excerpt_sr" rows="3"
@@ -113,11 +112,16 @@
             </section>
 
             <!-- Publish -->
-            <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4">
+            <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 space-y-3">
                 <Checkbox
                     v-model="form.is_published"
                     label="Published"
                     description="When checked, this post is visible on the public site."
+                />
+                <Checkbox
+                    v-model="form.is_featured"
+                    label="Featured on home"
+                    description="Featured posts appear in the 'From the Blog' section on the homepage (top 3 newest featured)."
                 />
             </div>
         </form>
@@ -163,6 +167,7 @@ const form = ref({
     meta_title: '', meta_title_sr: '',
     meta_description: '', meta_description_sr: '',
     is_published: false,
+    is_featured: false,
 });
 
 const categories = ref([]);
@@ -172,10 +177,14 @@ const categoryOptions = computed(() => [
 ]);
 
 let slugTouched = false;
+let slugSrTouched = false;
 const slugify = (s) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-').slice(0, 80);
 const autoSlug = () => {
-    if (isNew.value && !slugTouched) form.value.slug = slugify(form.value.title);
+    if (!slugTouched) form.value.slug = slugify(form.value.title);
+};
+const autoSlugSr = () => {
+    if (!slugSrTouched) form.value.slug_sr = slugify(form.value.title_sr);
 };
 
 const validate = () => {
@@ -256,8 +265,10 @@ onMounted(async () => {
             meta_title: data.meta_title || '', meta_title_sr: data.meta_title_sr || '',
             meta_description: data.meta_description || '', meta_description_sr: data.meta_description_sr || '',
             is_published: !!data.is_published,
+            is_featured: !!data.is_featured,
         };
-        slugTouched = true;
+        slugTouched = !!data.slug;
+        slugSrTouched = !!data.slug_sr;
     } finally {
         loading.value = false;
     }

@@ -56,7 +56,8 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    var map = L.map('locations-map', { scrollWheelZoom: false }).setView([44.812, 20.460], 14);
+    @php $mc = \App\Helpers\SiteSettings::mapCenter(); @endphp
+    var map = L.map('locations-map', { scrollWheelZoom: false }).setView([{{ $mc['lat'] }}, {{ $mc['lng'] }}], {{ $mc['zoom'] }});
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; OpenStreetMap &copy; CARTO',
@@ -77,12 +78,13 @@ document.addEventListener('DOMContentLoaded', function() {
         .bindPopup(
             '<div class="popup-name">{{ $location->name }}</div>' +
             '<div class="popup-address">{{ $location->address }}, {{ $location->city }}</div>' +
-            '<div class="popup-badge">Open 24/7</div>' +
+            '<div class="popup-badge">{{ __('Open 24/7') }}</div>' +
             '<div class="popup-actions">' +
-            '<a href="{{ route($lp . 'booking.index', ['slug' => $location->slug]) }}" class="popup-btn">Book Now</a>' +
-            '<a href="{{ $location->google_maps_url }}" target="_blank" class="popup-link">Directions &rarr;</a>' +
-            '</div>'
-        );
+            '<a href="{{ route($lp . 'booking.index', ['slug' => $location->slug]) }}" class="popup-btn">{{ __('Book Now') }}</a>' +
+            '<a href="{{ $location->google_maps_url }}" target="_blank" class="popup-link">{{ __('Directions') }} &rarr;</a>' +
+            '</div>',
+            { autoClose: false, closeOnClick: false }
+        ).openPopup();
     @endforeach
 });
 </script>

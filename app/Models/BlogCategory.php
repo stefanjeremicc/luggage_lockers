@@ -13,4 +13,9 @@ class BlogCategory extends Model
     {
         return $this->hasMany(BlogPost::class);
     }
+
+    public function nameFor(string $locale): string
+    {
+        return $locale === 'sr' && $this->name_sr ? $this->name_sr : (string) $this->name;
+    }
 }

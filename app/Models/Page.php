@@ -28,4 +28,17 @@ class Page extends Model
     {
         return $query->where('locale', $locale);
     }
+
+    /**
+     * Look up SEO/content for a page slug, falling back to English when SR is missing.
+     * Returns null when neither locale has a row.
+     */
+    public static function seoFor(string $slug, ?string $locale = null): ?self
+    {
+        $locale ??= app()->getLocale();
+        return static::where('slug', $slug)
+            ->where('locale', $locale)
+            ->first()
+            ?? static::where('slug', $slug)->where('locale', 'en')->first();
+    }
 }

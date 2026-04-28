@@ -83,7 +83,11 @@ export default (config = {}) => ({
 
     cellClasses(cell) {
         if (!cell.day) return '';
-        if (!cell.enabled) return 'text-[#2A2A2A] cursor-not-allowed';
+        if (!cell.enabled) {
+            // Disabled (past or beyond max) — readable but visibly muted with strikethrough
+            // so the user understands they exist but cannot be picked.
+            return 'text-[#5A5A5A] line-through cursor-not-allowed';
+        }
         if (cell.date === this.selectedDate) {
             return 'bg-[#F59E0B] text-black font-bold';
         }
@@ -92,6 +96,6 @@ export default (config = {}) => ({
         if (cell.date === today) {
             return 'border border-[#F59E0B] text-white hover:bg-[#F59E0B]/20 cursor-pointer';
         }
-        return 'text-[#A0A0A0] hover:bg-[#2A2A2A] hover:text-white cursor-pointer';
+        return 'text-[#E0E0E0] hover:bg-[#2A2A2A] hover:text-white cursor-pointer';
     },
 });

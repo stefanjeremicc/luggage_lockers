@@ -17,25 +17,56 @@
             <!-- Basics -->
             <section class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 space-y-4">
                 <h2 class="text-sm font-semibold text-[#F59E0B] uppercase tracking-wide">Basics</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Field label="Name" required>
-                        <input v-model="form.name" @input="autoSlug" required
+
+                <!-- Language tabs for translatable text fields -->
+                <div class="flex border-b border-[#2A2A2A]">
+                    <button type="button" v-for="t in tabs" :key="t.value"
+                        @click="activeTab = t.value"
+                        class="px-4 py-2 text-sm font-medium transition border-b-2 -mb-px"
+                        :class="activeTab === t.value ? 'border-[#F59E0B] text-[#F59E0B]' : 'border-transparent text-[#A0A0A0] hover:text-white'">
+                        {{ t.label }}
+                    </button>
+                </div>
+
+                <div v-show="activeTab === 'en'" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Field label="Name (English)" required>
+                            <input v-model="form.name" @input="autoSlug" required
+                                class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
+                        </Field>
+                        <Field label="Slug" required hint="lowercase letters, digits and hyphens only">
+                            <input v-model="form.slug" required pattern="[a-z0-9-]+"
+                                class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white font-mono text-sm focus:border-[#F59E0B] focus:outline-none">
+                        </Field>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Field label="Address (English)" required>
+                            <input v-model="form.address" required
+                                class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
+                        </Field>
+                        <Field label="City (English)">
+                            <input v-model="form.city" class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
+                        </Field>
+                    </div>
+                </div>
+
+                <div v-show="activeTab === 'sr'" class="space-y-4">
+                    <Field label="Naziv (Srpski)" hint="Ostavite prazno da koristi engleski">
+                        <input v-model="form.name_sr"
                             class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
                     </Field>
-                    <Field label="Slug" required>
-                        <input v-model="form.slug" required
-                            class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white font-mono text-sm focus:border-[#F59E0B] focus:outline-none">
-                    </Field>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Field label="Adresa (Srpski)" hint="Ostavite prazno da koristi engleski">
+                            <input v-model="form.address_sr"
+                                class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
+                        </Field>
+                        <Field label="Grad (Srpski)">
+                            <input v-model="form.city_sr"
+                                class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
+                        </Field>
+                    </div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Field label="Address" required>
-                        <input v-model="form.address" required
-                            class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
-                    </Field>
-                    <Field label="City">
-                        <input v-model="form.city" class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
-                    </Field>
-                </div>
+
                 <Field label="Map & coordinates" hint="Search address to auto-locate, or drag/click the marker to fine-tune.">
                     <LocationMap
                         :lat="form.lat"
@@ -47,11 +78,17 @@
                 </Field>
             </section>
 
-            <!-- Main image -->
-            <section class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 space-y-3">
-                <h2 class="text-sm font-semibold text-[#F59E0B] uppercase tracking-wide">Main image</h2>
-                <p class="text-xs text-[#A0A0A0]">Hero image shown on the location detail page.</p>
-                <ImageUploader v-model="form.image_url" folder="locations" />
+            <!-- Images -->
+            <section class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 space-y-4">
+                <h2 class="text-sm font-semibold text-[#F59E0B] uppercase tracking-wide">Images</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Field label="Hero image" hint="Shown on the location detail page header.">
+                        <ImageUploader v-model="form.image_url" folder="locations" />
+                    </Field>
+                    <Field label="Social share image (Open Graph)" hint="Used when this location is shared on Facebook, X, WhatsApp. Recommended 1200×630.">
+                        <ImageUploader v-model="form.og_image" folder="locations" />
+                    </Field>
+                </div>
             </section>
 
             <!-- Hours -->
@@ -72,14 +109,21 @@
             <section class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 space-y-4">
                 <h2 class="text-sm font-semibold text-[#F59E0B] uppercase tracking-wide">Contact</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Field label="Phone" hint="Used for tel: and WhatsApp links for this location.">
+                    <Field label="Phone" hint="Used for the tel: link on the location page.">
                         <PhoneInput v-model="form.phone" />
                     </Field>
-                    <Field label="Email"><input v-model="form.email" type="email" class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none"></Field>
+                    <Field label="WhatsApp" hint="Number for the WhatsApp chat link. Leave empty to hide. Use international format (e.g. +381…).">
+                        <PhoneInput v-model="form.whatsapp" />
+                    </Field>
+                    <Field label="Email">
+                        <input v-model="form.email" type="email"
+                            class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
+                    </Field>
+                    <Field label="Google Maps URL" hint="Optional shareable link.">
+                        <input v-model="form.google_maps_url" type="url"
+                            class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
+                    </Field>
                 </div>
-                <Field label="Google Maps URL">
-                    <input v-model="form.google_maps_url" class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
-                </Field>
             </section>
 
             <!-- Content -->
@@ -96,9 +140,29 @@
             <!-- SEO -->
             <details class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
                 <summary class="cursor-pointer text-sm text-[#F59E0B] font-semibold uppercase tracking-wide">SEO meta (optional)</summary>
-                <div class="mt-4 space-y-4">
-                    <Field label="Meta title"><input v-model="form.meta_title" class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none"></Field>
-                    <Field label="Meta description"><textarea v-model="form.meta_description" rows="2" class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none"></textarea></Field>
+                <div class="mt-4 space-y-5">
+                    <div class="space-y-3">
+                        <p class="text-xs text-[#A0A0A0] uppercase tracking-wide">English</p>
+                        <Field label="Meta title">
+                            <input v-model="form.meta_title" maxlength="255"
+                                class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
+                        </Field>
+                        <Field label="Meta description">
+                            <textarea v-model="form.meta_description" rows="2" maxlength="500"
+                                class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none"></textarea>
+                        </Field>
+                    </div>
+                    <div class="space-y-3">
+                        <p class="text-xs text-[#A0A0A0] uppercase tracking-wide">Srpski</p>
+                        <Field label="Meta naslov">
+                            <input v-model="form.meta_title_sr" maxlength="255"
+                                class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
+                        </Field>
+                        <Field label="Meta opis">
+                            <textarea v-model="form.meta_description_sr" rows="2" maxlength="500"
+                                class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none"></textarea>
+                        </Field>
+                    </div>
                 </div>
             </details>
 
@@ -194,14 +258,23 @@ const isNew = computed(() => !route.params.id);
 const loading = ref(!isNew.value);
 const saving = ref(false);
 
+const tabs = [
+    { value: 'en', label: 'English' },
+    { value: 'sr', label: 'Srpski' },
+];
+const activeTab = ref('en');
+
 const form = ref({
-    name: '', slug: '', address: '', city: 'Belgrade',
+    name: '', name_sr: '', slug: '',
+    address: '', address_sr: '',
+    city: 'Belgrade', city_sr: '',
     lat: 44.8176, lng: 20.4569,
     description: '', description_sr: '',
     is_24h: true, opening_time: null, closing_time: null,
-    phone: '', email: '', google_maps_url: '',
-    meta_title: '', meta_description: '',
-    image_url: '',
+    phone: '', whatsapp: '', email: '', google_maps_url: '',
+    meta_title: '', meta_title_sr: '',
+    meta_description: '', meta_description_sr: '',
+    image_url: '', og_image: '',
     is_active: true,
 });
 
@@ -249,6 +322,15 @@ const autoSlug = () => {
 };
 
 const save = async () => {
+    if (!form.value.name?.trim()) { toast.error('Name is required'); activeTab.value = 'en'; return; }
+    if (!form.value.slug?.trim()) { toast.error('Slug is required'); activeTab.value = 'en'; return; }
+    if (!/^[a-z0-9-]+$/.test(form.value.slug)) { toast.error('Slug must be lowercase letters, digits and hyphens only'); activeTab.value = 'en'; return; }
+    if (!form.value.address?.trim()) { toast.error('Address is required'); activeTab.value = 'en'; return; }
+    if (!form.value.is_24h && form.value.opening_time && form.value.closing_time
+        && form.value.opening_time >= form.value.closing_time) {
+        toast.error('Closing time must be after opening time');
+        return;
+    }
     saving.value = true;
     try {
         const payload = { ...form.value };
@@ -344,16 +426,18 @@ onMounted(async () => {
         ]);
         const data = await locRes.json();
         form.value = {
-            name: data.name || '', slug: data.slug || '',
-            address: data.address || '', city: data.city || 'Belgrade',
+            name: data.name || '', name_sr: data.name_sr || '', slug: data.slug || '',
+            address: data.address || '', address_sr: data.address_sr || '',
+            city: data.city || 'Belgrade', city_sr: data.city_sr || '',
             lat: Number(data.lat) || 44.8176, lng: Number(data.lng) || 20.4569,
             description: data.description || '', description_sr: data.description_sr || '',
             is_24h: !!data.is_24h,
             opening_time: data.opening_time || null, closing_time: data.closing_time || null,
-            phone: data.phone || '', email: data.email || '',
-            google_maps_url: data.google_maps_url || '',
-            meta_title: data.meta_title || '', meta_description: data.meta_description || '',
-            image_url: data.image_url || '',
+            phone: data.phone || '', whatsapp: data.whatsapp || '',
+            email: data.email || '', google_maps_url: data.google_maps_url || '',
+            meta_title: data.meta_title || '', meta_title_sr: data.meta_title_sr || '',
+            meta_description: data.meta_description || '', meta_description_sr: data.meta_description_sr || '',
+            image_url: data.image_url || '', og_image: data.og_image || '',
             is_active: !!data.is_active,
         };
         slugTouched = true;

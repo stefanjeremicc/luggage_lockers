@@ -1,35 +1,50 @@
 @extends('layouts.public')
 
-@section('title', $settings['home_meta_title'] ?? 'Belgrade Luggage Locker — 24/7 Secure Luggage Storage')
-@section('meta_description', $settings['home_meta_description'] ?? 'Secure 24/7 luggage storage in Belgrade city center. Smart lockers at 2 locations. Book online, pay cash on arrival. From €5.')
+@php
+    $locale = app()->getLocale();
+    $metaTitleKey = $locale === 'sr' ? 'home_meta_title_sr' : 'home_meta_title';
+    $metaDescKey = $locale === 'sr' ? 'home_meta_description_sr' : 'home_meta_description';
+    $heroHeadline = \App\Helpers\SiteSettings::heroHeadline($locale);
+    $heroSubhead = \App\Helpers\SiteSettings::heroSubhead($locale);
+    $heroImage = \App\Helpers\SiteSettings::heroImage();
+    $locationsCount = $locations->count();
+    $minPriceEur = \App\Models\PricingRule::active()->min('price_eur');
+@endphp
+
+@section('title', $settings[$metaTitleKey] ?? ($settings['home_meta_title'] ?? 'Belgrade Luggage Locker — 24/7 Secure Luggage Storage'))
+@section('meta_description', $settings[$metaDescKey] ?? ($settings['home_meta_description'] ?? ''))
 
 @section('content')
 {{-- Hero --}}
 <section class="hero-section relative flex items-center justify-center overflow-hidden -mt-20">
     {{-- Background image --}}
     <div class="absolute inset-0">
-        <img src="/images/hero-belgrade.webp" alt="" class="w-full h-full object-cover" loading="eager">
+        <img src="{{ $heroImage }}" alt="" class="w-full h-full object-cover" loading="eager">
         <div class="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-[#0A0A0A]"></div>
     </div>
 
     {{-- Content --}}
     <div class="relative z-10 max-w-4xl mx-auto px-6 sm:px-6 lg:px-8 pt-24 pb-28 sm:pt-28 sm:pb-32 text-center">
         <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.15] sm:leading-[1.08] tracking-tight">
-            {{ __('Luggage Storage') }}<br>
-            <span class="text-[#F59E0B]">{{ __('in Belgrade') }}</span>
+            @if($heroHeadline)
+                {!! nl2br(e($heroHeadline)) !!}
+            @else
+                {{ __('Luggage Storage') }}<br>
+                <span class="text-[#F59E0B]">{{ __('in Belgrade') }}</span>
+            @endif
         </h1>
 
         <p class="mt-6 sm:mt-6 text-base sm:text-xl text-white/60 max-w-2xl mx-auto leading-relaxed">
-            {{ __('Drop your bags, explore the city. 24/7 smart lockers at 2 locations. Book online in 60 seconds, pay cash on arrival.') }}
+            {{ $heroSubhead ?: __('Drop your bags, explore the city. 24/7 smart lockers at :count locations. Book online in 60 seconds, pay cash on arrival.', ['count' => $locationsCount]) }}
         </p>
 
         <div class="mt-10 sm:mt-10 flex flex-row items-center justify-center gap-3 sm:gap-4">
             <a href="{{ route($lp . 'locations.index') }}" class="btn-primary flex-1 sm:flex-none inline-flex items-center justify-center gap-2">
                 <span class="sm:hidden">{{ __('Book Now') }}</span>
-                <span class="hidden sm:inline">{{ __('Book Now — From €5') }}</span>
+                <span class="hidden sm:inline">{{ __('Book Now') }}{{ $minPriceEur ? ' — '.__('From').' €'.rtrim(rtrim(number_format($minPriceEur, 2), '0'), '.') : '' }}</span>
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
             </a>
-            <a href="#how-it-works" class="btn-outline flex-1 sm:flex-none text-center">{{ __('How It Works') }}</a>
+            <a href="#how-it-works" data-scroll-to="how-it-works" class="btn-outline flex-1 sm:flex-none text-center">{{ __('How It Works') }}</a>
         </div>
     </div>
 
@@ -44,7 +59,7 @@
                         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
                         @endfor
                     </div>
-                    <span class="text-[#A0A0A0]"><strong class="text-white">{{ $settings['google_rating'] ?? '4.9' }}</strong> on Google ({{ $settings['google_review_count'] ?? '70+' }} reviews)</span>
+                    <span class="text-[#A0A0A0]"><strong class="text-white">{{ $settings['google_rating'] ?? '4.9' }}</strong> {{ __('on Google') }} ({{ $settings['google_review_count'] ?? '70+' }} {{ __('reviews') }})</span>
                 </div>
                 <div class="w-px h-4 bg-[#2A2A2A]"></div>
                 <div class="flex items-center gap-2">
@@ -73,7 +88,7 @@
                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
                             @endfor
                         </div>
-                        <span class="text-[#A0A0A0] whitespace-nowrap"><strong class="text-white">{{ $settings['google_rating'] ?? '4.9' }}</strong> on Google</span>
+                        <span class="text-[#A0A0A0] whitespace-nowrap"><strong class="text-white">{{ $settings['google_rating'] ?? '4.9' }}</strong> {{ __('on Google') }}</span>
                     </div>
                     <span class="shrink-0 mx-4 w-px h-3.5 bg-[#2A2A2A]"></span>
                     <div class="flex items-center gap-2 shrink-0">
@@ -180,7 +195,8 @@
                     <div class="flex items-center justify-between mb-6">
                         <div>
                             <h3 class="text-lg font-bold text-white">{{ __('Standard Locker') }}</h3>
-                            <p class="text-sm text-[#A0A0A0] mt-1">{{ __('1 suitcase & 1 bag') }}</p>
+                            @php $stdInfo = \App\Helpers\SiteSettings::lockerInfo('standard'); @endphp
+                            <p class="text-sm text-[#A0A0A0] mt-1">{{ $stdInfo['capacity'] ?: __('1 suitcase & 1 bag') }}</p>
                         </div>
                         <div class="text-right">
                             <span class="text-2xl font-bold text-[#F59E0B]">&euro;{{ isset($pricingRules['standard']) ? intval($pricingRules['standard']->first()->price_eur) : '5' }}</span>
@@ -203,7 +219,7 @@
                                 ['1 week', '€50'], ['2 weeks', '€85'], ['1 month', '€150'],
                             ] as $row)
                             <div class="pricing-table-row">
-                                <span>{{ $row[0] }}</span>
+                                <span>{{ __($row[0]) }}</span>
                                 <span class="font-semibold">{{ $row[1] }}</span>
                             </div>
                             @endforeach
@@ -212,7 +228,7 @@
 
                     <div class="mt-6 flex items-center justify-between">
                         <a href="{{ route($lp . 'locations.index') }}" class="btn-primary text-center">{{ __('Book Standard') }}</a>
-                        <span class="text-xs text-[#A0A0A0]">50 &times; 65 &times; 28 cm</span>
+                        @if($stdInfo['dimensions'])<span class="text-xs text-[#A0A0A0]">{{ $stdInfo['dimensions'] }}</span>@endif
                     </div>
                 </div>
             </div>
@@ -224,7 +240,8 @@
                     <div class="flex items-center justify-between mb-6">
                         <div>
                             <h3 class="text-lg font-bold text-white">{{ __('Large Locker') }}</h3>
-                            <p class="text-sm text-[#A0A0A0] mt-1">{{ __('2 suitcases & 1 bag') }}</p>
+                            @php $lrgInfo = \App\Helpers\SiteSettings::lockerInfo('large'); @endphp
+                            <p class="text-sm text-[#A0A0A0] mt-1">{{ $lrgInfo['capacity'] ?: __('2 suitcases & 1 bag') }}</p>
                         </div>
                         <div class="text-right">
                             <span class="text-2xl font-bold text-[#F59E0B]">&euro;{{ isset($pricingRules['large']) ? intval($pricingRules['large']->first()->price_eur) : '10' }}</span>
@@ -247,7 +264,7 @@
                                 ['1 week', '€75'], ['2 weeks', '€120'], ['1 month', '€200'],
                             ] as $row)
                             <div class="pricing-table-row">
-                                <span>{{ $row[0] }}</span>
+                                <span>{{ __($row[0]) }}</span>
                                 <span class="font-semibold">{{ $row[1] }}</span>
                             </div>
                             @endforeach
@@ -256,7 +273,7 @@
 
                     <div class="mt-6 flex items-center justify-between">
                         <a href="{{ route($lp . 'locations.index') }}" class="btn-primary text-center">{{ __('Book Large') }}</a>
-                        <span class="text-xs text-[#A0A0A0]">50 &times; 65 &times; 90 cm</span>
+                        @if($lrgInfo['dimensions'])<span class="text-xs text-[#A0A0A0]">{{ $lrgInfo['dimensions'] }}</span>@endif
                     </div>
                 </div>
             </div>
@@ -269,14 +286,18 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-12">
             <h2 class="text-3xl font-bold mb-4">{{ __('What People Say About Us') }}</h2>
-            <div class="flex items-center justify-center gap-3">
-                <div class="flex text-[#F59E0B]">
-                    @for($i = 0; $i < 5; $i++)
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                    @endfor
+            {{-- Stars wrap above text on small screens so the line doesn't squish.
+                 Single column on mobile, inline on sm+. --}}
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 text-center">
+                <div class="flex items-center gap-2">
+                    <div class="flex text-[#F59E0B]">
+                        @for($i = 0; $i < 5; $i++)
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                        @endfor
+                    </div>
+                    <span class="text-lg font-bold">{{ $settings['google_rating'] ?? '4.9' }}</span>
                 </div>
-                <span class="text-lg font-bold">{{ $settings['google_rating'] ?? '4.9' }}</span>
-                <span class="text-[#A0A0A0]">{{ __('based on') }} <a href="{{ $settings['google_reviews_url'] ?? '#' }}" target="_blank" class="text-[#F59E0B] hover:underline">{{ $settings['google_review_count'] ?? '70+' }} {{ __('Google reviews') }}</a></span>
+                <span class="text-sm sm:text-base text-[#A0A0A0]">{{ __('based on') }} <a href="{{ $settings['google_reviews_url'] ?? '#' }}" target="_blank" class="text-[#F59E0B] hover:underline">{{ $settings['google_review_count'] ?? '70+' }} {{ __('Google reviews') }}</a></span>
             </div>
         </div>
 
@@ -288,22 +309,20 @@
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
                     @endfor
                 </div>
-                <p class="text-sm text-[#A0A0A0] leading-relaxed mb-4">"{{ $review->text }}"</p>
+                <p class="text-sm text-[#A0A0A0] leading-relaxed mb-4">"{{ app()->getLocale() === 'sr' && !empty($review->text_sr) ? $review->text_sr : $review->text }}"</p>
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 rounded-full bg-[#F59E0B]/20 text-[#F59E0B] flex items-center justify-center text-sm font-bold">{{ $review->avatar_letter ?? strtoupper(substr($review->name, 0, 1)) }}</div>
                     <div>
                         <p class="text-sm font-semibold">{{ $review->name }}</p>
-                        <p class="text-xs text-[#A0A0A0]">{{ ucfirst($review->source) }} Review</p>
+                        <p class="text-xs text-[#A0A0A0]">{{ ucfirst($review->source) }} {{ __('Review') }}</p>
                     </div>
                 </div>
             </div>
             @endforeach
         </div>
 
-        <div class="text-center mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+        <div class="text-center mt-8">
             <a href="{{ $settings['google_reviews_url'] ?? '#' }}" target="_blank" rel="noopener" class="text-[#F59E0B] hover:underline text-sm">{{ __('See all reviews on Google') }} &rarr;</a>
-            <span class="hidden sm:block text-[#3A3A3A]">·</span>
-            <button type="button" @click="$dispatch('open-review-modal')" class="text-[#F59E0B] hover:underline text-sm cursor-pointer">{{ __('Leave your own review') }} &rarr;</button>
         </div>
 
         {{-- Review submit modal --}}
@@ -426,6 +445,33 @@ function reviewSubmitForm() {
 }
 </script>
 @endpush
+
+{{-- Featured Blog Posts --}}
+@if($blogPosts->count())
+<section class="py-16 lg:py-24">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold mb-4">{{ __('From the Blog') }}</h2>
+            <p class="text-[#A0A0A0]">{{ __('Travel tips, city guides, and luggage advice for Belgrade.') }}</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            @foreach($blogPosts as $post)
+            <a href="{{ route($lp . 'blog.show', ['slug' => $post->slug]) }}" class="card hover:border-[#F59E0B] transition group">
+                @if($post->featured_image)
+                <img src="{{ $post->featured_image }}" alt="{{ $post->title }}" class="w-full aspect-square object-cover rounded-lg mb-4">
+                @endif
+                <h3 class="text-lg font-semibold group-hover:text-[#F59E0B] transition">{{ $post->title }}</h3>
+                <p class="text-sm text-[#A0A0A0] mt-2 line-clamp-2">{{ Str::limit($post->excerpt, 120) }}</p>
+                <p class="text-xs text-[#A0A0A0] mt-3">{{ $post->published_at?->format('d M Y') }}</p>
+            </a>
+            @endforeach
+        </div>
+        <div class="text-center mt-10">
+            <a href="{{ route($lp . 'blog.index') }}" class="text-[#F59E0B] hover:underline">{{ __('View all posts') }} &rarr;</a>
+        </div>
+    </div>
+</section>
+@endif
 
 {{-- FAQ Preview --}}
 @if($faqs->count())

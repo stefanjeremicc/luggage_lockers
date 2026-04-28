@@ -34,6 +34,7 @@ class ReviewController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
             'text' => 'required|string',
+            'text_sr' => 'nullable|string',
             'rating' => 'integer|min:1|max:5',
             'source' => 'string|max:50',
             'status' => 'nullable|in:pending,approved,rejected',

@@ -10,7 +10,7 @@ class BookingLocker extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'booking_id', 'locker_id', 'pin_code_encrypted',
+        'booking_id', 'booking_item_id', 'locker_id', 'pin_code_encrypted',
         'ttlock_keyboard_pwd_id', 'assigned_at',
     ];
 
@@ -29,5 +29,10 @@ class BookingLocker extends Model
     public function locker(): BelongsTo
     {
         return $this->belongsTo(Locker::class);
+    }
+
+    public function bookingItem(): BelongsTo
+    {
+        return $this->belongsTo(BookingItem::class);
     }
 }

@@ -15,7 +15,12 @@ class LockerController extends Controller
     public function index(Request $request): JsonResponse
     {
         // Natural sort by locker number via LENGTH() + number.
-        $query = Locker::with('location')
+        $query = Locker::with([
+                'location',
+                'currentBookings.customer:id,full_name,email',
+                'upcomingBookings' => fn($q) => $q->orderBy('check_in')->limit(1),
+                'upcomingBookings.customer:id,full_name,email',
+            ])
             ->orderBy('location_id')
             ->orderBy('sort_order')
             ->orderByRaw('LENGTH(number)')
@@ -31,10 +36,10 @@ class LockerController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'location_id' => 'required|exists:locations,id',
+            'location_id' => 'nullable|exists:locations,id',
             'number' => 'required|string|max:20',
             'size' => 'required|in:standard,large',
-            'ttlock_lock_id' => 'nullable|integer',
+            'ttlock_lock_id' => 'nullable|integer|unique:lockers,ttlock_lock_id',
         ]);
 
         $locker = Locker::create(array_merge($validated, [
@@ -92,6 +97,42 @@ class LockerController extends Controller
         return response()->json(['message' => 'Reordered']);
     }
 
+    /**
+     * All bookings on this locker that are currently in progress or scheduled in the future.
+     * Used by the LockerDetail page to show admins the upcoming reservation timeline.
+     */
+    public function bookings(int $id): JsonResponse
+    {
+        $locker = Locker::findOrFail($id);
+
+        $rows = $locker->bookings()
+            ->with('customer:id,full_name,email,phone')
+            ->whereIn('booking_status', [\App\Enums\BookingStatus::Confirmed, \App\Enums\BookingStatus::Active])
+            ->where('check_out', '>=', now())
+            ->orderBy('check_in')
+            ->get(['bookings.id', 'uuid', 'customer_id', 'check_in', 'check_out', 'booking_status', 'payment_status', 'total_eur'])
+            ->map(function ($b) {
+                $now = now();
+                return [
+                    'id' => $b->id,
+                    'uuid' => $b->uuid,
+                    'customer' => $b->customer ? [
+                        'full_name' => $b->customer->full_name,
+                        'email' => $b->customer->email,
+                        'phone' => $b->customer->phone,
+                    ] : null,
+                    'check_in' => $b->check_in,
+                    'check_out' => $b->check_out,
+                    'booking_status' => $b->booking_status->value,
+                    'payment_status' => $b->payment_status->value,
+                    'total_eur' => $b->total_eur,
+                    'is_active_now' => $b->check_in <= $now && $b->check_out >= $now,
+                ];
+            });
+
+        return response()->json($rows);
+    }
+
     public function remoteUnlock(int $id, LockServiceInterface $lockService): JsonResponse
     {
         $locker = $this->requireWithLockId($id);
@@ -132,12 +173,16 @@ class LockerController extends Controller
     public function passcodeStore(int $id, Request $request, LockServiceInterface $lockService): JsonResponse
     {
         $locker = $this->requireWithLockId($id);
+        // TTLock keyboardPwdType:
+        //   1 = Custom (requires startDate + endDate)
+        //   2 = Permanent (no dates — never expires)
+        //   3 = Timed (requires startDate + endDate)
         $validated = $request->validate([
             'code' => 'required|string|min:4|max:9',
             'type' => 'required|integer|in:1,2,3',
             'name' => 'nullable|string|max:100',
-            'start' => 'nullable|date',
-            'end' => 'nullable|date|after:start',
+            'start' => 'required_unless:type,2|nullable|date',
+            'end' => 'required_unless:type,2|nullable|date|after:start',
         ]);
 
         try {
@@ -228,8 +273,41 @@ class LockerController extends Controller
             $data = $lockService->getLockList();
             $locks = $data['list'] ?? [];
             $updated = 0;
+            $matchedByAlias = 0;
+            $created = 0;
+
             foreach ($locks as $lock) {
-                $locker = Locker::where('ttlock_lock_id', $lock['lockId'])->first();
+                $lockId = $lock['lockId'] ?? null;
+                $alias = trim((string) ($lock['lockAlias'] ?? ''));
+                if (!$lockId) continue;
+
+                // 1) Already mapped by ttlock_lock_id?
+                $locker = Locker::where('ttlock_lock_id', $lockId)->first();
+
+                // 2) Try to map by matching alias to existing locker.number that has no TTLock id yet.
+                if (!$locker && $alias !== '') {
+                    $candidate = Locker::whereNull('ttlock_lock_id')->where('number', $alias)->first();
+                    if ($candidate) {
+                        $candidate->update(['ttlock_lock_id' => $lockId]);
+                        $locker = $candidate;
+                        $matchedByAlias++;
+                    }
+                }
+
+                // 3) Auto-create only if requested AND alias is non-empty (so we don't pollute DB with garbage).
+                if (!$locker && request()->boolean('auto_create') && $alias !== '') {
+                    $locker = Locker::create([
+                        'uuid' => Str::uuid(),
+                        'ttlock_lock_id' => $lockId,
+                        'number' => $alias,
+                        'size' => 'standard',
+                        'status' => 'available',
+                        'is_active' => true,
+                        'is_published_on_site' => false,
+                    ]);
+                    $created++;
+                }
+
                 if ($locker) {
                     $locker->update([
                         'battery_level' => $lock['electricQuantity'] ?? $locker->battery_level,
@@ -239,7 +317,18 @@ class LockerController extends Controller
                     $updated++;
                 }
             }
-            return response()->json(['updated' => $updated, 'total_api' => count($locks)]);
+
+            $unmapped = collect($locks)->filter(fn ($l) =>
+                !Locker::where('ttlock_lock_id', $l['lockId'] ?? 0)->exists()
+            )->values()->all();
+
+            return response()->json([
+                'updated' => $updated,
+                'matched_by_alias' => $matchedByAlias,
+                'created' => $created,
+                'total_api' => count($locks),
+                'unmapped' => $unmapped, // list of TTLock locks still without a DB mapping
+            ]);
         } catch (\Throwable $e) {
             return response()->json(['message' => $e->getMessage()], 500);
         }

@@ -73,7 +73,7 @@
                     <h2 class="text-sm font-semibold text-[#F59E0B] uppercase tracking-wide">Categories</h2>
                     <p class="text-xs text-[#A0A0A0] mt-1">Group related FAQs. Drag to reorder.</p>
                 </div>
-                <Btn variant="secondary" size="sm" @click="addCategory">+ Add category</Btn>
+                <Btn variant="primary" size="sm" @click="addCategory">+ Add category</Btn>
             </div>
 
             <div v-if="newCategory" class="mb-3 bg-[#111] border border-[#F59E0B]/40 rounded-lg p-3 grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2">

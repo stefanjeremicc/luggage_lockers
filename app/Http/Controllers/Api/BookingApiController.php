@@ -13,17 +13,37 @@ class BookingApiController extends Controller
 {
     public function store(Request $request, BookingService $service): JsonResponse
     {
-        $validated = $request->validate([
+        // Validation supports two shapes: legacy single-size (locker_size + locker_qty) and
+        // new multi-size (items[]). Internally we normalise to items[] so BookingService
+        // sees one uniform format.
+        $base = $request->validate([
             'location_id' => 'required|exists:locations,id',
-            'locker_size' => 'required|in:standard,large',
-            'locker_qty' => 'required|integer|min:1|max:20',
             'date' => 'required|date',
             'time' => 'required|date_format:H:i',
             'duration' => 'required|in:6h,24h,2_days,3_days,4_days,5_days,1_week,2_weeks,1_month',
             'payment_method' => 'required|in:cash,stripe',
         ]);
 
-        $validated['customer_id'] = $request->user()->id;
+        if (is_array($request->input('items')) && count($request->input('items'))) {
+            $request->validate([
+                'items' => 'required|array|min:1',
+                'items.*.size' => 'required|in:standard,large',
+                'items.*.qty' => 'required|integer|min:1|max:20',
+            ]);
+            $base['items'] = $request->input('items');
+        } else {
+            $request->validate([
+                'locker_size' => 'required|in:standard,large',
+                'locker_qty' => 'required|integer|min:1|max:20',
+            ]);
+            $base['items'] = [[
+                'size' => $request->input('locker_size'),
+                'qty' => (int) $request->input('locker_qty'),
+            ]];
+        }
+
+        $base['customer_id'] = $request->user()->id;
+        $validated = $base;
 
         try {
             $booking = $service->create($validated);
@@ -48,6 +68,24 @@ class BookingApiController extends Controller
         $request->validate([
             'reason' => 'nullable|string|max:500',
         ]);
+
+        // Authorisation: either the customer who owns this booking (via sanctum), or a
+        // valid signed cancel token. The cancel link in confirmation emails embeds a token.
+        $authorized = false;
+        $user = $request->user();
+        if ($user && $user->id === $booking->customer_id) {
+            $authorized = true;
+        }
+        if (!$authorized) {
+            $token = $request->input('token') ?? $request->query('token');
+            $expected = hash_hmac('sha256', $booking->uuid.'|'.$booking->customer_id, config('app.key'));
+            if ($token && hash_equals($expected, $token)) {
+                $authorized = true;
+            }
+        }
+        if (!$authorized) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
 
         $booking = $service->cancel($booking, $request->input('reason'));
 

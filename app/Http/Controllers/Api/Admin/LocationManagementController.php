@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Location;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class LocationManagementController extends Controller
 {
@@ -16,29 +17,10 @@ class LocationManagementController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'slug' => 'required|string|unique:locations,slug',
-            'address' => 'required|string|max:500',
-            'city' => 'string|max:100',
-            'lat' => 'required|numeric',
-            'lng' => 'required|numeric',
-            'description' => 'nullable|string',
-            'description_sr' => 'nullable|string',
-            'is_24h' => 'boolean',
-            'opening_time' => 'nullable|date_format:H:i',
-            'closing_time' => 'nullable|date_format:H:i',
-            'phone' => 'nullable|string|max:50',
-            'whatsapp' => 'nullable|string|max:50',
-            'email' => 'nullable|email',
-            'google_maps_url' => 'nullable|url|max:500',
-            'meta_title' => 'nullable|string|max:255',
-            'meta_description' => 'nullable|string|max:500',
-            'image_url' => 'nullable|string|max:500',
-        ]);
+        $validated = $request->validate($this->rules());
+        $this->validateHours($validated);
 
-        $location = Location::create($validated);
-        return response()->json($location, 201);
+        return response()->json(Location::create($validated), 201);
     }
 
     public function show($id): JsonResponse
@@ -53,28 +35,9 @@ class LocationManagementController extends Controller
     public function update(Request $request, int $id): JsonResponse
     {
         $location = Location::findOrFail($id);
-        $validated = $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'slug' => 'sometimes|string|unique:locations,slug,' . $id,
-            'address' => 'sometimes|string|max:500',
-            'city' => 'nullable|string|max:100',
-            'lat' => 'sometimes|numeric',
-            'lng' => 'sometimes|numeric',
-            'description' => 'nullable|string',
-            'description_sr' => 'nullable|string',
-            'is_24h' => 'boolean',
-            'opening_time' => 'nullable|date_format:H:i',
-            'closing_time' => 'nullable|date_format:H:i',
-            'phone' => 'nullable|string|max:50',
-            'whatsapp' => 'nullable|string|max:50',
-            'email' => 'nullable|email',
-            'google_maps_url' => 'nullable|string|max:500',
-            'meta_title' => 'nullable|string|max:255',
-            'meta_description' => 'nullable|string|max:500',
-            'is_active' => 'boolean',
-            'sort_order' => 'integer',
-            'image_url' => 'nullable|string|max:500',
-        ]);
+        $validated = $request->validate($this->rules($id, updating: true));
+        $this->validateHours($validated);
+
         $location->update($validated);
         return response()->json($location);
     }
@@ -83,5 +46,56 @@ class LocationManagementController extends Controller
     {
         Location::findOrFail($id)->update(['is_active' => false]);
         return response()->json(['message' => 'Location deactivated']);
+    }
+
+    private function rules(?int $id = null, bool $updating = false): array
+    {
+        $required = $updating ? 'sometimes|required' : 'required';
+        $slugRule = ['string', 'max:120', 'regex:/^[a-z0-9-]+$/'];
+        $slugRule[] = $id
+            ? Rule::unique('locations', 'slug')->ignore($id)
+            : Rule::unique('locations', 'slug');
+
+        return [
+            'name' => "{$required}|string|max:255",
+            'name_sr' => 'nullable|string|max:255',
+            'slug' => array_merge([$required], $slugRule),
+            'address' => "{$required}|string|max:500",
+            'address_sr' => 'nullable|string|max:500',
+            'city' => 'nullable|string|max:100',
+            'city_sr' => 'nullable|string|max:100',
+            'lat' => "{$required}|numeric|between:-90,90",
+            'lng' => "{$required}|numeric|between:-180,180",
+            'description' => 'nullable|string|max:10000',
+            'description_sr' => 'nullable|string|max:10000',
+            'is_24h' => 'boolean',
+            'opening_time' => 'nullable|date_format:H:i',
+            'closing_time' => 'nullable|date_format:H:i',
+            'phone' => 'nullable|string|max:50',
+            'whatsapp' => 'nullable|string|max:50',
+            'email' => 'nullable|email|max:255',
+            'google_maps_url' => 'nullable|url|max:500',
+            'meta_title' => 'nullable|string|max:255',
+            'meta_title_sr' => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string|max:500',
+            'meta_description_sr' => 'nullable|string|max:500',
+            'image_url' => 'nullable|string|max:500',
+            'og_image' => 'nullable|string|max:500',
+            'is_active' => 'boolean',
+            'sort_order' => 'integer|min:0',
+        ];
+    }
+
+    private function validateHours(array $data): void
+    {
+        $is24h = $data['is_24h'] ?? false;
+        if ($is24h) return;
+
+        $open = $data['opening_time'] ?? null;
+        $close = $data['closing_time'] ?? null;
+
+        if ($open && $close && $open >= $close) {
+            abort(422, 'Closing time must be after opening time.');
+        }
     }
 }

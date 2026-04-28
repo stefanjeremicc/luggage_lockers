@@ -38,6 +38,8 @@ const routes = [
             { path: 'faqs/:id/edit', component: () => import('../views/FaqEdit.vue'), name: 'faq-edit' },
             { path: 'reviews', component: () => import('../views/Reviews.vue'), name: 'reviews' },
             { path: 'notification-templates', component: () => import('../views/NotificationTemplates.vue'), name: 'notification-templates' },
+            { path: 'pages', component: () => import('../views/Pages.vue'), name: 'pages' },
+            { path: 'pages/:slug/edit', component: () => import('../views/PageEdit.vue'), name: 'page-edit' },
             { path: 'settings', component: () => import('../views/Settings.vue'), name: 'settings' },
         ],
         beforeEnter: (to, from, next) => {

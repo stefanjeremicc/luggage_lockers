@@ -16,7 +16,10 @@ class DashboardController extends Controller
     {
         $today = Carbon::today();
 
-        $locations = Location::active()->with(['lockers' => fn($q) => $q->active()])->get();
+        $locations = Location::active()->with([
+            'lockers' => fn($q) => $q->active(),
+            'lockers.currentBookings.customer:id,full_name,email',
+        ])->get();
 
         $todayBookings = Booking::whereDate('check_in', $today)->count();
         $activeBookings = Booking::active()->count();
@@ -35,14 +38,22 @@ class DashboardController extends Controller
         $lockerGrid = $locations->map(fn($loc) => [
             'id' => $loc->id,
             'name' => $loc->name,
-            'lockers' => $loc->lockers->map(fn($l) => [
-                'id' => $l->id,
-                'number' => $l->number,
-                'size' => $l->size->value,
-                'status' => $l->status->value,
-                'battery_level' => $l->battery_level,
-                'is_online' => $l->is_online,
-            ]),
+            'lockers' => $loc->lockers->map(function($l) {
+                $cur = $l->currentBookings->first();
+                return [
+                    'id' => $l->id,
+                    'number' => $l->number,
+                    'size' => $l->size->value,
+                    'status' => $cur ? 'occupied' : $l->status->value,
+                    'battery_level' => $l->battery_level,
+                    'is_online' => $l->is_online,
+                    'current_booking' => $cur ? [
+                        'id' => $cur->id,
+                        'customer_name' => $cur->customer?->full_name,
+                        'check_out' => $cur->check_out,
+                    ] : null,
+                ];
+            }),
         ]);
 
         return response()->json([

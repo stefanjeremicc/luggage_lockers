@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\Admin\PricingRuleController;
 use App\Http\Controllers\Api\Admin\SettingsController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\Admin\BlogManagementController;
+use App\Http\Controllers\Api\Admin\PageController;
 use App\Http\Controllers\Api\Admin\BlogCategoryController;
 use App\Http\Controllers\Api\Admin\FaqManagementController;
 use App\Http\Controllers\Api\Admin\FaqCategoryController;
@@ -25,17 +26,20 @@ use Illuminate\Support\Facades\Route;
 // Public API
 Route::get('/locations/{id}/availability', [AvailabilityController::class, 'check']);
 Route::get('/locations/{id}/pricing', [PricingController::class, 'calculate']);
-Route::post('/bookings', [BookingApiController::class, 'store'])->middleware('auth:sanctum');
-Route::post('/bookings/{uuid}/cancel', [BookingApiController::class, 'cancel']);
+Route::post('/locations/{id}/pricing', [PricingController::class, 'calculate']);
+Route::post('/bookings', [BookingApiController::class, 'store'])->middleware(['auth:sanctum', 'throttle:10,1']);
+Route::post('/bookings/{uuid}/cancel', [BookingApiController::class, 'cancel'])->middleware('throttle:6,1');
 
-// Auth
-Route::post('/auth/guest', [GuestController::class, 'register']);
-Route::post('/auth/login', [LoginController::class, 'login']);
-Route::post('/auth/forgot-password', [LoginController::class, 'forgotPassword']);
-Route::post('/auth/reset-password', [LoginController::class, 'resetPassword']);
+// Auth — rate-limited to defeat brute-force on credentials and password-reset spam
+Route::middleware('throttle:6,1')->group(function () {
+    Route::post('/auth/guest', [GuestController::class, 'register']);
+    Route::post('/auth/login', [LoginController::class, 'login']);
+    Route::post('/auth/forgot-password', [LoginController::class, 'forgotPassword']);
+    Route::post('/auth/reset-password', [LoginController::class, 'resetPassword']);
+});
 Route::post('/auth/logout', [LoginController::class, 'logout'])->middleware('auth:sanctum');
 Route::get('/auth/me', [LoginController::class, 'me'])->middleware('auth:sanctum');
-Route::post('/auth/change-password', [LoginController::class, 'changePassword'])->middleware('auth:sanctum');
+Route::post('/auth/change-password', [LoginController::class, 'changePassword'])->middleware(['auth:sanctum', 'throttle:6,1']);
 
 // Admin API
 Route::prefix('admin')->middleware(['auth:sanctum', CheckRole::class . ':admin'])->group(function () {
@@ -46,7 +50,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', CheckRole::class . ':admin']
     Route::get('/bookings/{id}', [BookingManagementController::class, 'show']);
     Route::post('/bookings/{id}/mark-paid', [BookingManagementController::class, 'markPaid']);
     Route::post('/bookings/{id}/extend', [BookingManagementController::class, 'extend']);
+    Route::post('/bookings/{id}/resend', [BookingManagementController::class, 'resendConfirmation']);
+    Route::post('/bookings/{id}/reissue-pin', [BookingManagementController::class, 'reissuePin']);
+    Route::get('/bookings/{id}/notifications/{logId}/preview', [BookingManagementController::class, 'previewNotification']);
     Route::delete('/bookings/{id}', [BookingManagementController::class, 'destroy']);
+    Route::delete('/bookings/{id}/force', [BookingManagementController::class, 'forceDestroy']);
 
     Route::post('/lockers/reorder', [LockerController::class, 'reorder']);
     Route::post('/lockers/sync-all', [LockerController::class, 'syncAll']);
@@ -60,6 +68,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', CheckRole::class . ':admin']
     Route::put('/lockers/{id}/passcodes/{pwdId}', [LockerController::class, 'passcodeUpdate']);
     Route::delete('/lockers/{id}/passcodes/{pwdId}', [LockerController::class, 'passcodeDestroy']);
     Route::get('/lockers/{id}/unlock-records', [LockerController::class, 'unlockRecords']);
+    Route::get('/lockers/{id}/bookings', [LockerController::class, 'bookings']);
 
     Route::apiResource('locations', LocationManagementController::class)->names('admin.locations');
     Route::apiResource('pricing-rules', PricingRuleController::class)->names('admin.pricing-rules');
@@ -76,6 +85,10 @@ Route::prefix('admin')->middleware(['auth:sanctum', CheckRole::class . ':admin']
     Route::post('reviews/{id}/reject', [ReviewController::class, 'reject'])->name('admin.reviews.reject');
     Route::apiResource('reviews', ReviewController::class)->names('admin.reviews');
     Route::apiResource('notification-templates', NotificationTemplateController::class)->names('admin.notification-templates');
+
+    Route::get('/pages', [PageController::class, 'index']);
+    Route::get('/pages/{slug}', [PageController::class, 'show']);
+    Route::put('/pages/{slug}', [PageController::class, 'update']);
 
     Route::get('/settings', [SettingsController::class, 'index']);
     Route::put('/settings', [SettingsController::class, 'update']);

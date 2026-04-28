@@ -40,6 +40,41 @@
                     <p v-if="unsupported.unlock && unsupported.lock" class="mt-3 text-xs text-[#A0A0A0]">This lock model doesn't support remote commands. Use passcodes or Bluetooth app.</p>
                 </div>
             </div>
+
+            <!-- Reservation timeline for this locker -->
+            <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 mt-4">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <h3 class="font-semibold">Reservations</h3>
+                    <button @click="loadBookings" class="text-xs text-[#A0A0A0] hover:text-white">Refresh</button>
+                </div>
+                <div v-if="bookingsLoading" class="text-sm text-[#A0A0A0]">Loading…</div>
+                <div v-else-if="!bookings.length" class="text-sm text-[#A0A0A0]">No active or upcoming reservations.</div>
+                <div v-else class="divide-y divide-[#2A2A2A]/60 -mx-2 sm:-mx-3">
+                    <router-link v-for="b in bookings" :key="b.id" to="/admin/bookings"
+                        class="flex items-center gap-3 px-2 sm:px-3 py-3 hover:bg-[#222] transition rounded-lg">
+                        <!-- Status dot column -->
+                        <span class="shrink-0 w-2.5 h-2.5 rounded-full"
+                            :class="b.is_active_now ? 'bg-[#EF4444]' : 'bg-[#F59E0B]'"
+                            :title="b.is_active_now ? 'In use now' : 'Upcoming'"></span>
+
+                        <!-- Main info: name + dates -->
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-2">
+                                <span class="font-medium text-white truncate">{{ b.customer?.full_name || '—' }}</span>
+                                <span class="text-[10px] text-[#6B7280] font-mono shrink-0">#{{ b.id }}</span>
+                            </div>
+                            <div class="text-xs text-[#A0A0A0] mt-0.5 font-mono">
+                                {{ formatDateTime(b.check_in) }}
+                                <span class="text-[#6B7280] mx-1">→</span>
+                                {{ formatDateTime(b.check_out) }}
+                            </div>
+                        </div>
+
+                        <!-- Chevron -->
+                        <svg class="w-4 h-4 text-[#6B7280] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 5l7 7-7 7"/></svg>
+                    </router-link>
+                </div>
+            </div>
         </div>
 
         <div v-if="tab === 'passcodes'">
@@ -68,20 +103,39 @@
                     <button @click="loadPasscodes" class="text-xs text-[#A0A0A0] hover:text-white">Refresh</button>
                 </div>
                 <div v-if="passcodes.length === 0" class="text-sm text-[#A0A0A0]">No passcodes.</div>
-                <table v-else class="w-full text-sm">
-                    <thead class="text-xs text-[#A0A0A0] border-b border-[#2A2A2A]">
-                        <tr><th class="text-left py-2">Code</th><th class="text-left">Name</th><th class="text-left">Type</th><th class="text-left">Valid</th><th></th></tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="p in passcodes" :key="p.keyboardPwdId" class="border-b border-[#2A2A2A]/40">
-                            <td class="py-2 font-mono">{{ p.keyboardPwd }}</td>
-                            <td>{{ p.keyboardPwdName || '—' }}</td>
-                            <td class="text-xs">{{ pwdType(p.keyboardPwdType) }}</td>
-                            <td class="text-xs">{{ pwdRange(p) }}</td>
-                            <td class="text-right"><button @click="deletePasscode(p)" class="text-red-400 hover:text-red-300 text-xs">Delete</button></td>
-                        </tr>
-                    </tbody>
-                </table>
+                <template v-else>
+                    <!-- Mobile: cards -->
+                    <div class="md:hidden space-y-2">
+                        <div v-for="p in passcodes" :key="p.keyboardPwdId" class="bg-[#111] border border-[#2A2A2A] rounded-lg p-3">
+                            <div class="flex items-start justify-between gap-2 mb-2">
+                                <div>
+                                    <div class="font-mono font-bold text-base text-[#F59E0B]">{{ p.keyboardPwd }}</div>
+                                    <div class="text-xs text-[#A0A0A0] mt-0.5">{{ p.keyboardPwdName || '—' }}</div>
+                                </div>
+                                <span class="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-[#2A2A2A] text-[#A0A0A0]">{{ pwdType(p.keyboardPwdType) }}</span>
+                            </div>
+                            <div class="text-xs text-[#A0A0A0] mb-2">{{ pwdRange(p) }}</div>
+                            <button @click="deletePasscode(p)" class="text-red-400 hover:text-red-300 text-xs underline">Delete</button>
+                        </div>
+                    </div>
+                    <!-- Desktop: table -->
+                    <div class="hidden md:block overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="text-xs text-[#A0A0A0] border-b border-[#2A2A2A]">
+                                <tr><th class="text-left py-2">Code</th><th class="text-left">Name</th><th class="text-left">Type</th><th class="text-left">Valid</th><th></th></tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="p in passcodes" :key="p.keyboardPwdId" class="border-b border-[#2A2A2A]/40">
+                                    <td class="py-2 font-mono">{{ p.keyboardPwd }}</td>
+                                    <td>{{ p.keyboardPwdName || '—' }}</td>
+                                    <td class="text-xs">{{ pwdType(p.keyboardPwdType) }}</td>
+                                    <td class="text-xs">{{ pwdRange(p) }}</td>
+                                    <td class="text-right"><button @click="deletePasscode(p)" class="text-red-400 hover:text-red-300 text-xs">Delete</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
             </div>
         </div>
 
@@ -92,19 +146,35 @@
                     <button @click="loadHistory" class="text-xs text-[#A0A0A0] hover:text-white">Refresh</button>
                 </div>
                 <div v-if="history.length === 0" class="text-sm text-[#A0A0A0]">No records.</div>
-                <table v-else class="w-full text-sm">
-                    <thead class="text-xs text-[#A0A0A0] border-b border-[#2A2A2A]">
-                        <tr><th class="text-left py-2">Time</th><th class="text-left">Type</th><th class="text-left">User / Code</th><th class="text-left">Success</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="r in history" :key="r.lockRecordId" class="border-b border-[#2A2A2A]/40">
-                            <td class="py-2 text-xs">{{ new Date(r.lockDate).toLocaleString() }}</td>
-                            <td class="text-xs">{{ recordType(r.recordType) }}</td>
-                            <td class="text-xs">{{ r.username || r.keyboardPwd || '—' }}</td>
-                            <td class="text-xs" :class="r.success === 1 ? 'text-green-400' : 'text-red-400'">{{ r.success === 1 ? 'OK' : 'Fail' }}</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <template v-else>
+                    <!-- Mobile: cards -->
+                    <div class="md:hidden space-y-2">
+                        <div v-for="r in history" :key="r.lockRecordId" class="bg-[#111] border border-[#2A2A2A] rounded-lg p-3 flex items-center justify-between">
+                            <div class="min-w-0">
+                                <div class="text-sm">{{ recordType(r.recordType) }}</div>
+                                <div class="text-xs text-[#A0A0A0] truncate">{{ r.username || r.keyboardPwd || '—' }}</div>
+                                <div class="text-[10px] text-[#6B7280] mt-0.5">{{ new Date(r.lockDate).toLocaleString() }}</div>
+                            </div>
+                            <span class="text-xs px-2 py-0.5 rounded-full shrink-0" :class="r.success === 1 ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'">{{ r.success === 1 ? 'OK' : 'Fail' }}</span>
+                        </div>
+                    </div>
+                    <!-- Desktop: table -->
+                    <div class="hidden md:block overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="text-xs text-[#A0A0A0] border-b border-[#2A2A2A]">
+                                <tr><th class="text-left py-2">Time</th><th class="text-left">Type</th><th class="text-left">User / Code</th><th class="text-left">Success</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="r in history" :key="r.lockRecordId" class="border-b border-[#2A2A2A]/40">
+                                    <td class="py-2 text-xs">{{ new Date(r.lockDate).toLocaleString() }}</td>
+                                    <td class="text-xs">{{ recordType(r.recordType) }}</td>
+                                    <td class="text-xs">{{ r.username || r.keyboardPwd || '—' }}</td>
+                                    <td class="text-xs" :class="r.success === 1 ? 'text-green-400' : 'text-red-400'">{{ r.success === 1 ? 'OK' : 'Fail' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
             </div>
         </div>
 
@@ -171,8 +241,24 @@ const tabs = [
 
 const passcodes = ref([]);
 const history = ref([]);
+const bookings = ref([]);
+const bookingsLoading = ref(false);
 const newAlias = ref('');
 const newPwd = ref({ type: 3, code: '', name: '', start: '', end: '' });
+
+const loadBookings = async () => {
+    bookingsLoading.value = true;
+    try {
+        const res = await apiFetch(`/api/admin/lockers/${id}/bookings`);
+        bookings.value = await res.json();
+    } catch (e) { toast.error(friendlyError(e.message)); }
+    finally { bookingsLoading.value = false; }
+};
+
+const formatDateTime = (s) => {
+    if (!s) return '';
+    return new Date(s).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+};
 
 const load = async () => {
     try {
@@ -330,5 +416,8 @@ watch(tab, (t) => {
     if (t === 'history' && history.value.length === 0) loadHistory();
 });
 
-onMounted(load);
+onMounted(async () => {
+    await load();
+    await loadBookings();
+});
 </script>

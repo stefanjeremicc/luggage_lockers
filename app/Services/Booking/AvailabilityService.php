@@ -11,7 +11,7 @@ class AvailabilityService
 {
     public function check(int $locationId, string $date, string $time, string $duration): array
     {
-        $checkIn = Carbon::parse("{$date} {$time}");
+        $checkIn = Carbon::parse("{$date} {$time}", config('app.display_timezone'))->setTimezone('UTC');
         $checkOut = $this->calculateCheckOut($checkIn, $duration);
 
         $bookedStandard = $this->getBookedCount($locationId, 'standard', $checkIn, $checkOut);

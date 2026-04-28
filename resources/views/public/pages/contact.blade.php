@@ -149,9 +149,10 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            @php $mc = \App\Helpers\SiteSettings::mapCenter(); @endphp
             const map = L.map('contact-map', {
                 scrollWheelZoom: false
-            }).setView([44.812, 20.460], 14);
+            }).setView([{{ $mc['lat'] }}, {{ $mc['lng'] }}], {{ $mc['zoom'] }});
 
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
@@ -168,33 +169,13 @@
 
             const locations = @json($locations);
 
-            // Fallback markers if no locations in DB
-            const defaultMarkers = [
-                {
-                    lat: 44.8176,
-                    lng: 20.4633,
-                    name: 'City Center',
-                    address: 'Kapetan Misina 2A, Belgrade',
-                    google_maps_url: 'https://www.google.com/maps?q=44.8176,20.4633'
-                },
-                {
-                    lat: 44.8076,
-                    lng: 20.4644,
-                    name: 'Kralja Milana',
-                    address: 'Kralja Milana, Belgrade',
-                    google_maps_url: 'https://www.google.com/maps?q=44.8076,20.4644'
-                }
-            ];
-
-            const markerData = locations.length > 0
-                ? locations.map(l => ({
-                    lat: parseFloat(l.lat),
-                    lng: parseFloat(l.lng),
-                    name: l.name,
-                    address: l.address + ', ' + l.city,
-                    google_maps_url: l.google_maps_url || ('https://www.google.com/maps?q=' + l.lat + ',' + l.lng)
-                }))
-                : defaultMarkers;
+            const markerData = locations.map(l => ({
+                lat: parseFloat(l.lat),
+                lng: parseFloat(l.lng),
+                name: l.name,
+                address: l.address + ', ' + l.city,
+                google_maps_url: l.google_maps_url || ('https://www.google.com/maps?q=' + l.lat + ',' + l.lng)
+            }));
 
             markerData.forEach(function (loc) {
                 L.marker([loc.lat, loc.lng], { icon: markerIcon })
@@ -202,11 +183,12 @@
                     .bindPopup(
                         '<div class="popup-name">' + loc.name + '</div>' +
                         '<div class="popup-address">' + loc.address + '</div>' +
-                        '<div class="popup-badge">Open 24/7</div>' +
+                        '<div class="popup-badge">{{ __('Open 24/7') }}</div>' +
                         '<div class="popup-actions">' +
                         '<a href="' + loc.google_maps_url + '" target="_blank" rel="noopener" class="popup-btn">{{ __("Get Directions") }}</a>' +
-                        '</div>'
-                    );
+                        '</div>',
+                        { autoClose: false, closeOnClick: false }
+                    ).openPopup();
             });
         });
     </script>

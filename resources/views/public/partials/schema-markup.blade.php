@@ -1,15 +1,21 @@
+@php
+    $minPrice = \App\Models\PricingRule::active()->min('price_eur');
+    $maxPrice = \App\Models\PricingRule::active()->max('price_eur');
+    $priceRange = ($minPrice && $maxPrice) ? 'EUR '.intval($minPrice).'-'.intval($maxPrice) : 'EUR 5-230';
+@endphp
 <script type="application/ld+json">
 {
     "@@context": "https://schema.org",
     "@@type": "LocalBusiness",
-    "name": "Belgrade Luggage Locker",
+    "name": "{{ \App\Helpers\SiteSettings::siteName() }}",
     "description": "24/7 secure luggage storage in Belgrade with smart lockers",
     "url": "{{ url('/') }}",
-    "telephone": "+381642941503",
-    "email": "info@belgradeluggagelocker.com",
+    "telephone": "{{ \App\Helpers\SiteSettings::phoneTel() }}",
+    "email": "{{ \App\Helpers\SiteSettings::email() }}",
     "address": {
         "@@type": "PostalAddress",
-        "addressLocality": "Belgrade",
+        @if($a = \App\Helpers\SiteSettings::address())"streetAddress": "{{ $a }}",@endif
+        "addressLocality": "{{ \App\Helpers\SiteSettings::city() ?: 'Belgrade' }}",
         "addressCountry": "RS"
     },
     "openingHoursSpecification": {
@@ -18,6 +24,6 @@
         "opens": "00:00",
         "closes": "23:59"
     },
-    "priceRange": "EUR 5-230"
+    "priceRange": "{{ $priceRange }}"
 }
 </script>

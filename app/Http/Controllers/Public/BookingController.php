@@ -28,18 +28,29 @@ class BookingController extends Controller
     public function confirmation(string $uuid)
     {
         $booking = Booking::where('uuid', $uuid)
-            ->with(['location', 'customer', 'lockers'])
+            ->with(['location', 'customer', 'lockers', 'items'])
             ->firstOrFail();
 
         return view('public.booking.confirmation', compact('booking'));
     }
 
-    public function cancelForm(string $uuid)
+    public function cancelForm(\Illuminate\Http\Request $request, string $uuid)
     {
         $booking = Booking::where('uuid', $uuid)
-            ->with(['location', 'customer'])
+            ->with(['location', 'customer', 'items'])
             ->firstOrFail();
 
-        return view('public.booking.cancel', compact('booking'));
+        // Token-gate the cancel form. If no/wrong token, hide PII and ask for the email
+        // matching the booking — defends against UUID-scraping while keeping the flow
+        // friendly for the customer who got the email link.
+        $token = $request->query('token');
+        $expected = hash_hmac('sha256', $booking->uuid.'|'.$booking->customer_id, config('app.key'));
+        $authorized = $token && hash_equals($expected, $token);
+
+        return view('public.booking.cancel', [
+            'booking' => $booking,
+            'cancelToken' => $authorized ? $token : null,
+            'authorized' => $authorized,
+        ]);
     }
 }

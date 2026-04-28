@@ -160,9 +160,14 @@ class TTLockService implements LockServiceInterface
         if ($name !== null && $name !== '') {
             $params['keyboardPwdName'] = $name;
         }
+        // TTLock requires startDate + endDate for type 1 (Custom) and type 3 (Timed).
+        // Without them the cloud silently registers epoch dates → passcode is invalid on the lock.
         if ($type === 1 || $type === 3) {
-            $params['startDate'] = ($start ?? Carbon::now())->getTimestampMs();
-            $params['endDate'] = ($end ?? Carbon::now()->addDay())->getTimestampMs();
+            if (!$start || !$end) {
+                throw new \InvalidArgumentException('startDate and endDate are required for TTLock passcode type '.$type);
+            }
+            $params['startDate'] = $start->getTimestampMs();
+            $params['endDate'] = $end->getTimestampMs();
         }
         return $this->request('POST', '/v3/keyboardPwd/add', $params);
     }

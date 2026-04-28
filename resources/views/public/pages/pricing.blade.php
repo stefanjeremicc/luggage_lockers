@@ -1,7 +1,14 @@
 @extends('layouts.public')
 
+@php
+    $std = \App\Helpers\SiteSettings::lockerInfo('standard');
+    $lrg = \App\Helpers\SiteSettings::lockerInfo('large');
+    $minStd = collect($pricingRules['standard'] ?? [])->min('price_eur');
+    $minLrg = collect($pricingRules['large'] ?? [])->min('price_eur');
+    $fmtPrice = fn($p) => $p ? rtrim(rtrim(number_format($p, 2), '0'), '.') : '—';
+@endphp
+
 @section('title', __('Pricing') . ' — Belgrade Luggage Locker')
-@section('meta_description', 'Luggage storage pricing in Belgrade. Standard lockers from €5, Large lockers from €10. No hidden fees.')
 
 @section('content')
 <section class="py-16 lg:py-24">
@@ -10,22 +17,25 @@
         <p class="text-center text-[#A0A0A0] mb-14 max-w-xl mx-auto">{{ __('No hidden fees. Pay cash on arrival in EUR or RSD.') }}</p>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {{-- Standard Locker --}}
-            <div class="pricing-card" x-data="{ showDim: false }">
+            @foreach([['size' => 'standard', 'info' => $std, 'min' => $minStd, 'rules' => $pricingRules['standard'] ?? [], 'featured' => false], ['size' => 'large', 'info' => $lrg, 'min' => $minLrg, 'rules' => $pricingRules['large'] ?? [], 'featured' => true]] as $card)
+            <div class="pricing-card @if($card['featured']) pricing-card--featured @endif" x-data="{ showDim: false }">
+                @if($card['featured'])<div class="pricing-card-badge">{{ __('Popular') }}</div>@endif
                 <div class="p-6 sm:p-8">
                     <div class="flex items-center justify-between mb-6">
                         <div>
-                            <h2 class="text-lg font-bold text-white">{{ __('Standard Locker') }}</h2>
-                            <p class="text-sm text-[#A0A0A0] mt-1">{{ __('Up to 1 carry-on bag + backpack') }}</p>
+                            <h2 class="text-lg font-bold text-white">{{ __(ucfirst($card['size']) . ' Locker') }}</h2>
+                            @if($card['info']['capacity'])
+                                <p class="text-sm text-[#A0A0A0] mt-1">{{ $card['info']['capacity'] }}</p>
+                            @endif
                         </div>
                         <div class="text-right">
-                            <span class="text-2xl font-bold text-[#F59E0B]">&euro;5</span>
+                            <span class="text-2xl font-bold text-[#F59E0B]">&euro;{{ $fmtPrice($card['min']) }}</span>
                             <p class="text-xs text-[#A0A0A0]">{{ __('from / 6h') }}</p>
                         </div>
                     </div>
 
                     <div class="pricing-table">
-                        @foreach($pricingRules['standard'] ?? [] as $index => $rule)
+                        @foreach($card['rules'] as $rule)
                         <div class="pricing-table-row">
                             <span>{{ __($rule->label) }}</span>
                             <span class="font-semibold">&euro;{{ number_format($rule->price_eur, 0) }}</span>
@@ -34,68 +44,28 @@
                     </div>
 
                     <div class="mt-6 flex items-center justify-between">
-                        <a href="{{ route($lp . 'locations.index') }}" class="btn-primary text-center">{{ __('Book Standard') }}</a>
+                        <a href="{{ route($lp . 'locations.index') }}" class="btn-primary text-center">{{ __('Book') }} {{ __(ucfirst($card['size'])) }}</a>
+                        @if($card['info']['dimensions'])
                         <button @click="showDim = true" class="text-xs text-[#A0A0A0] hover:text-[#F59E0B] transition flex items-center gap-1.5">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5"/></svg>
-                            50 &times; 65 &times; 28 cm
+                            {{ $card['info']['dimensions'] }}
                         </button>
+                        @endif
                     </div>
                 </div>
 
-                {{-- Dimensions modal — fullscreen --}}
+                @if($card['info']['image'])
                 <div x-show="showDim" x-transition.opacity x-cloak @click.self="showDim = false" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
                     <div class="relative max-w-lg w-full">
                         <button @click="showDim = false" class="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-[#2A2A2A] border border-[#3A3A3A] flex items-center justify-center text-[#A0A0A0] hover:text-white hover:bg-[#3A3A3A] transition z-10">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
-                        <img src="/images/lockers/standard-dimensions.jpg" alt="{{ __('Standard Locker dimensions') }}" class="w-full rounded-2xl border border-[#2A2A2A]">
+                        <img src="{{ $card['info']['image'] }}" alt="{{ __(ucfirst($card['size']) . ' Locker dimensions') }}" class="w-full rounded-2xl border border-[#2A2A2A]">
                     </div>
                 </div>
+                @endif
             </div>
-
-            {{-- Large Locker --}}
-            <div class="pricing-card pricing-card--featured" x-data="{ showDim: false }">
-                <div class="pricing-card-badge">{{ __('Popular') }}</div>
-                <div class="p-6 sm:p-8">
-                    <div class="flex items-center justify-between mb-6">
-                        <div>
-                            <h2 class="text-lg font-bold text-white">{{ __('Large Locker') }}</h2>
-                            <p class="text-sm text-[#A0A0A0] mt-1">{{ __('Up to 4 carry-on bags or 2 checked bags') }}</p>
-                        </div>
-                        <div class="text-right">
-                            <span class="text-2xl font-bold text-[#F59E0B]">&euro;10</span>
-                            <p class="text-xs text-[#A0A0A0]">{{ __('from / 6h') }}</p>
-                        </div>
-                    </div>
-
-                    <div class="pricing-table">
-                        @foreach($pricingRules['large'] ?? [] as $index => $rule)
-                        <div class="pricing-table-row">
-                            <span>{{ __($rule->label) }}</span>
-                            <span class="font-semibold">&euro;{{ number_format($rule->price_eur, 0) }}</span>
-                        </div>
-                        @endforeach
-                    </div>
-
-                    <div class="mt-6 flex items-center justify-between">
-                        <a href="{{ route($lp . 'locations.index') }}" class="btn-primary text-center">{{ __('Book Large') }}</a>
-                        <button @click="showDim = true" class="text-xs text-[#A0A0A0] hover:text-[#F59E0B] transition flex items-center gap-1.5">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5"/></svg>
-                            50 &times; 65 &times; 90 cm
-                        </button>
-                    </div>
-                </div>
-
-                {{-- Dimensions modal — fullscreen --}}
-                <div x-show="showDim" x-transition.opacity x-cloak @click.self="showDim = false" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
-                    <div class="relative max-w-lg w-full">
-                        <button @click="showDim = false" class="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-[#2A2A2A] border border-[#3A3A3A] flex items-center justify-center text-[#A0A0A0] hover:text-white hover:bg-[#3A3A3A] transition z-10">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                        </button>
-                        <img src="/images/lockers/large-dimensions.jpg" alt="{{ __('Large Locker dimensions') }}" class="w-full rounded-2xl border border-[#2A2A2A]">
-                    </div>
-                </div>
-            </div>
+            @endforeach
         </div>
 
         {{-- Info Cards --}}

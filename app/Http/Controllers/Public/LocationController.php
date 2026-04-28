@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Public;
 
+use App\Enums\LockerSize;
 use App\Http\Controllers\Controller;
 use App\Models\Location;
+use App\Models\PricingRule;
 
 class LocationController extends Controller
 {
@@ -34,6 +36,34 @@ class LocationController extends Controller
             ->groupBy('size')
             ->pluck('count', 'size');
 
+        // Sample locker per size for dimensions
+        $sampleLockers = $location->lockers()
+            ->active()
+            ->where('is_published_on_site', true)
+            ->get()
+            ->groupBy(fn ($l) => $l->size->value)
+            ->map(fn ($group) => $group->first());
+
+        // Lowest "from" price per size — prefer location-specific, fall back to global
+        $sizeSummary = collect(['standard', 'large'])
+            ->mapWithKeys(function ($sizeKey) use ($location, $sizes, $sampleLockers) {
+                if (!$sizes->has($sizeKey)) return [$sizeKey => null];
+                $sizeEnum = LockerSize::from($sizeKey);
+                $minPrice = PricingRule::active()
+                    ->where('locker_size', $sizeEnum)
+                    ->where(fn ($q) => $q->where('location_id', $location->id)->orWhereNull('location_id'))
+                    ->orderBy('price_eur')
+                    ->value('price_eur');
+
+                $sample = $sampleLockers->get($sizeKey);
+                return [$sizeKey => (object) [
+                    'count' => $sizes->get($sizeKey),
+                    'from_price' => $minPrice ? (int) $minPrice : null,
+                    'dimensions' => $sample?->dimensions_cm,
+                    'image' => "/images/lockers/{$sizeKey}.webp",
+                ]];
+            });
+
         $nearbyLocations = Location::active()
             ->where('id', '!=', $location->id)
             ->withCount(['lockers' => fn($q) => $q->active()->where('is_published_on_site', true)])
@@ -49,7 +79,7 @@ class LocationController extends Controller
             ->take(3)
             ->values();
 
-        return view('public.locations.show', compact('location', 'sizes', 'nearbyLocations'));
+        return view('public.locations.show', compact('location', 'sizes', 'sizeSummary', 'nearbyLocations'));
     }
 
     private function haversineKm(float $lat1, float $lng1, float $lat2, float $lng2): float

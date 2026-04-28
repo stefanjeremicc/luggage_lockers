@@ -11,20 +11,7 @@
             </template>
         </PageHeader>
 
-        <div class="flex gap-2 mb-4 flex-wrap">
-            <button v-for="t in filterTabs" :key="t.value"
-                @click="filter = t.value"
-                class="px-3 py-1.5 rounded-full text-xs border transition cursor-pointer flex items-center gap-2"
-                :class="filter === t.value ? 'bg-[#F59E0B] text-black border-[#F59E0B]' : 'border-[#2A2A2A] text-[#A0A0A0] hover:border-[#F59E0B]'">
-                {{ t.label }}
-                <span v-if="t.count" class="px-1.5 py-0.5 rounded text-[10px] font-bold"
-                    :class="filter === t.value ? 'bg-black/20 text-black' : 'bg-[#F59E0B]/15 text-[#F59E0B]'">
-                    {{ t.count }}
-                </span>
-            </button>
-        </div>
-
-        <div v-if="loading" class="text-sm text-[#A0A0A0]">Loading…</div>
+<div v-if="loading" class="text-sm text-[#A0A0A0]">Loading…</div>
         <div v-else-if="!reviews.length && editingId !== 'new'" class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-8 text-center text-[#A0A0A0]">
             No reviews yet.
         </div>
@@ -46,12 +33,11 @@
                 :scroll-sensitivity="120"
                 :scroll-speed="18"
                 :force-fallback="true"
-                :disabled="filter !== 'all'"
                 class="space-y-3"
                 @end="persistOrder"
             >
                 <template #item="{ element: review }">
-                    <div v-show="matchesFilter(review)">
+                    <div>
                         <!-- Inline edit form replaces the card when editing this review -->
                         <div v-if="editingId === review.id" class="bg-[#1A1A1A] border border-[#F59E0B]/40 rounded-xl p-5">
                             <ReviewEditor :review="form" :saving="saving" @save="save" @cancel="cancelEdit" />
@@ -129,34 +115,15 @@ const loading = ref(true);
 const editingId = ref(null); // id | 'new' | null
 const form = ref(blank());
 const saving = ref(false);
-const filter = ref('all');
-
-const filterTabs = computed(() => {
-    const pending = reviews.value.filter(r => r.status === 'pending').length;
-    return [
-        { value: 'all', label: 'All', count: reviews.value.length },
-        { value: 'pending', label: 'Pending', count: pending },
-        { value: 'approved', label: 'Approved' },
-        { value: 'rejected', label: 'Rejected' },
-    ];
-});
 
 const subtitle = computed(() => {
     const pending = reviews.value.filter(r => r.status === 'pending').length;
-    if (pending > 0 && filter.value === 'all') return `${reviews.value.length} reviews · ${pending} pending review${pending > 1 ? 's' : ''}`;
+    if (pending > 0) return `${reviews.value.length} reviews · ${pending} pending review${pending > 1 ? 's' : ''}`;
     return `${reviews.value.length} reviews · drag rows to reorder`;
 });
 
-const matchesFilter = (review) => {
-    if (filter.value === 'all') return true;
-    if (filter.value === 'pending') return review.status === 'pending';
-    if (filter.value === 'approved') return review.status === 'approved' || !review.status;
-    if (filter.value === 'rejected') return review.status === 'rejected';
-    return true;
-};
-
 function blank() {
-    return { id: null, name: '', text: '', rating: 5, is_active: true, status: 'approved' };
+    return { id: null, name: '', text: '', text_sr: '', rating: 5, is_active: true, status: 'approved' };
 }
 
 const fetchReviews = async () => {
@@ -318,13 +285,21 @@ const ReviewEditor = defineComponent({
                     class: 'w-full bg-[#111] border rounded-lg px-4 py-2.5 text-white focus:outline-none h-[42px] ' +
                         (errors.value.name ? 'border-[#EF4444]' : 'border-[#2A2A2A] focus:border-[#F59E0B]'),
                 })),
-            h(Field, { label: 'Review text', required: true, error: errors.value.text }, () =>
+            h(Field, { label: 'Review text (English)', required: true, error: errors.value.text }, () =>
                 h('textarea', {
                     value: local.value.text,
                     onInput: e => (local.value.text = e.target.value),
                     rows: 3,
                     class: 'w-full bg-[#111] border rounded-lg px-4 py-2.5 text-white focus:outline-none ' +
                         (errors.value.text ? 'border-[#EF4444]' : 'border-[#2A2A2A] focus:border-[#F59E0B]'),
+                })),
+            h(Field, { label: 'Review text (Serbian)' }, () =>
+                h('textarea', {
+                    value: local.value.text_sr || '',
+                    onInput: e => (local.value.text_sr = e.target.value),
+                    rows: 3,
+                    placeholder: 'Prevod na srpski (opciono)',
+                    class: 'w-full bg-[#111] border border-[#2A2A2A] focus:border-[#F59E0B] rounded-lg px-4 py-2.5 text-white focus:outline-none',
                 })),
             h(Field, { label: 'Rating', required: true, error: errors.value.rating }, () =>
                 h(StarRating, {
