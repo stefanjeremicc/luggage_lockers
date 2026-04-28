@@ -13,7 +13,7 @@ import { computed, useAttrs } from 'vue';
 import { RouterLink } from 'vue-router';
 
 const props = defineProps({
-    variant: { type: String, default: 'primary' }, // primary | secondary | danger | ghost | outline
+    variant: { type: String, default: 'primary' }, // primary | secondary | success | danger | danger-solid | ghost | outline
     size: { type: String, default: 'md' },          // sm | md | lg | icon
     loading: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
@@ -44,6 +44,7 @@ const iconSize = computed(() => ({
 const variantClasses = {
     primary: 'bg-[#F59E0B] hover:bg-[#D97706] active:bg-[#B45309] text-black font-semibold disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-[#F59E0B]/50',
     secondary: 'bg-[#1F1F1F] hover:bg-[#2A2A2A] border border-[#2A2A2A] hover:border-[#3A3A3A] text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed',
+    success: 'bg-[#10B981] hover:bg-[#059669] text-white font-semibold disabled:bg-[#1F1F1F] disabled:text-[#555] disabled:cursor-not-allowed',
     danger: 'bg-[#EF4444]/15 hover:bg-[#EF4444]/25 text-[#EF4444] font-semibold border border-transparent hover:border-[#EF4444]/30 disabled:opacity-50',
     'danger-solid': 'bg-[#EF4444] hover:bg-red-600 text-white font-semibold disabled:opacity-50',
     ghost: 'text-[#A0A0A0] hover:text-white hover:bg-[#1A1A1A] font-medium',

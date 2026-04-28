@@ -36,9 +36,11 @@
                 <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
                     <h3 class="font-semibold mb-3">Remote actions</h3>
                     <div class="flex flex-col gap-2">
-                        <button @click="doAction('sync', 'POST')" :disabled="busy" class="bg-[#2A2A2A] hover:bg-[#333] text-white px-4 py-2 rounded text-sm">Refresh status</button>
-                        <button @click="askRemote('unlock')" :disabled="busy || unsupported.unlock" :title="unsupported.unlock ? 'Not supported by this lock' : ''" class="bg-green-600 hover:bg-green-700 disabled:bg-[#1F1F1F] disabled:text-[#555] disabled:cursor-not-allowed text-white px-4 py-2 rounded text-sm">Remote unlock</button>
-                        <button @click="askRemote('lock')" :disabled="busy || unsupported.lock" :title="unsupported.lock ? 'Not supported by this lock' : ''" class="bg-blue-600 hover:bg-blue-700 disabled:bg-[#1F1F1F] disabled:text-[#555] disabled:cursor-not-allowed text-white px-4 py-2 rounded text-sm">Remote lock</button>
+                        <Btn variant="secondary" size="sm" :disabled="busy" @click="doAction('sync', 'POST')">Refresh status</Btn>
+                        <Btn variant="success" size="sm" :disabled="busy || unsupported.unlock"
+                            :title="unsupported.unlock ? 'Not supported by this lock' : ''" @click="askRemote('unlock')">Remote unlock</Btn>
+                        <Btn variant="primary" size="sm" :disabled="busy || unsupported.lock"
+                            :title="unsupported.lock ? 'Not supported by this lock' : ''" @click="askRemote('lock')">Remote lock</Btn>
                     </div>
                     <p v-if="unsupported.unlock && unsupported.lock" class="mt-3 text-xs text-[#A0A0A0]">This lock model doesn't support remote commands. Use passcodes or Bluetooth app.</p>
                 </div>
@@ -95,8 +97,8 @@
                     <DateTimePicker v-if="newPwd.type !== 2" v-model="newPwd.end" :min="newPwd.start || new Date().toISOString()" />
                 </div>
                 <div class="flex gap-2 mt-3">
-                    <button @click="genCode" class="bg-[#2A2A2A] hover:bg-[#333] text-white px-3 py-1.5 text-xs rounded">Generate random</button>
-                    <button @click="createPasscode" :disabled="busy" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 text-sm rounded">Create</button>
+                    <Btn variant="secondary" size="sm" @click="genCode">Generate random</Btn>
+                    <Btn variant="primary" size="sm" :disabled="busy" @click="createPasscode">Create</Btn>
                 </div>
             </div>
 
@@ -187,7 +189,7 @@
                 <p class="text-xs text-[#A0A0A0] mb-2">Changes alias on TTLock side and in local DB.</p>
                 <div class="flex gap-2">
                     <input v-model="newAlias" class="flex-1 bg-[#111] border border-[#2A2A2A] rounded px-3 py-2 text-sm" />
-                    <button @click="rename" :disabled="busy" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">Save</button>
+                    <Btn variant="primary" size="sm" :disabled="busy" @click="rename">Save</Btn>
                 </div>
             </div>
         </div>
@@ -201,6 +203,7 @@ import { useAuth } from '../composables/useAuth';
 import { useToast } from '../composables/useToast';
 import DateTimePicker from '../components/DateTimePicker.vue';
 import ConfirmModal from '../components/ConfirmModal.vue';
+import Btn from '../components/Btn.vue';
 
 const toast = useToast();
 
