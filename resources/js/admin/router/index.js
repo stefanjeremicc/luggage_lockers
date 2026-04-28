@@ -40,6 +40,7 @@ const routes = [
             { path: 'notification-templates', component: () => import('../views/NotificationTemplates.vue'), name: 'notification-templates' },
             { path: 'pages', component: () => import('../views/Pages.vue'), name: 'pages' },
             { path: 'pages/:slug/edit', component: () => import('../views/PageEdit.vue'), name: 'page-edit' },
+            { path: 'users', component: () => import('../views/Users.vue'), name: 'users' },
             { path: 'settings', component: () => import('../views/Settings.vue'), name: 'settings' },
         ],
         beforeEnter: (to, from, next) => {

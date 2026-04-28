@@ -99,6 +99,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', CheckRole::class . ':admin']
 
     // Super admin only
     Route::middleware(CheckRole::class . ':super_admin')->group(function () {
+        Route::post('users/{id}/reset-password', [UserController::class, 'resetPassword'])->name('admin.users.reset-password');
         Route::apiResource('users', UserController::class)->names('admin.users');
     });
 });
