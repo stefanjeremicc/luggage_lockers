@@ -17,9 +17,44 @@ h1{color:#10B981;text-align:center}h2{color:#F59E0B;font-size:16px;margin-top:20
 <p><strong>Location:</strong> {{ $booking->location->name }}</p>
 <p><strong>Address:</strong> {{ $booking->location->address }}, Belgrade</p>
 @php $tz = config('app.display_timezone'); @endphp
-<p><strong>Check-in:</strong> {{ $booking->check_in->copy()->setTimezone($tz)->format('d M Y, h:i A') }}</p>
-<p><strong>Check-out:</strong> {{ $booking->check_out->copy()->setTimezone($tz)->format('d M Y, h:i A') }}</p>
-<p><strong>Lockers:</strong> {{ $booking->locker_qty }} x {{ ucfirst($booking->locker_size->value) }}</p>
+@php
+    $items = $booking->items;
+    $sameWindow = $items->isNotEmpty() && $items->every(fn($it) =>
+        $it->check_in?->equalTo($items->first()->check_in) &&
+        $it->check_out?->equalTo($items->first()->check_out)
+    );
+    $durationLabels = ['6h' => '6 hours', '24h' => '24 hours', '2_days' => '2 days', '3_days' => '3 days', '4_days' => '4 days', '5_days' => '5 days', '1_week' => '1 week', '2_weeks' => '2 weeks', '1_month' => '1 month'];
+@endphp
+
+@if($items->isEmpty())
+    <p><strong>Check-in:</strong> {{ $booking->check_in->copy()->setTimezone($tz)->format('d M Y, h:i A') }}</p>
+    <p><strong>Check-out:</strong> {{ $booking->check_out->copy()->setTimezone($tz)->format('d M Y, h:i A') }}</p>
+    <p><strong>Lockers:</strong> {{ $booking->locker_qty }} x {{ ucfirst($booking->locker_size->value) }}</p>
+@elseif($sameWindow)
+    <p><strong>Check-in:</strong> {{ $items->first()->check_in->copy()->setTimezone($tz)->format('d M Y, h:i A') }}</p>
+    <p><strong>Check-out:</strong> {{ $items->first()->check_out->copy()->setTimezone($tz)->format('d M Y, h:i A') }}</p>
+    <p><strong>Lockers:</strong></p>
+    <ul style="color:#A0A0A0;margin:0 0 8px 18px;padding:0">
+        @foreach($items as $item)
+            <li>{{ $item->qty }} × {{ ucfirst($item->locker_size->value) }} <span style="color:#6B7280">· {{ $durationLabels[$item->duration_key] ?? $item->duration_key }}</span></li>
+        @endforeach
+    </ul>
+@else
+    <p><strong>Lockers:</strong></p>
+    <ul style="color:#A0A0A0;margin:0 0 8px 18px;padding:0">
+        @foreach($items as $item)
+            <li>
+                {{ $item->qty }} × {{ ucfirst($item->locker_size->value) }}
+                <span style="color:#6B7280">· {{ $durationLabels[$item->duration_key] ?? $item->duration_key }}</span><br>
+                <span style="color:#6B7280;font-size:13px">
+                    {{ $item->check_in->copy()->setTimezone($tz)->format('d M, h:i A') }}
+                    →
+                    {{ $item->check_out->copy()->setTimezone($tz)->format('d M, h:i A') }}
+                </span>
+            </li>
+        @endforeach
+    </ul>
+@endif
 <p><strong>Total:</strong> &euro;{{ number_format($booking->total_eur, 2) }} — Pay cash on arrival</p>
 </div>
 
