@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BlogPost;
 use App\Models\Faq;
 use App\Models\Location;
+use App\Models\Page;
 use App\Models\PricingRule;
 use App\Models\Review;
 use App\Models\Setting;
@@ -46,9 +47,14 @@ class HomeController extends Controller
             ->limit(9)
             ->get();
 
-        // How It Works steps — authored in config/homepage.php
-        $howItWorksSteps = config('homepage.how_it_works', []);
+        // Homepage CMS sections — DB-authored, with config fallback
+        $home = Page::seoFor('home', $locale);
+        $configSteps = config('homepage.how_it_works', []);
+        $sectionSteps = $home?->section('how_it_works');
+        $howItWorksSteps = is_array($sectionSteps) && count($sectionSteps) === 4 && !empty($sectionSteps[0]['title'])
+            ? $sectionSteps
+            : $configSteps;
 
-        return view('public.home', compact('locations', 'faqs', 'blogPosts', 'pricingRules', 'reviews', 'howItWorksSteps'));
+        return view('public.home', compact('locations', 'faqs', 'blogPosts', 'pricingRules', 'reviews', 'howItWorksSteps', 'home'));
     }
 }

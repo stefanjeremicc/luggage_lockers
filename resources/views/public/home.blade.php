@@ -116,8 +116,12 @@
 {{-- How It Works --}}
 <section id="how-it-works" class="py-16 lg:py-24">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="text-3xl font-bold text-center mb-4">{{ __('How To Use Our Lockers') }}</h2>
-        <p class="text-center text-[#A0A0A0] mb-14">{{ __('Simple, fast, and secure — in 4 easy steps') }}</p>
+        @php
+            $hiwTitle = $home?->section('how_it_works_heading.title') ?: __('How To Use Our Lockers');
+            $hiwSub = $home?->section('how_it_works_heading.subtitle') ?: __('Simple, fast, and secure — in 4 easy steps');
+        @endphp
+        <h2 class="text-3xl font-bold text-center mb-4">{{ $hiwTitle }}</h2>
+        <p class="text-center text-[#A0A0A0] mb-14">{{ $hiwSub }}</p>
         @php
             $stepIcons = [
                 'computer' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>',
@@ -477,7 +481,7 @@ function reviewSubmitForm() {
 @if($faqs->count())
 <section class="py-16 lg:py-24">
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="text-3xl font-bold text-center mb-12">{{ __('Frequently Asked Questions') }}</h2>
+        <h2 class="text-3xl font-bold text-center mb-12">{{ $home?->section('faq.title') ?: __('Frequently Asked Questions') }}</h2>
         <div class="space-y-3">
             @foreach($faqs as $faq)
             <div class="card !p-0 overflow-hidden" x-data="{ open: false }">
@@ -505,9 +509,9 @@ function reviewSubmitForm() {
         <div class="absolute bottom-0 right-1/4 w-64 h-64 bg-[#F59E0B] rounded-full blur-3xl"></div>
     </div>
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-        <h2 class="text-3xl sm:text-4xl font-bold">{{ __('Ready to Explore Belgrade?') }}</h2>
-        <p class="mt-4 text-lg text-[#A0A0A0]">{{ __('Drop your bags and enjoy the city hands-free. Book in 60 seconds.') }}</p>
-        <a href="{{ route($lp . 'locations.index') }}" class="btn-primary mt-8">{{ __('Book Your Locker') }}</a>
+        <h2 class="text-3xl sm:text-4xl font-bold">{{ $home?->section('cta.title') ?: __('Ready to Explore Belgrade?') }}</h2>
+        <p class="mt-4 text-lg text-[#A0A0A0]">{{ $home?->section('cta.subtitle') ?: __('Drop your bags and enjoy the city hands-free. Book in 60 seconds.') }}</p>
+        <a href="{{ route($lp . 'locations.index') }}" class="btn-primary mt-8">{{ $home?->section('cta.button') ?: __('Book Your Locker') }}</a>
     </div>
 </section>
 @endsection

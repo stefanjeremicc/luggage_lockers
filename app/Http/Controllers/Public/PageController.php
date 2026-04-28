@@ -48,6 +48,19 @@ class PageController extends Controller
 
     public function near(string $slug)
     {
+        // Prefer admin-authored landing page when published in current locale.
+        $locale = app()->getLocale();
+        $landing = Page::landings()->published()
+            ->where('slug', $slug)
+            ->where(fn ($q) => $q->where('locale', $locale)->orWhere('locale', 'en'))
+            ->orderByRaw("locale = '{$locale}' DESC")
+            ->with('location')
+            ->first();
+        if ($landing) {
+            $locations = Location::active()->orderBy('sort_order')->get();
+            return view('public.pages.landing', compact('landing', 'locations'));
+        }
+
         $pois = config('seo.near_pois', []);
         $poi = $pois[$slug] ?? null;
         abort_if(!$poi, 404);
