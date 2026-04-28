@@ -225,17 +225,10 @@
             </div>
         </div>
 
-        <!-- Details modal (bottom sheet on mobile, centered on desktop) -->
-        <div v-if="detailsBooking" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/70" @click.self="detailsBooking = null">
-            <div class="bg-[#1A1A1A] border border-[#2A2A2A] sm:rounded-xl rounded-t-2xl max-w-2xl w-full max-h-[92vh] sm:max-h-[90vh] overflow-y-auto">
-                <div class="flex items-center justify-between p-4 border-b border-[#2A2A2A] sticky top-0 bg-[#1A1A1A]">
-                    <div>
-                        <h2 class="text-lg font-semibold">Booking details</h2>
-                        <p class="text-[10px] text-[#6B7280] font-mono mt-0.5">#{{ detailsBooking.uuid?.slice(0, 8) }}</p>
-                    </div>
-                    <button @click="detailsBooking = null" class="text-[#A0A0A0] hover:text-white text-xl leading-none">×</button>
-                </div>
-                <div class="p-4 space-y-4 text-sm">
+        <!-- Details modal -->
+        <Modal :model-value="!!detailsBooking" @update:model-value="v => !v && (detailsBooking = null)"
+            size="lg" title="Booking details" :subtitle="detailsBooking ? '#' + (detailsBooking.uuid?.slice(0, 8) || '') : ''" no-padding>
+            <div v-if="detailsBooking" class="p-4 space-y-4 text-sm">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <div class="text-xs text-[#6B7280] mb-1">Status</div>
@@ -324,16 +317,15 @@
                             </tbody>
                         </table>
                     </div>
-                </div>
             </div>
-        </div>
+        </Modal>
 
-        <!-- Extend modal (bottom sheet on mobile) -->
-        <div v-if="extendOpen" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/70" @click.self="extendOpen = null">
-            <div class="bg-[#1A1A1A] border border-[#2A2A2A] sm:rounded-xl rounded-t-2xl max-w-sm w-full p-5">
-                <h2 class="text-lg font-semibold mb-1">Extend booking</h2>
+        <!-- Extend modal -->
+        <Modal :model-value="!!extendOpen" @update:model-value="v => !v && (extendOpen = null)"
+            size="sm" title="Extend booking">
+            <template v-if="extendOpen">
                 <p class="text-xs text-[#A0A0A0] mb-4">Add more time on top of current check-out ({{ formatDate(extendOpen.check_out) }}).</p>
-                <select v-model="extendDuration" class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-3 py-2 text-sm focus:border-[#F59E0B] focus:outline-none mb-4">
+                <select v-model="extendDuration" class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-3 py-2 text-sm focus:border-[#F59E0B] focus:outline-none">
                     <option value="6h">+ 6 hours</option>
                     <option value="24h">+ 24 hours</option>
                     <option value="2_days">+ 2 days</option>
@@ -343,12 +335,14 @@
                     <option value="2_weeks">+ 2 weeks</option>
                     <option value="1_month">+ 1 month</option>
                 </select>
+            </template>
+            <template #footer>
                 <div class="flex gap-2 justify-end">
-                    <button @click="extendOpen = null" class="px-3 py-2 text-xs rounded-lg bg-[#2A2A2A] hover:bg-[#333]">Cancel</button>
-                    <button @click="confirmExtend()" class="px-3 py-2 text-xs rounded-lg bg-[#F59E0B] text-black font-semibold hover:bg-[#FBBF24]">Extend</button>
+                    <Btn variant="secondary" size="sm" @click="extendOpen = null">Cancel</Btn>
+                    <Btn variant="primary" size="sm" @click="confirmExtend()">Extend</Btn>
                 </div>
-            </div>
-        </div>
+            </template>
+        </Modal>
     </div>
 </template>
 <script setup>
@@ -356,6 +350,8 @@ import { ref, computed, onMounted } from 'vue';
 import { useAuth } from '../composables/useAuth';
 import { useConfirm } from '../composables/useConfirm';
 import { useToast } from '../composables/useToast';
+import Modal from '../components/Modal.vue';
+import Btn from '../components/Btn.vue';
 
 const { apiFetch } = useAuth();
 const confirmDialog = useConfirm();
