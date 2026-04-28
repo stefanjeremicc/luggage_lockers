@@ -7,8 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class Page extends Model
 {
     protected $fillable = [
-        'slug', 'locale', 'title', 'content', 'meta_title',
-        'meta_description', 'og_image', 'is_published', 'published_at',
+        'slug', 'locale', 'type', 'title', 'content', 'sections', 'location_id',
+        'meta_title', 'meta_description', 'og_image', 'canonical_url',
+        'og_title', 'og_description', 'is_published', 'published_at',
     ];
 
     protected function casts(): array
@@ -16,7 +17,32 @@ class Page extends Model
         return [
             'is_published' => 'boolean',
             'published_at' => 'datetime',
+            'sections' => 'array',
         ];
+    }
+
+    public function location()
+    {
+        return $this->belongsTo(Location::class);
+    }
+
+    public function scopeOfType($query, string $type)
+    {
+        return $query->where('type', $type);
+    }
+
+    public function scopeLandings($query)
+    {
+        return $query->where('type', 'landing');
+    }
+
+    /**
+     * Read a section value from `sections` JSON with safe fallback.
+     * Example: $page->section('hero.title', 'Default').
+     */
+    public function section(string $path, mixed $default = null): mixed
+    {
+        return data_get($this->sections ?? [], $path, $default);
     }
 
     public function scopePublished($query)
