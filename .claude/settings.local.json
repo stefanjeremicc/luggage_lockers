@@ -157,7 +157,9 @@
       "Bash(curl -s http://[::1]:5175/resources/js/public/booking-flow.js)",
       "Bash(curl -sI \"http://[::1]:5175/resources/js/public/booking-flow.js\")",
       "Bash(curl -s \"http://[::1]:5175/resources/js/public/booking-flow.js?t=$\\(date +%s\\)\")",
-      "Bash(curl -s \"http://[::1]:5175/resources/js/public/booking-flow.js\")"
+      "Bash(curl -s \"http://[::1]:5175/resources/js/public/booking-flow.js\")",
+      "Bash(php -r 'require '\\\\''vendor/autoload.php'\\\\''; $app = require '\\\\''bootstrap/app.php'\\\\''; $app->make\\(Illuminate\\\\Contracts\\\\Console\\\\Kernel::class\\)->bootstrap\\(\\); $b = App\\\\Models\\\\Booking::with\\('\\\\''items'\\\\'','\\\\''location'\\\\''\\)->find\\(24\\); $html = view\\('\\\\''emails.booking-confirmed'\\\\'', ['\\\\''booking'\\\\'' => $b]\\)->render\\(\\); echo strlen\\($html\\), '\\\\'' bytes; has-items-list: '\\\\'', \\(str_contains\\($html, '\\\\''<ul'\\\\''\\) ? '\\\\''yes'\\\\'' : '\\\\''no'\\\\''\\), PHP_EOL;')",
+      "Bash(php -r 'require '\\\\''vendor/autoload.php'\\\\''; $app = require '\\\\''bootstrap/app.php'\\\\''; $app->make\\(Illuminate\\\\Contracts\\\\Console\\\\Kernel::class\\)->bootstrap\\(\\); $b = App\\\\Models\\\\Booking::with\\('\\\\''items'\\\\'','\\\\''location'\\\\''\\)->find\\(24\\); $html = view\\('\\\\''emails.booking-reminder'\\\\'', ['\\\\''booking'\\\\'' => $b]\\)->render\\(\\); echo strlen\\($html\\), '\\\\'' bytes; has-time: '\\\\'', \\(preg_match\\('\\\\''/font-size:24px/'\\\\'', $html\\) ? '\\\\''yes'\\\\'' : '\\\\''no'\\\\''\\), PHP_EOL;')"
     ]
   }
 }

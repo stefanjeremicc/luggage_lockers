@@ -17,11 +17,8 @@
             <!-- 1. Contact & status -->
             <Card title="Contact & status" title-variant="section">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Field label="Phone" hint="Used for the tel: link on the location page.">
+                    <Field label="Phone" hint="Single number used for both call (tel:) and WhatsApp chat link.">
                         <PhoneInput v-model="form.phone" />
-                    </Field>
-                    <Field label="WhatsApp" hint="Number for the WhatsApp chat link. Leave empty to hide.">
-                        <PhoneInput v-model="form.whatsapp" />
                     </Field>
                     <Field label="Email">
                         <input v-model="form.email" type="email"
@@ -228,7 +225,7 @@ const form = ref({
     lat: 44.8176, lng: 20.4569,
     description: '', description_sr: '',
     is_24h: true, opening_time: null, closing_time: null,
-    phone: '', whatsapp: '', email: '', google_maps_url: '',
+    phone: '', email: '', google_maps_url: '',
     meta_title: '', meta_title_sr: '',
     meta_description: '', meta_description_sr: '',
     image_url: '', og_image: '',
@@ -390,7 +387,7 @@ onMounted(async () => {
             description: data.description || '', description_sr: data.description_sr || '',
             is_24h: !!data.is_24h,
             opening_time: data.opening_time || null, closing_time: data.closing_time || null,
-            phone: data.phone || '', whatsapp: data.whatsapp || '',
+            phone: data.phone || '',
             email: data.email || '', google_maps_url: data.google_maps_url || '',
             meta_title: data.meta_title || '', meta_title_sr: data.meta_title_sr || '',
             meta_description: data.meta_description || '', meta_description_sr: data.meta_description_sr || '',
