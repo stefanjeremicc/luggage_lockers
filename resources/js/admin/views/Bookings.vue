@@ -29,59 +29,66 @@
                 No bookings.
             </div>
             <article v-for="b in bookings" :key="b.id" class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 active:bg-[#222] transition" @click="openDetails(b)">
-                <div class="flex items-start justify-between gap-3 mb-3">
+                <!-- Top: name + status -->
+                <header class="flex items-start justify-between gap-3 mb-3 pb-3 border-b border-[#2A2A2A]">
                     <div class="min-w-0 flex-1">
-                        <div class="font-semibold truncate text-base">{{ b.customer?.full_name || '—' }}</div>
+                        <div class="font-semibold text-base truncate">{{ b.customer?.full_name || '—' }}</div>
                         <div class="text-xs text-[#A0A0A0] truncate mt-0.5">{{ b.customer?.email }}</div>
                     </div>
                     <span class="px-2 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide shrink-0" :class="statusClass(b.booking_status)">{{ b.booking_status }}</span>
-                </div>
+                </header>
 
-                <div class="grid grid-cols-2 gap-3 my-3 py-3 border-y border-[#2A2A2A]">
-                    <div>
-                        <div class="text-[10px] uppercase tracking-wide text-[#6B7280] mb-0.5">Locker + PIN</div>
-                        <div v-if="b.pins?.length" class="font-mono text-sm space-y-0.5">
+                <!-- Stacked rows: label + value, one per line -->
+                <dl class="space-y-2 text-sm">
+                    <div class="flex items-baseline gap-3">
+                        <dt class="text-[10px] uppercase tracking-wide text-[#6B7280] w-20 shrink-0">Location</dt>
+                        <dd class="text-white truncate">{{ b.location?.name || '—' }}</dd>
+                    </div>
+                    <div class="flex items-baseline gap-3">
+                        <dt class="text-[10px] uppercase tracking-wide text-[#6B7280] w-20 shrink-0">Check-in</dt>
+                        <dd class="text-white">{{ formatDate(b.check_in) }}</dd>
+                    </div>
+                    <div class="flex items-baseline gap-3">
+                        <dt class="text-[10px] uppercase tracking-wide text-[#6B7280] w-20 shrink-0">Check-out</dt>
+                        <dd class="text-white">{{ formatDate(b.check_out) }}</dd>
+                    </div>
+                    <div class="flex items-baseline gap-3">
+                        <dt class="text-[10px] uppercase tracking-wide text-[#6B7280] w-20 shrink-0">Items</dt>
+                        <dd class="flex flex-wrap gap-1">
+                            <span v-for="(line, i) in sizeBreakdown(b)" :key="i"
+                                class="px-2 py-0.5 rounded-full text-xs" :class="sizeClass(line.size)">
+                                {{ line.qty }}× {{ line.size }}<span v-if="line.duration"> · {{ durationLabel(line.duration) }}</span>
+                            </span>
+                            <span v-if="!sizeBreakdown(b).length" class="text-[#6B7280]">—</span>
+                        </dd>
+                    </div>
+                    <div class="flex items-baseline gap-3">
+                        <dt class="text-[10px] uppercase tracking-wide text-[#6B7280] w-20 shrink-0">Locker / PIN</dt>
+                        <dd v-if="b.pins?.length" class="font-mono text-xs space-y-0.5">
                             <div v-for="p in b.pins" :key="p.locker_number">
                                 <span class="text-white font-semibold">{{ p.locker_number || '—' }}</span>
                                 <span class="text-[#F59E0B] font-bold ml-1">({{ p.pin || '——' }})</span>
                             </div>
-                        </div>
-                        <div v-else class="text-sm text-[#6B7280]">—</div>
+                        </dd>
+                        <dd v-else class="text-[#6B7280]">—</dd>
                     </div>
-                    <div class="text-right">
-                        <div class="text-[10px] uppercase tracking-wide text-[#6B7280] mb-0.5">Total</div>
-                        <div class="font-bold text-[#F59E0B] text-base">€{{ Number(b.total_eur).toFixed(2) }}</div>
-                        <div class="text-[10px] text-[#6B7280] mt-1 font-mono">#{{ b.id }}</div>
+                    <div class="flex items-baseline gap-3">
+                        <dt class="text-[10px] uppercase tracking-wide text-[#6B7280] w-20 shrink-0">Total</dt>
+                        <dd class="font-bold text-[#F59E0B]">€{{ Number(b.total_eur).toFixed(2) }}</dd>
                     </div>
-                </div>
-
-                <div class="text-xs flex items-center gap-1.5 flex-wrap mb-2">
-                    <span class="text-[#6B7280] uppercase tracking-wide text-[10px]">Items</span>
-                    <span v-for="(line, i) in sizeBreakdown(b)" :key="i"
-                        class="px-2 py-0.5 rounded-full" :class="sizeClass(line.size)">
-                        {{ line.qty }}× {{ line.size }}<span v-if="line.duration"> · {{ durationLabel(line.duration) }}</span>
-                    </span>
-                </div>
-
-                <dl class="grid grid-cols-[auto,1fr] gap-x-3 gap-y-1 text-xs">
-                    <dt class="text-[#6B7280]">📍</dt>
-                    <dd class="text-right truncate">{{ b.location?.name || '—' }}</dd>
-                    <dt class="text-[#6B7280]">🕐</dt>
-                    <dd class="text-right">
-                        <div class="text-white">{{ formatDate(b.check_in) }}</div>
-                        <div class="text-[#6B7280] text-[10px] mt-0.5">→ {{ formatDate(b.check_out) }}</div>
-                    </dd>
-                    <dt class="text-[#6B7280]">📦</dt>
-                    <dd class="text-right">
-                        <span class="px-2 py-0.5 rounded-full" :class="sizeClass(b.locker_size)">{{ b.locker_qty }}× {{ b.locker_size }}</span>
-                    </dd>
-                    <dt class="text-[#6B7280]">💶</dt>
-                    <dd class="text-right">
-                        <span class="inline-flex items-center gap-1" :class="b.payment_status === 'paid' ? 'text-[#10B981]' : 'text-[#A0A0A0]'">
-                            <span class="w-1.5 h-1.5 rounded-full" :class="b.payment_status === 'paid' ? 'bg-[#10B981]' : 'bg-[#6B7280]'"></span>
-                            {{ b.payment_status === 'paid' ? 'Paid' : 'Unpaid' }}
-                        </span>
-                    </dd>
+                    <div class="flex items-baseline gap-3">
+                        <dt class="text-[10px] uppercase tracking-wide text-[#6B7280] w-20 shrink-0">Payment</dt>
+                        <dd>
+                            <span class="inline-flex items-center gap-1 text-xs" :class="b.payment_status === 'paid' ? 'text-[#10B981]' : 'text-[#A0A0A0]'">
+                                <span class="w-1.5 h-1.5 rounded-full" :class="b.payment_status === 'paid' ? 'bg-[#10B981]' : 'bg-[#6B7280]'"></span>
+                                {{ b.payment_status === 'paid' ? 'Paid' : 'Unpaid' }}
+                            </span>
+                        </dd>
+                    </div>
+                    <div class="flex items-baseline gap-3">
+                        <dt class="text-[10px] uppercase tracking-wide text-[#6B7280] w-20 shrink-0">Booking ID</dt>
+                        <dd class="font-mono text-xs text-[#6B7280]">#{{ b.id }}</dd>
+                    </div>
                 </dl>
 
                 <div class="mt-4 pt-3 border-t border-[#2A2A2A] grid grid-cols-2 gap-2" @click.stop>
