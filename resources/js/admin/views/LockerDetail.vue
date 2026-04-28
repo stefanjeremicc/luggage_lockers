@@ -8,12 +8,15 @@
 
         <ConfirmModal v-model="confirmOpen" :title="confirmCfg.title" :message="confirmCfg.message" :variant="confirmCfg.variant" :confirm-text="confirmCfg.confirmText" @confirm="confirmCfg.onConfirm && confirmCfg.onConfirm()" />
 
-        <div class="flex gap-2 mb-6 border-b border-[#2A2A2A]">
-            <button v-for="t in tabs" :key="t.id" @click="tab = t.id"
-                class="px-4 py-2 text-sm border-b-2 -mb-px transition"
-                :class="tab === t.id ? 'border-blue-500 text-white' : 'border-transparent text-[#A0A0A0] hover:text-white'">
-                {{ t.label }}
-            </button>
+        <div class="border-b border-[#2A2A2A] mb-6 -mx-4 sm:mx-0">
+            <div class="flex gap-1 overflow-x-auto scrollbar-thin px-4 sm:px-0" role="tablist">
+                <button v-for="t in tabs" :key="t.id" @click="tab = t.id"
+                    role="tab" :aria-selected="tab === t.id"
+                    class="shrink-0 px-3 sm:px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition whitespace-nowrap focus:outline-none"
+                    :class="tab === t.id ? 'border-[#F59E0B] text-[#F59E0B]' : 'border-transparent text-[#A0A0A0] hover:text-white'">
+                    {{ t.label }}
+                </button>
+            </div>
         </div>
 
         <div v-if="tab === 'overview'">
@@ -421,3 +424,10 @@ onMounted(async () => {
     await loadBookings();
 });
 </script>
+
+<style scoped>
+.scrollbar-thin::-webkit-scrollbar { height: 4px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: #2A2A2A; border-radius: 2px; }
+.scrollbar-thin { scrollbar-width: thin; scrollbar-color: #2A2A2A transparent; }
+</style>
