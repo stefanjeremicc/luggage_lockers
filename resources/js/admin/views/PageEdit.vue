@@ -69,6 +69,73 @@
                     <RichEditor v-model="data[loc].content" />
                 </div>
 
+                <!-- Homepage sections (structured) -->
+                <template v-if="slug === 'home' && data[loc].sections">
+                    <div class="border-t border-[#2A2A2A] pt-4 mt-2">
+                        <h3 class="text-sm font-semibold text-[#F59E0B] uppercase tracking-wide mb-3">Hero</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs text-[#A0A0A0] mb-1">Title</label>
+                                <input v-model="data[loc].sections.hero.title" type="text" class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-3 py-2 text-sm text-white focus:border-[#F59E0B] focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-[#A0A0A0] mb-1">Subtitle</label>
+                                <textarea v-model="data[loc].sections.hero.subtitle" rows="2" class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-3 py-2 text-sm text-white focus:border-[#F59E0B] focus:outline-none resize-y"></textarea>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs text-[#A0A0A0] mb-1">Primary CTA text</label>
+                                    <input v-model="data[loc].sections.hero.cta_primary" type="text" class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-3 py-2 text-sm text-white focus:border-[#F59E0B] focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-[#A0A0A0] mb-1">Secondary CTA text</label>
+                                    <input v-model="data[loc].sections.hero.cta_secondary" type="text" class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-3 py-2 text-sm text-white focus:border-[#F59E0B] focus:outline-none">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-[#A0A0A0] mb-1">Hero image (optional)</label>
+                                <ImageUploader v-model="data[loc].sections.hero.image" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-[#2A2A2A] pt-4 mt-2">
+                        <h3 class="text-sm font-semibold text-[#F59E0B] uppercase tracking-wide mb-3">How it works (4 steps)</h3>
+                        <div class="space-y-3">
+                            <div v-for="(step, i) in data[loc].sections.how_it_works" :key="i" class="bg-[#111] border border-[#2A2A2A] rounded-lg p-3 space-y-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-[#6B7280] font-mono w-8">#{{ i + 1 }}</span>
+                                    <select v-model="step.icon" class="bg-[#0A0A0A] border border-[#2A2A2A] rounded px-2 py-1 text-xs text-white">
+                                        <option value="computer">computer</option>
+                                        <option value="search">search</option>
+                                        <option value="lock">lock</option>
+                                        <option value="smile">smile</option>
+                                    </select>
+                                    <input v-model="step.title" placeholder="Step title" class="flex-1 bg-[#0A0A0A] border border-[#2A2A2A] rounded px-2 py-1 text-sm text-white focus:border-[#F59E0B] focus:outline-none">
+                                </div>
+                                <textarea v-model="step.desc" rows="2" placeholder="Step description" class="w-full bg-[#0A0A0A] border border-[#2A2A2A] rounded px-2 py-1.5 text-sm text-white focus:border-[#F59E0B] focus:outline-none resize-y"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-[#2A2A2A] pt-4 mt-2">
+                        <h3 class="text-sm font-semibold text-[#F59E0B] uppercase tracking-wide mb-3">FAQ heading</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <input v-model="data[loc].sections.faq.title" placeholder="Title" class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-3 py-2 text-sm text-white focus:border-[#F59E0B] focus:outline-none">
+                            <input v-model="data[loc].sections.faq.subtitle" placeholder="Subtitle" class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-3 py-2 text-sm text-white focus:border-[#F59E0B] focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div class="border-t border-[#2A2A2A] pt-4 mt-2">
+                        <h3 class="text-sm font-semibold text-[#F59E0B] uppercase tracking-wide mb-3">Final CTA</h3>
+                        <div class="space-y-3">
+                            <input v-model="data[loc].sections.cta.title" placeholder="Title" class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-3 py-2 text-sm text-white focus:border-[#F59E0B] focus:outline-none">
+                            <textarea v-model="data[loc].sections.cta.subtitle" rows="2" placeholder="Subtitle" class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-3 py-2 text-sm text-white focus:border-[#F59E0B] focus:outline-none resize-y"></textarea>
+                            <input v-model="data[loc].sections.cta.button" placeholder="Button text" class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-3 py-2 text-sm text-white focus:border-[#F59E0B] focus:outline-none">
+                        </div>
+                    </div>
+                </template>
+
                 <label class="inline-flex items-center gap-2 cursor-pointer select-none mt-2">
                     <input type="checkbox" v-model="data[loc].is_published"
                         class="w-4 h-4 rounded border-[#2A2A2A] bg-[#111] accent-[#F59E0B]">
@@ -95,10 +162,36 @@ const loading = ref(true);
 const saving = ref(false);
 const activeLocale = ref('en');
 
-const blank = () => ({ title: '', meta_title: '', meta_description: '', og_image: '', content: '', is_published: true });
+const blankSections = () => slug === 'home' ? ({
+    hero: { title: '', subtitle: '', cta_primary: '', cta_secondary: '', image: '' },
+    how_it_works: [
+        { icon: 'computer', title: '', desc: '' },
+        { icon: 'search', title: '', desc: '' },
+        { icon: 'lock', title: '', desc: '' },
+        { icon: 'smile', title: '', desc: '' },
+    ],
+    faq: { title: '', subtitle: '' },
+    cta: { title: '', subtitle: '', button: '' },
+}) : null;
+
+const blank = () => ({ title: '', meta_title: '', meta_description: '', og_image: '', content: '', sections: blankSections(), is_published: true });
 const data = ref({ en: blank(), sr: blank() });
 
 const hasContent = computed(() => ['about', 'terms', 'privacy'].includes(slug));
+
+const normalizeSections = (raw) => {
+    if (slug !== 'home') return raw || null;
+    const base = blankSections();
+    if (!raw || typeof raw !== 'object') return base;
+    return {
+        hero: { ...base.hero, ...(raw.hero || {}) },
+        how_it_works: Array.isArray(raw.how_it_works) && raw.how_it_works.length === 4
+            ? raw.how_it_works.map((s, i) => ({ ...base.how_it_works[i], ...s }))
+            : base.how_it_works,
+        faq: { ...base.faq, ...(raw.faq || {}) },
+        cta: { ...base.cta, ...(raw.cta || {}) },
+    };
+};
 
 const load = async () => {
     try {
@@ -112,6 +205,7 @@ const load = async () => {
                 meta_description: row.meta_description || '',
                 og_image: row.og_image || '',
                 content: row.content || '',
+                sections: normalizeSections(row.sections),
                 is_published: !!row.is_published,
             } : blank();
         }

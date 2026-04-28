@@ -37,20 +37,22 @@ class PageController extends Controller
 
     public function update(Request $request, string $slug): JsonResponse
     {
-        $data = $request->validate([
-            'en.title' => 'nullable|string|max:200',
-            'en.meta_title' => 'nullable|string|max:70',
-            'en.meta_description' => 'nullable|string|max:300',
-            'en.og_image' => 'nullable|string|max:500',
-            'en.content' => 'nullable|string',
-            'en.is_published' => 'nullable|boolean',
-            'sr.title' => 'nullable|string|max:200',
-            'sr.meta_title' => 'nullable|string|max:70',
-            'sr.meta_description' => 'nullable|string|max:300',
-            'sr.og_image' => 'nullable|string|max:500',
-            'sr.content' => 'nullable|string',
-            'sr.is_published' => 'nullable|boolean',
-        ]);
+        $rules = [];
+        foreach (['en', 'sr'] as $locale) {
+            $rules += [
+                "$locale.title" => 'nullable|string|max:200',
+                "$locale.meta_title" => 'nullable|string|max:70',
+                "$locale.meta_description" => 'nullable|string|max:300',
+                "$locale.og_image" => 'nullable|string|max:500',
+                "$locale.og_title" => 'nullable|string|max:200',
+                "$locale.og_description" => 'nullable|string|max:500',
+                "$locale.canonical_url" => 'nullable|string|max:500',
+                "$locale.content" => 'nullable|string',
+                "$locale.sections" => 'nullable|array',
+                "$locale.is_published" => 'nullable|boolean',
+            ];
+        }
+        $data = $request->validate($rules);
 
         foreach (['en', 'sr'] as $locale) {
             if (!isset($data[$locale])) continue;
