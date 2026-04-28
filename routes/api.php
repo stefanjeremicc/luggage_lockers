@@ -91,8 +91,10 @@ Route::prefix('admin')->middleware(['auth:sanctum', CheckRole::class . ':admin']
     Route::apiResource('notification-templates', NotificationTemplateController::class)->names('admin.notification-templates');
 
     Route::get('/pages', [PageController::class, 'index']);
+    Route::post('/pages', [PageController::class, 'store']);
     Route::get('/pages/{slug}', [PageController::class, 'show']);
     Route::put('/pages/{slug}', [PageController::class, 'update']);
+    Route::delete('/pages/{slug}', [PageController::class, 'destroy']);
 
     Route::get('/settings', [SettingsController::class, 'index']);
     Route::put('/settings', [SettingsController::class, 'update']);

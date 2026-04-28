@@ -23,6 +23,14 @@
         <div v-if="loading" class="text-sm text-[#A0A0A0]">Loading…</div>
 
         <div v-else class="space-y-6">
+            <div v-if="isLanding" class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4">
+                <label class="block text-xs text-[#A0A0A0] mb-1">Linked location (optional)</label>
+                <select v-model="locationId" class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-3 py-2 text-sm text-white focus:border-[#F59E0B] focus:outline-none">
+                    <option :value="null">— None —</option>
+                    <option v-for="l in locations" :key="l.id" :value="l.id">{{ l.name }}</option>
+                </select>
+                <p class="text-[11px] text-[#6B7280] mt-1">Booking CTAs on this landing will deep-link to this location.</p>
+            </div>
             <div class="flex gap-2">
                 <button v-for="loc in ['en', 'sr']" :key="loc" @click="activeLocale = loc"
                     class="px-4 py-2 rounded-lg text-sm transition border"
@@ -61,6 +69,24 @@
                     <label class="block text-sm text-white font-medium mb-1">OG image (social share)</label>
                     <p class="text-xs text-[#6B7280] mb-2">Path or full URL. 1200×630 recommended. Leave blank to skip.</p>
                     <ImageUploader v-model="data[loc].og_image" />
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm text-white font-medium mb-1">OG title</label>
+                        <input v-model="data[loc].og_title" maxlength="200" type="text"
+                            class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-3 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-white font-medium mb-1">Canonical URL</label>
+                        <input v-model="data[loc].canonical_url" type="url" placeholder="https://…"
+                            class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-3 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm text-white font-medium mb-1">OG description</label>
+                    <textarea v-model="data[loc].og_description" maxlength="500" rows="2"
+                        class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-3 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none resize-y"></textarea>
                 </div>
 
                 <div v-if="hasContent">
@@ -174,10 +200,14 @@ const blankSections = () => slug === 'home' ? ({
     cta: { title: '', subtitle: '', button: '' },
 }) : null;
 
-const blank = () => ({ title: '', meta_title: '', meta_description: '', og_image: '', content: '', sections: blankSections(), is_published: true });
+const blank = () => ({ title: '', meta_title: '', meta_description: '', og_image: '', og_title: '', og_description: '', canonical_url: '', content: '', sections: blankSections(), is_published: true });
 const data = ref({ en: blank(), sr: blank() });
+const pageType = ref('page');
+const locationId = ref(null);
+const locations = ref([]);
 
-const hasContent = computed(() => ['about', 'terms', 'privacy'].includes(slug));
+const hasContent = computed(() => pageType.value === 'landing' || ['about', 'terms', 'privacy'].includes(slug));
+const isLanding = computed(() => pageType.value === 'landing');
 
 const normalizeSections = (raw) => {
     if (slug !== 'home') return raw || null;
@@ -195,8 +225,15 @@ const normalizeSections = (raw) => {
 
 const load = async () => {
     try {
-        const res = await apiFetch(`/api/admin/pages/${slug}`);
-        const json = await res.json();
+        const [pRes, lRes] = await Promise.all([
+            apiFetch(`/api/admin/pages/${slug}`),
+            apiFetch('/api/admin/locations'),
+        ]);
+        const json = await pRes.json();
+        pageType.value = json.type || 'page';
+        locationId.value = json.location_id || null;
+        const locJson = await lRes.json();
+        locations.value = Array.isArray(locJson) ? locJson : (locJson.data || []);
         for (const loc of ['en', 'sr']) {
             const row = json[loc];
             data.value[loc] = row ? {
@@ -204,6 +241,9 @@ const load = async () => {
                 meta_title: row.meta_title || '',
                 meta_description: row.meta_description || '',
                 og_image: row.og_image || '',
+                og_title: row.og_title || '',
+                og_description: row.og_description || '',
+                canonical_url: row.canonical_url || '',
                 content: row.content || '',
                 sections: normalizeSections(row.sections),
                 is_published: !!row.is_published,
@@ -217,6 +257,7 @@ const save = async () => {
     saving.value = true;
     try {
         const payload = {
+            location_id: locationId.value,
             en: { ...data.value.en, is_published: data.value.en.is_published ? 1 : 0 },
             sr: { ...data.value.sr, is_published: data.value.sr.is_published ? 1 : 0 },
         };
