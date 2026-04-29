@@ -19,10 +19,10 @@ class AvailabilityService
         $checkOut = $this->calculateCheckOut($checkIn, $duration);
 
         $bookedStandard = $this->getBookedCount($locationId, 'standard', $checkIn, $checkOut);
-        $totalStandard = Locker::where('location_id', $locationId)->where('size', 'standard')->active()->count();
+        $totalStandard = Locker::where('location_id', $locationId)->where('size', 'standard')->bookable()->count();
 
         $bookedLarge = $this->getBookedCount($locationId, 'large', $checkIn, $checkOut);
-        $totalLarge = Locker::where('location_id', $locationId)->where('size', 'large')->active()->count();
+        $totalLarge = Locker::where('location_id', $locationId)->where('size', 'large')->bookable()->count();
 
         return [
             'standard' => [
@@ -60,7 +60,7 @@ class AvailabilityService
             $checkIn = $base->copy();
             $checkOut = $this->calculateCheckOut($checkIn, $dur);
             $booked = $this->getBookedCount($locationId, $size, $checkIn, $checkOut);
-            $total = Locker::where('location_id', $locationId)->where('size', $size)->active()->count();
+            $total = Locker::where('location_id', $locationId)->where('size', $size)->bookable()->count();
 
             $out[$size] = [
                 'total' => $total,

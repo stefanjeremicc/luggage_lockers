@@ -37,10 +37,12 @@
             <router-link v-for="l in sortedLockers" :key="l.id"
                 :to="`/admin/lockers/${l.id}`"
                 class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-[#3A3A3A] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition">
-                <div class="min-w-0">
+                <div class="min-w-0" :class="{ 'opacity-60': !l.is_online || !l.is_active }">
                     <div class="flex items-center gap-2 flex-wrap">
                         <span class="font-mono font-bold text-lg">{{ l.number }}</span>
                         <span class="text-xs px-2 py-0.5 rounded-full" :class="l.size === 'large' ? 'bg-fuchsia-500/20 text-fuchsia-400' : 'bg-cyan-500/20 text-cyan-400'">{{ l.size }}</span>
+                        <span v-if="!l.is_online" class="text-[10px] px-2 py-0.5 rounded-full bg-[#EF4444]/20 text-[#EF4444] font-semibold uppercase tracking-wide">Unreachable</span>
+                        <span v-if="!l.is_active" class="text-[10px] px-2 py-0.5 rounded-full bg-[#6B7280]/20 text-[#A0A0A0] font-semibold uppercase tracking-wide">Deactivated</span>
                         <span v-if="l.current_bookings?.length" class="text-[10px] px-2 py-0.5 rounded-full bg-[#EF4444]/20 text-[#EF4444] font-semibold uppercase tracking-wide">Booked</span>
                         <span v-else-if="l.upcoming_bookings?.length" class="text-[10px] px-2 py-0.5 rounded-full bg-[#F59E0B]/20 text-[#F59E0B] font-semibold uppercase tracking-wide">Upcoming</span>
                     </div>

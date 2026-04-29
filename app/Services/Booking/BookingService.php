@@ -95,7 +95,7 @@ class BookingService
 
                 $candidates = Locker::where('location_id', $data['location_id'])
                     ->where('size', $size)
-                    ->active()
+                    ->bookable()
                     ->orderByRaw('last_used_at IS NULL DESC')
                     ->orderBy('last_used_at')
                     ->orderBy('id')

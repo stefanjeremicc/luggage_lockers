@@ -65,4 +65,14 @@ class Locker extends Model
     {
         return $query->where('status', LockerStatus::Available);
     }
+
+    /**
+     * Bookable = admin-enabled (is_active) AND physically reachable via TTLock
+     * gateway (is_online). Used by availability/booking flows so customers
+     * never reserve a locker we can't actually open for them.
+     */
+    public function scopeBookable($query)
+    {
+        return $query->where('is_active', true)->where('is_online', true);
+    }
 }
