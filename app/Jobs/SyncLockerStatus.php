@@ -25,9 +25,12 @@ class SyncLockerStatus implements ShouldQueue
                 $locker = Locker::where('ttlock_lock_id', $lock['lockId'])->first();
                 if (!$locker) continue;
 
+                // TTLock /v3/lock/list returns `hasGateway` (1 = paired with an
+                // online gateway, 0 = unreachable). `lockStatus` is not in this
+                // payload — only in /v3/lock/detail. So use hasGateway here.
                 $locker->update([
                     'battery_level' => $lock['electricQuantity'] ?? $locker->battery_level,
-                    'is_online' => ($lock['lockStatus'] ?? null) !== null,
+                    'is_online' => (int) ($lock['hasGateway'] ?? 0) === 1,
                     'last_synced_at' => now(),
                 ]);
             }
