@@ -171,7 +171,8 @@
       "Bash(rm -f /c/xampp/mysql/data/luggage_lockers/locations.ibd /c/xampp/mysql/data/luggage_lockers/lockers.ibd)",
       "Bash(rm -rf /c/xampp/mysql/data/luggage_lockers_BROKEN_*)",
       "Bash(rm -f /tmp/restore_all.php /tmp/restore_loc_lockers.php)",
-      "Bash(grep -n 'class BookingItem\\\\|protected $fillable\\\\|locker_size\\\\|qty' /c/Users/Barbie/OneDrive/IT/Projects/GitHub/luggage_lockers/app/Models/BookingItem.php)"
+      "Bash(grep -n 'class BookingItem\\\\|protected $fillable\\\\|locker_size\\\\|qty' /c/Users/Barbie/OneDrive/IT/Projects/GitHub/luggage_lockers/app/Models/BookingItem.php)",
+      "Bash(git commit -m 'Fix syntax error in Lockers.vue tooltip *)"
     ]
   }
 }

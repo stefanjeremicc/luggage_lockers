@@ -74,7 +74,7 @@
                                 :model-value="l.is_active ? 'active' : 'inactive'"
                                 :options="activeOptions"
                                 @update:model-value="v => updateActive(l, v)" />
-                            <div v-else class="px-3 py-2 rounded-lg bg-[#EF4444]/10 text-[#EF4444] text-xs font-semibold text-center" :title="'Auto-disabled: TTLock gateway can\\'t reach this locker. Re-enables automatically when sync detects it back online.'">
+                            <div v-else class="px-3 py-2 rounded-lg bg-[#EF4444]/10 text-[#EF4444] text-xs font-semibold text-center" title="Auto-disabled: TTLock gateway cannot reach this locker. Re-enables automatically when sync detects it back online.">
                                 Unreachable
                             </div>
                         </div>
