@@ -70,21 +70,13 @@
                     <div class="flex-1 sm:flex-none">
                         <span class="text-[9px] uppercase tracking-wide text-[#6B7280] block mb-1">Booking</span>
                         <div @click.stop.prevent class="w-full sm:w-44">
-                            <Select :model-value="l.is_active ? 'active' : 'inactive'"
+                            <Select v-if="l.is_online"
+                                :model-value="l.is_active ? 'active' : 'inactive'"
                                 :options="activeOptions"
                                 @update:model-value="v => updateActive(l, v)" />
-                        </div>
-                    </div>
-                    <div class="sm:mt-1">
-                        <span class="text-[9px] uppercase tracking-wide text-[#6B7280] block mb-1">TTLock</span>
-                        <div class="flex items-center gap-1.5">
-                            <span class="w-2 h-2 rounded-full" :class="{
-                                'bg-[#10B981]': l.status === 'available',
-                                'bg-[#EF4444]': l.status === 'occupied',
-                                'bg-[#F59E0B]': l.status === 'maintenance',
-                                'bg-[#6B7280]': l.status === 'offline',
-                            }"></span>
-                            <span class="text-xs capitalize text-[#A0A0A0]">{{ l.status }}</span>
+                            <div v-else class="px-3 py-2 rounded-lg bg-[#EF4444]/10 text-[#EF4444] text-xs font-semibold text-center" :title="'Auto-disabled: TTLock gateway can\\'t reach this locker. Re-enables automatically when sync detects it back online.'">
+                                Unreachable
+                            </div>
                         </div>
                     </div>
                 </div>
