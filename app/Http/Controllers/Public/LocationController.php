@@ -24,14 +24,13 @@ class LocationController extends Controller
         $location = Location::where(fn ($q) => $q->where('slug', $slug)->orWhere('slug_sr', $slug))
             ->active()
             ->withCount([
-                'lockers' => fn($q) => $q->bookable()->where('is_published_on_site', true),
-                'lockers as available_count' => fn($q) => $q->bookable()->where('is_published_on_site', true)->where('status', 'available'),
+                'lockers' => fn($q) => $q->bookable(),
+                'lockers as available_count' => fn($q) => $q->bookable()->where('status', 'available'),
             ])
             ->firstOrFail();
 
         $sizes = $location->lockers()
             ->bookable()
-            ->where('is_published_on_site', true)
             ->selectRaw('size, COUNT(*) as count')
             ->groupBy('size')
             ->pluck('count', 'size');
@@ -39,7 +38,6 @@ class LocationController extends Controller
         // Sample locker per size for dimensions
         $sampleLockers = $location->lockers()
             ->bookable()
-            ->where('is_published_on_site', true)
             ->get()
             ->groupBy(fn ($l) => $l->size->value)
             ->map(fn ($group) => $group->first());
@@ -66,7 +64,7 @@ class LocationController extends Controller
 
         $nearbyLocations = Location::active()
             ->where('id', '!=', $location->id)
-            ->withCount(['lockers' => fn($q) => $q->bookable()->where('is_published_on_site', true)])
+            ->withCount(['lockers' => fn($q) => $q->bookable()])
             ->get()
             ->map(function ($l) use ($location) {
                 $l->distance_km = $this->haversineKm(

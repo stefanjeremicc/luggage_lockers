@@ -60,14 +60,6 @@
                 </div>
                 <div class="flex flex-row sm:flex-col items-stretch sm:items-end gap-3 sm:gap-1 shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-[#2A2A2A] sm:border-0 -mx-4 sm:mx-0 px-4 sm:px-0">
                     <div class="flex-1 sm:flex-none">
-                        <span class="text-[9px] uppercase tracking-wide text-[#6B7280] block mb-1">Site visibility</span>
-                        <div @click.stop.prevent class="w-full sm:w-44">
-                            <Select :model-value="l.is_published_on_site ? 'visible' : 'hidden'"
-                                :options="visibilityOptions"
-                                @update:model-value="v => updateVisibility(l, v)" />
-                        </div>
-                    </div>
-                    <div class="flex-1 sm:flex-none">
                         <span class="text-[9px] uppercase tracking-wide text-[#6B7280] block mb-1">Booking</span>
                         <div @click.stop.prevent class="w-full sm:w-44">
                             <Select v-if="l.is_online"
@@ -91,11 +83,6 @@ import { useToast } from '../composables/useToast';
 import Select from '../components/Select.vue';
 import Btn from '../components/Btn.vue';
 import PageHeader from '../components/PageHeader.vue';
-
-const visibilityOptions = [
-    { value: 'visible', label: 'Visible on site' },
-    { value: 'hidden', label: 'Hidden from site' },
-];
 
 const activeOptions = [
     { value: 'active', label: 'Bookable' },
@@ -129,21 +116,6 @@ const sortedLockers = computed(() =>
 );
 
 const formatTime = (d) => d ? new Date(d).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
-
-const updateVisibility = async (l, v) => {
-    const next = v === 'visible';
-    try {
-        const res = await apiFetch(`/api/admin/lockers/${l.id}`, {
-            method: 'PUT',
-            body: JSON.stringify({ is_published_on_site: next }),
-        });
-        if (!res.ok) throw new Error();
-        l.is_published_on_site = next;
-        toast.success(next ? 'Locker shown on site' : 'Locker hidden from site');
-    } catch {
-        toast.error('Failed to update visibility');
-    }
-};
 
 const updateActive = async (l, v) => {
     const next = v === 'active';

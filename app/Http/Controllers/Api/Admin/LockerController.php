@@ -70,7 +70,7 @@ class LockerController extends Controller
         $locker = Locker::findOrFail($id);
         $locker->update($request->only([
             'number', 'size', 'ttlock_lock_id', 'status', 'is_active',
-            'sort_order', 'site_sort_order', 'location_id', 'is_published_on_site',
+            'sort_order', 'location_id',
         ]));
         return response()->json($locker);
     }
@@ -86,9 +86,9 @@ class LockerController extends Controller
         $validated = $request->validate([
             'ids' => 'required|array',
             'ids.*' => 'integer|exists:lockers,id',
-            'field' => 'nullable|in:sort_order,site_sort_order',
+            'field' => 'nullable|in:sort_order',
         ]);
-        $field = $validated['field'] ?? 'site_sort_order';
+        $field = $validated['field'] ?? 'sort_order';
 
         foreach ($validated['ids'] as $idx => $lockerId) {
             Locker::where('id', $lockerId)->update([$field => $idx]);
@@ -304,7 +304,6 @@ class LockerController extends Controller
                         'size' => 'standard',
                         'status' => 'available',
                         'is_active' => true,
-                        'is_published_on_site' => false,
                     ]);
                     $created++;
                 }
