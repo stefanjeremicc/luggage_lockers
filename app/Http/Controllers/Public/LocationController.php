@@ -21,7 +21,7 @@ class LocationController extends Controller
 
     public function show(string $slug)
     {
-        $location = Location::where('slug', $slug)
+        $location = Location::where(fn ($q) => $q->where('slug', $slug)->orWhere('slug_sr', $slug))
             ->active()
             ->withCount([
                 'lockers' => fn($q) => $q->active()->where('is_published_on_site', true),

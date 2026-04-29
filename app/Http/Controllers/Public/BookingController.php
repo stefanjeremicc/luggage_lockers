@@ -11,7 +11,7 @@ class BookingController extends Controller
 {
     public function index(string $slug)
     {
-        $location = Location::where('slug', $slug)->active()->firstOrFail();
+        $location = Location::where(fn ($q) => $q->where('slug', $slug)->orWhere('slug_sr', $slug))->active()->firstOrFail();
 
         $durations = PricingRule::active()
             ->where(function ($q) use ($location) {

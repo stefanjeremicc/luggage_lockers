@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Auth\GuestController;
 use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\Admin\BookingManagementController;
+use App\Http\Controllers\Api\Admin\GatewayController;
 use App\Http\Controllers\Api\Admin\LockerController;
 use App\Http\Controllers\Api\Admin\LocationManagementController;
 use App\Http\Controllers\Api\Admin\PricingRuleController;
@@ -59,6 +60,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', CheckRole::class . ':admin']
     Route::get('/bookings/{id}/notifications/{logId}/preview', [BookingManagementController::class, 'previewNotification']);
     Route::delete('/bookings/{id}', [BookingManagementController::class, 'destroy']);
     Route::delete('/bookings/{id}/force', [BookingManagementController::class, 'forceDestroy']);
+
+    Route::get('/gateways', [GatewayController::class, 'index']);
+    Route::post('/gateways/sync', [GatewayController::class, 'sync']);
 
     Route::post('/lockers/reorder', [LockerController::class, 'reorder']);
     Route::post('/lockers/sync-all', [LockerController::class, 'syncAll']);

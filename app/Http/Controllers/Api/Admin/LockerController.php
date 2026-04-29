@@ -190,8 +190,8 @@ class LockerController extends Controller
                 $locker->ttlock_lock_id,
                 $validated['code'],
                 $validated['type'],
-                !empty($validated['start']) ? Carbon::parse($validated['start']) : null,
-                !empty($validated['end']) ? Carbon::parse($validated['end']) : null,
+                !empty($validated['start']) ? Carbon::parse($validated['start'], config('app.display_timezone')) : null,
+                !empty($validated['end']) ? Carbon::parse($validated['end'], config('app.display_timezone')) : null,
                 $validated['name'] ?? null,
             );
             return response()->json($resp);
@@ -205,7 +205,7 @@ class LockerController extends Controller
         $locker = $this->requireWithLockId($id);
         $validated = $request->validate(['end' => 'required|date']);
         try {
-            $ok = $lockService->updateAccessCodeTime($locker->ttlock_lock_id, $pwdId, Carbon::parse($validated['end']));
+            $ok = $lockService->updateAccessCodeTime($locker->ttlock_lock_id, $pwdId, Carbon::parse($validated['end'], config('app.display_timezone')));
             return response()->json(['success' => $ok]);
         } catch (\Throwable $e) {
             return response()->json(['message' => $e->getMessage()], 500);
@@ -226,8 +226,9 @@ class LockerController extends Controller
     public function unlockRecords(int $id, Request $request, LockServiceInterface $lockService): JsonResponse
     {
         $locker = $this->requireWithLockId($id);
-        $start = $request->has('start') ? Carbon::parse($request->input('start')) : Carbon::now()->subDays(7);
-        $end = $request->has('end') ? Carbon::parse($request->input('end')) : Carbon::now();
+        $tz = config('app.display_timezone');
+        $start = $request->has('start') ? Carbon::parse($request->input('start'), $tz) : Carbon::now()->subDays(7);
+        $end = $request->has('end') ? Carbon::parse($request->input('end'), $tz) : Carbon::now();
         try {
             $data = $lockService->getUnlockRecords($locker->ttlock_lock_id, $start, $end);
             return response()->json($data);

@@ -29,66 +29,43 @@
                 No bookings.
             </div>
             <article v-for="b in bookings" :key="b.id" class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 active:bg-[#222] transition" @click="openDetails(b)">
-                <!-- Top: name + status -->
-                <header class="flex items-start justify-between gap-3 mb-3 pb-3 border-b border-[#2A2A2A]">
-                    <div class="min-w-0 flex-1">
-                        <div class="font-semibold text-base truncate">{{ b.customer?.full_name || '—' }}</div>
-                        <div class="text-xs text-[#A0A0A0] truncate mt-0.5">{{ b.customer?.email }}</div>
-                    </div>
-                    <span class="px-2 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide shrink-0" :class="statusClass(b.booking_status)">{{ b.booking_status }}</span>
-                </header>
-
-                <!-- Stacked rows: label + value, one per line -->
-                <dl class="space-y-2 text-sm">
-                    <div class="flex items-baseline gap-3">
-                        <dt class="text-[10px] uppercase tracking-wide text-[#6B7280] w-20 shrink-0">Location</dt>
-                        <dd class="text-white truncate">{{ b.location?.name || '—' }}</dd>
-                    </div>
-                    <div class="flex items-baseline gap-3">
-                        <dt class="text-[10px] uppercase tracking-wide text-[#6B7280] w-20 shrink-0">Check-in</dt>
-                        <dd class="text-white">{{ formatDate(b.check_in) }}</dd>
-                    </div>
-                    <div class="flex items-baseline gap-3">
-                        <dt class="text-[10px] uppercase tracking-wide text-[#6B7280] w-20 shrink-0">Check-out</dt>
-                        <dd class="text-white">{{ formatDate(b.check_out) }}</dd>
-                    </div>
-                    <div class="flex items-baseline gap-3">
-                        <dt class="text-[10px] uppercase tracking-wide text-[#6B7280] w-20 shrink-0">Items</dt>
-                        <dd class="flex flex-wrap gap-1">
-                            <span v-for="(line, i) in sizeBreakdown(b)" :key="i"
-                                class="px-2 py-0.5 rounded-full text-xs" :class="sizeClass(line.size)">
-                                {{ line.qty }}× {{ line.size }}<span v-if="line.duration"> · {{ durationLabel(line.duration) }}</span>
-                            </span>
-                            <span v-if="!sizeBreakdown(b).length" class="text-[#6B7280]">—</span>
-                        </dd>
-                    </div>
-                    <div class="flex items-baseline gap-3">
-                        <dt class="text-[10px] uppercase tracking-wide text-[#6B7280] w-20 shrink-0">Locker / PIN</dt>
-                        <dd v-if="b.pins?.length" class="font-mono text-xs space-y-0.5">
-                            <div v-for="p in b.pins" :key="p.locker_number">
-                                <span class="text-white font-semibold">{{ p.locker_number || '—' }}</span>
-                                <span class="text-[#F59E0B] font-bold ml-1">({{ p.pin || '——' }})</span>
-                            </div>
-                        </dd>
-                        <dd v-else class="text-[#6B7280]">—</dd>
-                    </div>
-                    <div class="flex items-baseline gap-3">
-                        <dt class="text-[10px] uppercase tracking-wide text-[#6B7280] w-20 shrink-0">Total</dt>
-                        <dd class="font-bold text-[#F59E0B]">€{{ Number(b.total_eur).toFixed(2) }}</dd>
-                    </div>
-                    <div class="flex items-baseline gap-3">
-                        <dt class="text-[10px] uppercase tracking-wide text-[#6B7280] w-20 shrink-0">Payment</dt>
+                <dl class="booking-dl">
+                    <div><dt class="booking-label">Status</dt>
+                        <dd><span class="booking-pill" :class="statusClass(b.booking_status)">{{ b.booking_status }}</span></dd></div>
+                    <div><dt class="booking-label">Booking ID</dt>
+                        <dd class="booking-value font-mono">#{{ b.id }}</dd></div>
+                    <div><dt class="booking-label">Name</dt>
+                        <dd class="booking-value">{{ b.customer?.full_name || '—' }}</dd></div>
+                    <div v-if="b.customer?.email"><dt class="booking-label">Email</dt>
+                        <dd class="booking-value">{{ b.customer.email }}</dd></div>
+                    <div v-if="b.customer?.phone"><dt class="booking-label">Phone</dt>
+                        <dd class="booking-value">{{ b.customer.phone }}</dd></div>
+                    <div><dt class="booking-label">Location</dt>
+                        <dd class="booking-value">{{ b.location?.name || '—' }}</dd></div>
+                    <div><dt class="booking-label">Check-in</dt>
+                        <dd class="booking-value">{{ formatDate(b.check_in) || '—' }}</dd></div>
+                    <div><dt class="booking-label">Check-out</dt>
+                        <dd class="booking-value">{{ formatDate(b.check_out) || '—' }}</dd></div>
+                    <div class="items-start"><dt class="booking-label">Items</dt>
                         <dd>
-                            <span class="inline-flex items-center gap-1 text-xs" :class="b.payment_status === 'paid' ? 'text-[#10B981]' : 'text-[#A0A0A0]'">
-                                <span class="w-1.5 h-1.5 rounded-full" :class="b.payment_status === 'paid' ? 'bg-[#10B981]' : 'bg-[#6B7280]'"></span>
-                                {{ b.payment_status === 'paid' ? 'Paid' : 'Unpaid' }}
-                            </span>
-                        </dd>
-                    </div>
-                    <div class="flex items-baseline gap-3">
-                        <dt class="text-[10px] uppercase tracking-wide text-[#6B7280] w-20 shrink-0">Booking ID</dt>
-                        <dd class="font-mono text-xs text-[#6B7280]">#{{ b.id }}</dd>
-                    </div>
+                            <div v-if="pinRows(b).length" class="flex flex-col gap-1.5">
+                                <div v-for="p in pinRows(b)" :key="p.number" class="flex items-center gap-2">
+                                    <span class="booking-pill" :class="sizeClass(p.size)">{{ p.size === 'large' ? 'L' : 'S' }}<template v-if="p.duration"> · {{ durationLabel(p.duration) }}</template></span>
+                                    <span class="booking-value font-mono">{{ p.number || '—' }}</span>
+                                    <span class="booking-value font-mono text-[#F59E0B]">({{ p.pin || '——' }})</span>
+                                </div>
+                            </div>
+                            <div v-else-if="sizeBreakdown(b).length" class="flex flex-wrap gap-1">
+                                <span v-for="(line, i) in sizeBreakdown(b)" :key="i" class="booking-pill" :class="sizeClass(line.size)">
+                                    {{ line.qty }}× {{ line.size === 'large' ? 'L' : 'S' }}<template v-if="line.duration"> · {{ durationLabel(line.duration) }}</template>
+                                </span>
+                            </div>
+                            <span v-else class="booking-value text-[#6B7280]">—</span>
+                        </dd></div>
+                    <div><dt class="booking-label">Payment</dt>
+                        <dd><span class="booking-pill" :class="b.payment_status === 'paid' ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-[#EF4444]/20 text-[#EF4444]'">{{ b.payment_status === 'paid' ? 'Paid' : 'Unpaid' }}</span></dd></div>
+                    <div><dt class="booking-label">Total</dt>
+                        <dd class="booking-value text-[#F59E0B]">€{{ Number(b.total_eur).toFixed(2) }}</dd></div>
                 </dl>
 
                 <div class="mt-4 pt-3 border-t border-[#2A2A2A] grid grid-cols-2 gap-2" @click.stop>
@@ -120,20 +97,18 @@
                         <th class="px-4 py-3 font-medium">Customer</th>
                         <th class="px-4 py-3 font-medium">Location</th>
                         <th class="px-4 py-3 font-medium">Period</th>
-                        <th class="px-4 py-3 font-medium">Size</th>
-                        <th class="px-4 py-3 font-medium">Locker + PIN</th>
+                        <th class="px-4 py-3 font-medium">Type + Locker + PIN</th>
                         <th class="px-4 py-3 font-medium">Total</th>
                         <th class="px-4 py-3 font-medium">Status</th>
-                        <th class="px-4 py-3 font-medium">Payment</th>
                         <th class="px-4 py-3 font-medium text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-if="!bookings.length && !loading">
-                        <td colspan="10" class="px-4 py-8 text-center text-[#A0A0A0]">No bookings.</td>
+                        <td colspan="8" class="px-4 py-8 text-center text-[#A0A0A0]">No bookings.</td>
                     </tr>
                     <tr v-if="!bookings.length && loading">
-                        <td colspan="10" class="px-4 py-8 text-center text-[#A0A0A0]">Loading…</td>
+                        <td colspan="8" class="px-4 py-8 text-center text-[#A0A0A0]">Loading…</td>
                     </tr>
                     <tr v-for="b in bookings" :key="b.id" class="border-b border-[#2A2A2A]/50 hover:bg-[#111]">
                         <td class="px-3 py-3 text-[#6B7280] font-mono text-xs whitespace-nowrap">#{{ b.id }}</td>
@@ -147,32 +122,32 @@
                             <div class="text-[#6B7280] mt-1">{{ formatDate(b.check_out) }}</div>
                         </td>
                         <td class="px-4 py-3 whitespace-nowrap">
-                            <div v-if="sizeBreakdown(b).length" class="flex flex-col gap-0.5">
+                            <div v-if="b.pins?.length" class="flex flex-col gap-1 text-xs">
+                                <div v-for="p in b.pins" :key="p.locker_number" class="flex items-center gap-1.5">
+                                    <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center" :class="sizeClass(p.size || 'standard')">{{ (p.size || 'standard') === 'large' ? 'L' : 'S' }}</span>
+                                    <span class="font-mono font-semibold text-white">{{ p.locker_number || '—' }}</span>
+                                    <span class="font-mono font-bold text-[#F59E0B]">({{ p.pin || '——' }})</span>
+                                    <span :title="p.ttlock_registered ? 'Registered on smart lock' : 'Not yet on smart lock'"
+                                        class="w-1.5 h-1.5 rounded-full" :class="p.ttlock_registered ? 'bg-[#10B981]' : 'bg-[#F59E0B]'"></span>
+                                </div>
+                            </div>
+                            <div v-else-if="sizeBreakdown(b).length" class="flex flex-col gap-1">
                                 <span v-for="(line, i) in sizeBreakdown(b)" :key="i"
                                     class="px-2 py-0.5 rounded-full text-xs inline-block w-fit" :class="sizeClass(line.size)">
                                     {{ line.qty }}× {{ line.size }}<span v-if="line.duration" class="text-[10px] opacity-80"> · {{ durationLabel(line.duration) }}</span>
                                 </span>
                             </div>
-                            <span v-else class="px-2 py-0.5 rounded-full text-xs" :class="sizeClass(b.locker_size)">{{ b.locker_qty }}× {{ b.locker_size }}</span>
-                        </td>
-                        <td class="px-4 py-3 whitespace-nowrap">
-                            <div v-if="b.pins?.length" class="flex flex-col gap-0.5 font-mono text-xs">
-                                <span v-for="p in b.pins" :key="p.locker_number" class="flex items-center gap-1.5">
-                                    <span class="font-semibold text-white">{{ p.locker_number || '—' }}</span>
-                                    <span class="font-bold text-[#F59E0B]">({{ p.pin || '——' }})</span>
-                                    <span :title="p.ttlock_registered ? 'Registered on smart lock' : 'Not yet on smart lock'"
-                                        class="w-1.5 h-1.5 rounded-full" :class="p.ttlock_registered ? 'bg-[#10B981]' : 'bg-[#F59E0B]'"></span>
-                                </span>
-                            </div>
                             <span v-else class="text-[#6B7280] text-xs">—</span>
                         </td>
                         <td class="px-4 py-3 text-[#F59E0B] font-medium whitespace-nowrap">€{{ Number(b.total_eur).toFixed(2) }}</td>
-                        <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-full text-xs" :class="statusClass(b.booking_status)">{{ b.booking_status }}</span></td>
-                        <td class="px-4 py-3">
-                            <span class="inline-flex items-center gap-1 text-xs" :class="b.payment_status === 'paid' ? 'text-[#10B981]' : 'text-[#A0A0A0]'">
-                                <span class="w-1.5 h-1.5 rounded-full" :class="b.payment_status === 'paid' ? 'bg-[#10B981]' : 'bg-[#6B7280]'"></span>
-                                {{ b.payment_status === 'paid' ? 'Paid (cash)' : 'Unpaid' }}
-                            </span>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <div class="flex flex-col gap-1">
+                                <span class="px-2 py-0.5 rounded-full text-xs w-fit" :class="statusClass(b.booking_status)">{{ b.booking_status }}</span>
+                                <span class="px-2 py-0.5 rounded-full text-xs w-fit"
+                                    :class="b.payment_status === 'paid' ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-[#EF4444]/20 text-[#EF4444]'">
+                                    {{ b.payment_status === 'paid' ? 'Paid' : 'Unpaid' }}
+                                </span>
+                            </div>
                         </td>
                         <td class="px-4 py-3 whitespace-nowrap">
                             <div class="flex items-center justify-end gap-1">
@@ -235,94 +210,76 @@
         <!-- Details modal -->
         <Modal :model-value="!!detailsBooking" @update:model-value="v => !v && (detailsBooking = null)"
             size="lg" title="Booking details" :subtitle="detailsBooking ? '#' + (detailsBooking.uuid?.slice(0, 8) || '') : ''" no-padding>
-            <div v-if="detailsBooking" class="p-4 space-y-4 text-sm">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <div class="text-xs text-[#6B7280] mb-1">Status</div>
-                            <span class="px-2 py-0.5 rounded-full text-xs" :class="statusClass(detailsBooking.booking_status)">{{ detailsBooking.booking_status }}</span>
-                        </div>
-                        <div>
-                            <div class="text-xs text-[#6B7280] mb-1">Payment</div>
-                            <span class="inline-flex items-center gap-1 text-xs" :class="detailsBooking.payment_status === 'paid' ? 'text-[#10B981]' : 'text-[#A0A0A0]'">
-                                <span class="w-1.5 h-1.5 rounded-full" :class="detailsBooking.payment_status === 'paid' ? 'bg-[#10B981]' : 'bg-[#6B7280]'"></span>
-                                {{ detailsBooking.payment_status === 'paid' ? 'Paid (cash)' : 'Unpaid' }}
-                            </span>
-                        </div>
-                        <div>
-                            <div class="text-xs text-[#6B7280] mb-1">Customer</div>
-                            <div>{{ detailsBooking.customer?.full_name }}</div>
-                            <div class="text-xs text-[#A0A0A0]">{{ detailsBooking.customer?.email }}</div>
-                            <div v-if="detailsBooking.customer?.phone" class="text-xs text-[#A0A0A0]">{{ detailsBooking.customer.phone }}</div>
-                        </div>
-                        <div>
-                            <div class="text-xs text-[#6B7280] mb-1">Location</div>
-                            <div class="text-[#F59E0B] font-medium">{{ detailsBooking.location?.name }}</div>
-                            <div class="text-xs text-[#A0A0A0]">{{ detailsBooking.location?.address }}<template v-if="detailsBooking.location?.city">, {{ detailsBooking.location.city }}</template></div>
-                        </div>
-                        <div>
-                            <div class="text-xs text-[#6B7280] mb-1">Check-in</div>
-                            <div>{{ formatDate(detailsBooking.check_in) }}</div>
-                        </div>
-                        <div>
-                            <div class="text-xs text-[#6B7280] mb-1">Check-out</div>
-                            <div>{{ formatDate(detailsBooking.check_out) }}</div>
-                        </div>
-                        <div>
-                            <div class="text-xs text-[#6B7280] mb-1">Lockers &amp; PINs</div>
-                            <div v-if="detailsBooking.pins?.length" class="space-y-1">
-                                <div v-for="p in detailsBooking.pins" :key="p.locker_number" class="flex items-center gap-2 text-xs">
-                                    <span class="font-mono font-semibold">#{{ p.locker_number }}</span>
-                                    <span class="font-mono font-bold tracking-wider text-[#F59E0B]">{{ p.pin || '——' }}</span>
-                                    <span class="px-1.5 py-0.5 rounded text-[10px]"
-                                        :class="p.ttlock_registered ? 'bg-[#10B981]/15 text-[#10B981]' : 'bg-[#F59E0B]/15 text-[#F59E0B]'">
-                                        {{ p.ttlock_registered ? 'On lock' : 'Not on lock' }}
-                                    </span>
+            <div v-if="detailsBooking" class="p-4 space-y-5">
+                <dl class="booking-dl">
+                    <div><dt class="booking-label">Status</dt>
+                        <dd><span class="booking-pill" :class="statusClass(detailsBooking.booking_status)">{{ detailsBooking.booking_status }}</span></dd></div>
+                    <div><dt class="booking-label">Booking ID</dt>
+                        <dd class="booking-value font-mono">#{{ detailsBooking.id }}</dd></div>
+                    <div><dt class="booking-label">Name</dt>
+                        <dd class="booking-value">{{ detailsBooking.customer?.full_name || '—' }}</dd></div>
+                    <div v-if="detailsBooking.customer?.email"><dt class="booking-label">Email</dt>
+                        <dd class="booking-value">{{ detailsBooking.customer.email }}</dd></div>
+                    <div v-if="detailsBooking.customer?.phone"><dt class="booking-label">Phone</dt>
+                        <dd class="booking-value">{{ detailsBooking.customer.phone }}</dd></div>
+                    <div><dt class="booking-label">Location</dt>
+                        <dd class="booking-value">{{ detailsBooking.location?.name || '—' }}</dd></div>
+                    <div><dt class="booking-label">Check-in</dt>
+                        <dd class="booking-value">{{ formatDate(detailsBooking.check_in) || '—' }}</dd></div>
+                    <div><dt class="booking-label">Check-out</dt>
+                        <dd class="booking-value">{{ formatDate(detailsBooking.check_out) || '—' }}</dd></div>
+                    <div class="items-start"><dt class="booking-label">Items</dt>
+                        <dd>
+                            <div v-if="pinRows(detailsBooking).length" class="flex flex-col gap-1.5">
+                                <div v-for="p in pinRows(detailsBooking)" :key="p.number" class="flex items-center gap-2">
+                                    <span class="booking-pill" :class="sizeClass(p.size)">{{ p.size === 'large' ? 'L' : 'S' }}<template v-if="p.duration"> · {{ durationLabel(p.duration) }}</template></span>
+                                    <span class="booking-value font-mono">{{ p.number || '—' }}</span>
+                                    <span class="booking-value font-mono text-[#F59E0B]">({{ p.pin || '——' }})</span>
                                 </div>
                             </div>
-                            <div v-else class="font-mono text-xs">{{ lockerNumbers(detailsBooking) }} ({{ detailsBooking.locker_qty }}× {{ detailsBooking.locker_size }})</div>
-                        </div>
-                        <div>
-                            <div class="text-xs text-[#6B7280] mb-1">Total</div>
-                            <div class="text-[#F59E0B] font-semibold">€{{ Number(detailsBooking.total_eur).toFixed(2) }}</div>
-                        </div>
-                    </div>
+                            <div v-else-if="sizeBreakdown(detailsBooking).length" class="flex flex-wrap gap-1">
+                                <span v-for="(line, i) in sizeBreakdown(detailsBooking)" :key="i" class="booking-pill" :class="sizeClass(line.size)">
+                                    {{ line.qty }}× {{ line.size === 'large' ? 'L' : 'S' }}<template v-if="line.duration"> · {{ durationLabel(line.duration) }}</template>
+                                </span>
+                            </div>
+                            <span v-else class="booking-value text-[#6B7280]">—</span>
+                        </dd></div>
+                    <div><dt class="booking-label">Payment</dt>
+                        <dd><span class="booking-pill" :class="detailsBooking.payment_status === 'paid' ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-[#EF4444]/20 text-[#EF4444]'">{{ detailsBooking.payment_status === 'paid' ? 'Paid' : 'Unpaid' }}</span></dd></div>
+                    <div><dt class="booking-label">Total</dt>
+                        <dd class="booking-value text-[#F59E0B]">€{{ Number(detailsBooking.total_eur).toFixed(2) }}</dd></div>
+                    <div v-if="detailsBooking.cancel_reason" class="items-start"><dt class="booking-label">Cancel reason</dt>
+                        <dd class="booking-value text-[#EF4444]">{{ detailsBooking.cancel_reason }}</dd></div>
+                </dl>
 
-                    <div v-if="detailsBooking.cancel_reason">
-                        <div class="text-xs text-[#6B7280] mb-1">Cancel reason</div>
-                        <div class="text-[#EF4444]">{{ detailsBooking.cancel_reason }}</div>
-                    </div>
-
-                    <div v-if="detailsBooking.notification_logs?.length">
-                        <div class="text-xs text-[#6B7280] mb-2">Notification history</div>
-                        <table class="w-full text-xs bg-[#111] border border-[#2A2A2A] rounded-lg overflow-hidden">
-                            <thead class="bg-[#1A1A1A]">
-                                <tr class="text-[#6B7280] text-left">
-                                    <th class="px-3 py-1.5 font-medium">Channel</th>
-                                    <th class="px-3 py-1.5 font-medium">Event</th>
-                                    <th class="px-3 py-1.5 font-medium">Recipient</th>
-                                    <th class="px-3 py-1.5 font-medium">When</th>
-                                    <th class="px-3 py-1.5 font-medium text-right">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="log in detailsBooking.notification_logs" :key="log.id" class="border-t border-[#2A2A2A]/60">
-                                    <td class="px-3 py-1.5">
-                                        <span class="inline-flex items-center gap-1.5">
-                                            <span class="w-1.5 h-1.5 rounded-full" :class="log.channel === 'email' ? 'bg-blue-400' : 'bg-[#10B981]'"></span>
-                                            {{ log.channel === 'email' ? 'Email' : 'WhatsApp' }}
-                                        </span>
-                                    </td>
-                                    <td class="px-3 py-1.5">{{ eventLabel(log.template) }}</td>
-                                    <td class="px-3 py-1.5 text-[#A0A0A0] truncate max-w-[160px]">{{ log.recipient }}</td>
-                                    <td class="px-3 py-1.5 text-[#A0A0A0] whitespace-nowrap">{{ formatDate(log.sent_at || log.created_at) }}</td>
-                                    <td class="px-3 py-1.5 text-right whitespace-nowrap">
-                                        <span :class="statusBadge(log.status)" class="px-1.5 py-0.5 rounded text-[10px] font-medium">{{ statusText(log.status) }}</span>
-                                        <button v-if="log.payload" @click="previewNotification(detailsBooking.id, log.id)"
-                                            class="ml-1.5 text-[#F59E0B] hover:underline text-[10px]">View</button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div v-if="detailsBooking.notification_logs?.length" class="pt-4 border-t border-[#2A2A2A]">
+                        <div class="booking-label mb-3">Notification history</div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr>
+                                        <th class="booking-label text-left pb-2 pr-3">Channel</th>
+                                        <th class="booking-label text-left pb-2 pr-3">Event</th>
+                                        <th class="booking-label text-left pb-2 pr-3">Recipient</th>
+                                        <th class="booking-label text-left pb-2 pr-3">When</th>
+                                        <th class="booking-label text-right pb-2">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="log in detailsBooking.notification_logs" :key="log.id" class="border-t border-[#2A2A2A]/60">
+                                        <td class="booking-value py-2 pr-3 whitespace-nowrap">{{ log.channel === 'email' ? 'Email' : 'WhatsApp' }}</td>
+                                        <td class="booking-value py-2 pr-3 whitespace-nowrap">{{ eventLabel(log.template) }}</td>
+                                        <td class="booking-value py-2 pr-3 truncate max-w-[200px]">{{ log.recipient }}</td>
+                                        <td class="booking-value py-2 pr-3 whitespace-nowrap">{{ formatDate(log.sent_at || log.created_at) }}</td>
+                                        <td class="py-2 text-right whitespace-nowrap">
+                                            <span class="booking-pill" :class="statusBadge(log.status)">{{ statusText(log.status) }}</span>
+                                            <button v-if="log.payload" @click="previewNotification(detailsBooking.id, log.id)"
+                                                class="booking-value text-[#F59E0B] hover:underline ml-2">View</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
             </div>
         </Modal>
@@ -432,6 +389,20 @@ const sizeBreakdown = (b) => {
         .map(s => ({ size: s, qty: map[s] }));
 };
 
+// One row per locker, joining pin info with item duration.
+const pinRows = (b) => {
+    if (!b.pins?.length) return [];
+    const dur = {};
+    (b.items || []).forEach(it => { dur[it.locker_size] = it.duration_key; });
+    return b.pins.map(p => ({
+        size: p.size || 'standard',
+        duration: dur[p.size || 'standard'] || null,
+        number: p.locker_number,
+        pin: p.pin,
+        ttlock: p.ttlock_registered,
+    }));
+};
+
 // Friendly label for a duration key. Falls back to the raw key.
 const durationLabels = {
     '6h': '6h', '24h': '24h', '2_days': '2d', '3_days': '3d', '4_days': '4d',
@@ -524,7 +495,12 @@ const cancelBooking = async (id) => {
     });
     if (!ok) return;
     try {
-        await apiFetch(`/api/admin/bookings/${id}`, { method: 'DELETE' });
+        const res = await apiFetch(`/api/admin/bookings/${id}`, { method: 'DELETE' });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            toast.error(data.message || 'Failed to cancel');
+            return;
+        }
         toast.success('Booking cancelled');
         fetchBookings();
     } catch { toast.error('Failed to cancel'); }
@@ -629,4 +605,40 @@ onMounted(fetchBookings);
     transition: background 0.15s, color 0.15s;
 }
 .action-icon:hover { background: #2A2A2A; color: #fff; }
+
+/* Single source of truth for booking detail typography */
+.booking-dl > div {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0;
+}
+.booking-label {
+    flex: 0 0 110px;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.3;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #6B7280;
+    margin: 0;
+}
+.booking-value {
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.4;
+    color: #A0A0A0;
+}
+.booking-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.4;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
 </style>

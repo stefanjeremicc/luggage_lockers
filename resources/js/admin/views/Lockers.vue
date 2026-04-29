@@ -65,6 +65,14 @@
                                 @update:model-value="v => updateVisibility(l, v)" />
                         </div>
                     </div>
+                    <div class="flex-1 sm:flex-none">
+                        <span class="text-[9px] uppercase tracking-wide text-[#6B7280] block mb-1">Booking</span>
+                        <div @click.stop.prevent class="w-full sm:w-44">
+                            <Select :model-value="l.is_active ? 'active' : 'inactive'"
+                                :options="activeOptions"
+                                @update:model-value="v => updateActive(l, v)" />
+                        </div>
+                    </div>
                     <div class="sm:mt-1">
                         <span class="text-[9px] uppercase tracking-wide text-[#6B7280] block mb-1">TTLock</span>
                         <div class="flex items-center gap-1.5">
@@ -93,6 +101,11 @@ import PageHeader from '../components/PageHeader.vue';
 const visibilityOptions = [
     { value: 'visible', label: 'Visible on site' },
     { value: 'hidden', label: 'Hidden from site' },
+];
+
+const activeOptions = [
+    { value: 'active', label: 'Bookable' },
+    { value: 'inactive', label: 'Deactivated' },
 ];
 
 const { apiFetch } = useAuth();
@@ -135,6 +148,21 @@ const updateVisibility = async (l, v) => {
         toast.success(next ? 'Locker shown on site' : 'Locker hidden from site');
     } catch {
         toast.error('Failed to update visibility');
+    }
+};
+
+const updateActive = async (l, v) => {
+    const next = v === 'active';
+    try {
+        const res = await apiFetch(`/api/admin/lockers/${l.id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ is_active: next }),
+        });
+        if (!res.ok) throw new Error();
+        l.is_active = next;
+        toast.success(next ? 'Locker now bookable' : 'Locker deactivated — no new bookings');
+    } catch {
+        toast.error('Failed to update bookable status');
     }
 };
 

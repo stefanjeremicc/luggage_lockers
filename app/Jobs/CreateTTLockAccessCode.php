@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\BookingLocker;
+use App\Models\TtlockGateway;
 use App\Services\Lock\LockServiceInterface;
 use App\Services\Notification\BookingNotifier;
 use Illuminate\Bus\Queueable;
@@ -35,6 +36,18 @@ class CreateTTLockAccessCode implements ShouldQueue
                 'locker_id' => $bl->locker_id,
             ]);
             BookingNotifier::sendPinDelivered($bl);
+            return;
+        }
+
+        // Pre-flight: if no gateway is online, the passcode will land in TTLock cloud
+        // but never reach the physical lock. Refuse to create — let job retry/backoff.
+        $gatewayOnline = TtlockGateway::where('is_online', true)->exists();
+        if (!$gatewayOnline) {
+            Log::warning('TTLock passcode creation deferred: no gateway online', [
+                'booking_locker_id' => $bl->id,
+                'attempt' => $this->attempts(),
+            ]);
+            $this->release(60);
             return;
         }
 

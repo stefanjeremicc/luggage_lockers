@@ -24,7 +24,7 @@ class NotificationTemplateSeeder extends Seeder
 
     private function templates(): array
     {
-        $commonVars = ['customer_name', 'location_name', 'location_address', 'check_in', 'check_out', 'locker_qty', 'locker_size', 'total_eur', 'cancel_url', 'directions_url', 'support_phone', 'support_email'];
+        $commonVars = ['customer_name', 'location_name', 'location_address', 'check_in', 'check_out', 'locker_qty', 'locker_size', 'items_summary', 'total_eur', 'cancel_url', 'directions_url', 'support_phone', 'support_email'];
 
         return [
             // ─── booking_confirmed ─────────────────────────────────────
@@ -39,7 +39,7 @@ class NotificationTemplateSeeder extends Seeder
                     '<p><strong>Address:</strong> {{ location_address }}</p>'.
                     '<p><strong>Check-in:</strong> {{ check_in }}</p>'.
                     '<p><strong>Check-out:</strong> {{ check_out }}</p>'.
-                    '<p><strong>Lockers:</strong> {{ locker_qty }} x {{ locker_size }}</p>'.
+                    '<p><strong>Lockers:</strong> {{ items_summary }}</p>'.
                     '<p><strong>Total:</strong> €{{ total_eur }} — Pay cash on arrival</p></div>'.
                     '<h2>How to Use</h2><div class="info"><ol>'.
                     '<li>Go to {{ location_name }} ({{ location_address }})</li>'.
@@ -63,7 +63,7 @@ class NotificationTemplateSeeder extends Seeder
                     '<p><strong>Adresa:</strong> {{ location_address }}</p>'.
                     '<p><strong>Dolazak:</strong> {{ check_in }}</p>'.
                     '<p><strong>Odlazak:</strong> {{ check_out }}</p>'.
-                    '<p><strong>Ormarići:</strong> {{ locker_qty }} x {{ locker_size }}</p>'.
+                    '<p><strong>Ormarići:</strong> {{ items_summary }}</p>'.
                     '<p><strong>Ukupno:</strong> €{{ total_eur }} — Plaćanje gotovinom</p></div>'.
                     '<h2>Kako da koristite</h2><div class="info"><ol>'.
                     '<li>Dođite na {{ location_name }} ({{ location_address }})</li>'.

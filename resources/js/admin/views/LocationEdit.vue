@@ -60,65 +60,71 @@
                 </div>
             </Card>
 
-            <!-- 3. Bilingual content (EN / SR side by side) -->
+            <!-- 3. Bilingual content (EN / SR toggle) -->
             <Card title="Content" title-variant="section">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
-                    <!-- Name -->
-                    <Field label="Name (English)" required>
-                        <input v-model="form.name" @input="autoSlug" required
-                            class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
-                    </Field>
-                    <Field label="Naziv (Srpski)" hint="Ostavite prazno da koristi engleski">
-                        <input v-model="form.name_sr"
-                            class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
-                    </Field>
+                <div class="flex gap-2 mb-4">
+                    <button type="button" v-for="loc in ['en', 'sr']" :key="loc" @click="activeLocale = loc"
+                        class="px-4 py-2 rounded-lg text-sm transition border"
+                        :class="activeLocale === loc ? 'bg-[#F59E0B] text-black border-[#F59E0B]' : 'border-[#2A2A2A] text-[#A0A0A0] hover:border-[#F59E0B]'">
+                        {{ loc === 'en' ? 'English' : 'Srpski' }}
+                    </button>
+                </div>
 
-                    <!-- Slug spans both -->
-                    <Field label="Slug" required hint="lowercase letters, digits and hyphens only" class="lg:col-span-2">
+                <!-- English fields -->
+                <div v-show="activeLocale === 'en'" class="space-y-4">
+                    <Field label="Slug (English)" required hint="lowercase letters, digits and hyphens only — used in /locations/{slug}">
                         <input v-model="form.slug" required pattern="[a-z0-9-]+"
                             class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white font-mono text-sm focus:border-[#F59E0B] focus:outline-none">
                     </Field>
-
-                    <!-- Address -->
-                    <Field label="Address (English)" required>
+                    <Field label="Name" required>
+                        <input v-model="form.name" @input="autoSlug" required
+                            class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
+                    </Field>
+                    <Field label="Address" required>
                         <input v-model="form.address" required
                             class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
                     </Field>
-                    <Field label="Adresa (Srpski)" hint="Ostavite prazno da koristi engleski">
-                        <input v-model="form.address_sr"
-                            class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
-                    </Field>
-
-                    <!-- City -->
-                    <Field label="City (English)">
+                    <Field label="City">
                         <input v-model="form.city" class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
                     </Field>
-                    <Field label="Grad (Srpski)">
-                        <input v-model="form.city_sr" class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
-                    </Field>
-
-                    <!-- Description -->
-                    <Field label="Description (English)">
+                    <Field label="Description">
                         <RichEditor v-model="form.description" placeholder="Describe this location…" min-height="160px" />
                     </Field>
-                    <Field label="Opis (Srpski)">
-                        <RichEditor v-model="form.description_sr" placeholder="Opis lokacije na srpskom…" min-height="160px" />
-                    </Field>
-
-                    <!-- Meta -->
-                    <Field label="Meta title (English)">
+                    <Field label="Meta title">
                         <input v-model="form.meta_title" maxlength="255"
                             class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
                     </Field>
-                    <Field label="Meta naslov (Srpski)">
-                        <input v-model="form.meta_title_sr" maxlength="255"
-                            class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
-                    </Field>
-                    <Field label="Meta description (English)">
+                    <Field label="Meta description">
                         <textarea v-model="form.meta_description" rows="2" maxlength="500"
                             class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none"></textarea>
                     </Field>
-                    <Field label="Meta opis (Srpski)">
+                </div>
+
+                <!-- Serbian fields -->
+                <div v-show="activeLocale === 'sr'" class="space-y-4">
+                    <Field label="Slug (Srpski)" hint="Ostavite prazno da koristi engleski slug. Mala slova, cifre i crtice.">
+                        <input v-model="form.slug_sr" pattern="[a-z0-9-]+"
+                            class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white font-mono text-sm focus:border-[#F59E0B] focus:outline-none">
+                    </Field>
+                    <Field label="Naziv" hint="Ostavite prazno da koristi engleski">
+                        <input v-model="form.name_sr"
+                            class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
+                    </Field>
+                    <Field label="Adresa" hint="Ostavite prazno da koristi engleski">
+                        <input v-model="form.address_sr"
+                            class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
+                    </Field>
+                    <Field label="Grad">
+                        <input v-model="form.city_sr" class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
+                    </Field>
+                    <Field label="Opis">
+                        <RichEditor v-model="form.description_sr" placeholder="Opis lokacije na srpskom…" min-height="160px" />
+                    </Field>
+                    <Field label="Meta naslov">
+                        <input v-model="form.meta_title_sr" maxlength="255"
+                            class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none">
+                    </Field>
+                    <Field label="Meta opis">
                         <textarea v-model="form.meta_description_sr" rows="2" maxlength="500"
                             class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-white focus:border-[#F59E0B] focus:outline-none"></textarea>
                     </Field>
@@ -138,8 +144,11 @@
             </Card>
         </form>
 
-        <!-- 5. Locker assignment (only on edit) -->
-        <Card v-if="!isNew && !loading" title="Lockers at this location" title-variant="section" class="mt-6">
+        <!-- 5. Locker assignment -->
+        <Card v-if="isNew" title="Lockers at this location" title-variant="section" class="mt-6">
+            <p class="text-sm text-[#A0A0A0]">Save the location first, then return here to assign lockers.</p>
+        </Card>
+        <Card v-else-if="!loading" title="Lockers at this location" title-variant="section" class="mt-6">
             <template #actions>
                 <span class="text-xs text-[#A0A0A0]">{{ assignedLockers.length }} assigned</span>
             </template>
@@ -217,9 +226,10 @@ const confirmDialog = useConfirm();
 const isNew = computed(() => !route.params.id);
 const loading = ref(!isNew.value);
 const saving = ref(false);
+const activeLocale = ref('en');
 
 const form = ref({
-    name: '', name_sr: '', slug: '',
+    name: '', name_sr: '', slug: '', slug_sr: '',
     address: '', address_sr: '',
     city: 'Belgrade', city_sr: '',
     lat: 44.8176, lng: 20.4569,
@@ -380,7 +390,7 @@ onMounted(async () => {
         ]);
         const data = await locRes.json();
         form.value = {
-            name: data.name || '', name_sr: data.name_sr || '', slug: data.slug || '',
+            name: data.name || '', name_sr: data.name_sr || '', slug: data.slug || '', slug_sr: data.slug_sr || '',
             address: data.address || '', address_sr: data.address_sr || '',
             city: data.city || 'Belgrade', city_sr: data.city_sr || '',
             lat: Number(data.lat) || 44.8176, lng: Number(data.lng) || 20.4569,

@@ -22,8 +22,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(LockServiceInterface::class, TTLockService::class);
 
         $this->app->bind(NotificationServiceInterface::class, EmailNotificationService::class);
-        $this->app->singleton('notification.email', fn ($app) => $app->make(EmailNotificationService::class));
-        $this->app->singleton('notification.whatsapp', fn ($app) => $app->make(WhatsAppNotificationService::class));
+        $this->app->singleton('notification.email', fn($app) => $app->make(EmailNotificationService::class));
+        $this->app->singleton('notification.whatsapp', fn($app) => $app->make(WhatsAppNotificationService::class));
     }
 
     public function boot(): void
@@ -51,15 +51,24 @@ class AppServiceProvider extends ServiceProvider
         // Resolve per-route SEO from the pages table. Routes map to slugs; if a page
         // record exists, its meta_title/meta_description/og_image override blade defaults.
         $routeToSlug = [
-            'home' => 'home', 'sr.home' => 'home',
-            'locations.index' => 'locations', 'sr.locations.index' => 'locations',
-            'pricing' => 'pricing', 'sr.pricing' => 'pricing',
-            'faq' => 'faq', 'sr.faq' => 'faq',
-            'contact' => 'contact', 'sr.contact' => 'contact',
-            'blog.index' => 'blog', 'sr.blog.index' => 'blog',
-            'about' => 'about', 'sr.about' => 'about',
-            'terms' => 'terms', 'sr.terms' => 'terms',
-            'privacy' => 'privacy', 'sr.privacy' => 'privacy',
+            'home' => 'home',
+            'sr.home' => 'home',
+            'locations.index' => 'locations',
+            'sr.locations.index' => 'locations',
+            'pricing' => 'pricing',
+            'sr.pricing' => 'pricing',
+            'faq' => 'faq',
+            'sr.faq' => 'faq',
+            'contact' => 'contact',
+            'sr.contact' => 'contact',
+            'blog.index' => 'blog',
+            'sr.blog.index' => 'blog',
+            'about' => 'about',
+            'sr.about' => 'about',
+            'terms' => 'terms',
+            'sr.terms' => 'terms',
+            'privacy' => 'privacy',
+            'sr.privacy' => 'privacy',
         ];
         View::composer('layouts.public', function ($view) use ($routeToSlug) {
             $name = request()->route()?->getName();

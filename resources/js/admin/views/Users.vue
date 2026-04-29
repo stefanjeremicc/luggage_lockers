@@ -63,8 +63,8 @@
                     <input v-model="form.name" required
                         class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-3 py-2 text-white focus:border-[#F59E0B] focus:outline-none">
                 </FormField>
-                <FormField label="Email" required>
-                    <input v-model="form.email" type="email" required
+                <FormField label="Email" hint="Optional.">
+                    <input v-model="form.email" type="email"
                         class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-3 py-2 text-white focus:border-[#F59E0B] focus:outline-none">
                 </FormField>
                 <FormField label="Username" hint="Optional. Used for login if email isn't.">
@@ -196,7 +196,7 @@ const save = async () => {
     try {
         const payload = {
             name: form.name,
-            email: form.email,
+            email: form.email || null,
             username: form.username || null,
             role: form.role,
             location_ids: form.role === 'super_admin' ? [] : form.location_ids,

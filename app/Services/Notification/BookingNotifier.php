@@ -71,6 +71,19 @@ class BookingNotifier
         $checkIn = $booking->check_in->copy()->setTimezone($tz);
         $checkOut = $booking->check_out->copy()->setTimezone($tz);
 
+        // Build a multi-item summary like "2 x Large, 1 x Standard" from booking_items if present;
+        // fall back to legacy single-size rendering when items table is empty.
+        $items = $booking->relationLoaded('items') ? $booking->items : $booking->items()->get();
+        if ($items && $items->count() > 0) {
+            $itemsSummary = $items->map(fn($it) => $it->qty . ' x ' . ucfirst(is_object($it->locker_size) ? $it->locker_size->value : (string) $it->locker_size))->implode(', ');
+            $totalQty = (int) $items->sum('qty');
+            $sizeLabel = ucfirst(is_object($items->first()->locker_size) ? $items->first()->locker_size->value : (string) $items->first()->locker_size);
+        } else {
+            $sizeLabel = is_object($booking->locker_size) ? ucfirst($booking->locker_size->value) : ucfirst((string) $booking->locker_size);
+            $itemsSummary = ($booking->locker_qty ?? 1) . ' x ' . $sizeLabel;
+            $totalQty = (int) ($booking->locker_qty ?? 1);
+        }
+
         return [
             'customer_name' => $booking->customer->full_name,
             'location_name' => $booking->location->name,
@@ -82,9 +95,10 @@ class BookingNotifier
             'check_out_time' => $checkOut->format('H:i'),
             'check_out_full' => $checkOut->format('M j, Y \a\t H:i'),
             'duration_label' => $booking->duration_label,
-            'locker_qty' => $booking->locker_qty,
+            'locker_qty' => $totalQty,
             'locker_number' => $booking->lockers->first()?->number ?? '',
-            'locker_size' => is_object($booking->locker_size) ? ucfirst($booking->locker_size->value) : ucfirst((string) $booking->locker_size),
+            'locker_size' => $sizeLabel,
+            'items_summary' => $itemsSummary,
             'total_eur' => number_format((float) $booking->total_eur, 2),
             'eur_rsd_rate' => Setting::getValue('eur_rsd_rate', 117),
             'entry_door_code' => Setting::getValue('entry_door_code', '0717#'),

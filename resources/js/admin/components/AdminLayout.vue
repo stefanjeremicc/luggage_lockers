@@ -48,6 +48,13 @@
             <main class="flex-1 md:ml-64 flex flex-col min-h-screen w-full min-w-0">
                 <!-- Desktop top bar (hidden on mobile) -->
                 <header class="hidden md:flex sticky top-0 z-30 bg-[#0A0A0A]/90 backdrop-blur border-b border-[#2A2A2A] h-[65px] px-8 items-center justify-end gap-4">
+                    <button @click="syncGateways" :disabled="gatewaySyncing"
+                        class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-[#1A1A1A] transition text-xs"
+                        :title="gatewayTitle">
+                        <span class="w-2 h-2 rounded-full" :class="gatewayBadgeClass"></span>
+                        <span class="text-[#A0A0A0]">Gateway</span>
+                        <span class="text-white font-medium">{{ gatewayStatus.online_count ?? 0 }}/{{ gatewayStatus.total ?? 0 }}</span>
+                    </button>
                     <div class="relative" ref="menuRef">
                         <button @click="userMenuOpen = !userMenuOpen"
                             class="flex items-center gap-3 px-3 py-1.5 rounded-lg hover:bg-[#1A1A1A] transition">
@@ -59,7 +66,9 @@
                             </div>
                             <svg class="w-4 h-4 text-[#A0A0A0]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </button>
-                        <UserMenu v-if="userMenuOpen" :user="user" @logout="handleLogout" />
+                        <div v-if="userMenuOpen" class="absolute right-0 top-full mt-2 z-50">
+                            <UserMenu :user="user" @logout="handleLogout" />
+                        </div>
                     </div>
                 </header>
 
@@ -95,7 +104,7 @@ import ConfirmModal from './ConfirmModal.vue';
 
 const confirm = useConfirm();
 
-const { user, logout } = useAuth();
+const { user, logout, apiFetch } = useAuth();
 const route = useRoute();
 const drawerOpen = ref(false);
 const userMenuOpen = ref(false);
@@ -129,13 +138,53 @@ const onKey = (e) => {
     if (e.key === 'Escape') { drawerOpen.value = false; userMenuOpen.value = false; }
 };
 
+// Gateway online/offline indicator. Polls /api/admin/gateways every 60s and
+// renders a colored dot in the header. Click triggers an immediate sync.
+const gatewayStatus = ref({ online_count: 0, total: 0, any_online: false });
+const gatewaySyncing = ref(false);
+let gatewayPoll = null;
+
+const gatewayBadgeClass = computed(() => {
+    if (!gatewayStatus.value.total) return 'bg-[#6B7280]';
+    if (gatewayStatus.value.online_count === 0) return 'bg-[#EF4444]';
+    if (gatewayStatus.value.online_count < gatewayStatus.value.total) return 'bg-[#F59E0B]';
+    return 'bg-[#10B981]';
+});
+
+const gatewayTitle = computed(() => {
+    const s = gatewayStatus.value;
+    if (!s.total) return 'No gateways registered. Click to sync.';
+    return `${s.online_count}/${s.total} TTLock gateways online — click to re-sync`;
+});
+
+const fetchGatewayStatus = async () => {
+    try {
+        const res = await apiFetch('/api/admin/gateways');
+        if (res.ok) gatewayStatus.value = await res.json();
+    } catch {}
+};
+
+const syncGateways = async () => {
+    if (gatewaySyncing.value) return;
+    gatewaySyncing.value = true;
+    try {
+        await apiFetch('/api/admin/gateways/sync', { method: 'POST' });
+        await fetchGatewayStatus();
+    } finally {
+        gatewaySyncing.value = false;
+    }
+};
+
 onMounted(() => {
     document.addEventListener('click', closeOnOutside);
     document.addEventListener('keydown', onKey);
+    fetchGatewayStatus();
+    gatewayPoll = setInterval(fetchGatewayStatus, 60000);
 });
 onUnmounted(() => {
     document.removeEventListener('click', closeOnOutside);
     document.removeEventListener('keydown', onKey);
+    if (gatewayPoll) clearInterval(gatewayPoll);
 });
 
 const handleLogout = () => {

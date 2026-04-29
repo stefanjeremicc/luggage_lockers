@@ -51,6 +51,7 @@ class LocationManagementController extends Controller
     private function rules(?int $id = null, bool $updating = false): array
     {
         $required = $updating ? 'sometimes|required' : 'required';
+        $requiredParts = $updating ? ['sometimes', 'required'] : ['required'];
         $slugRule = ['string', 'max:120', 'regex:/^[a-z0-9-]+$/'];
         $slugRule[] = $id
             ? Rule::unique('locations', 'slug')->ignore($id)
@@ -59,7 +60,10 @@ class LocationManagementController extends Controller
         return [
             'name' => "{$required}|string|max:255",
             'name_sr' => 'nullable|string|max:255',
-            'slug' => array_merge([$required], $slugRule),
+            'slug' => array_merge($requiredParts, $slugRule),
+            'slug_sr' => array_merge(['nullable', 'string', 'max:120', 'regex:/^[a-z0-9-]+$/'], [
+                $id ? Rule::unique('locations', 'slug_sr')->ignore($id) : Rule::unique('locations', 'slug_sr'),
+            ]),
             'address' => "{$required}|string|max:500",
             'address_sr' => 'nullable|string|max:500',
             'city' => 'nullable|string|max:100',

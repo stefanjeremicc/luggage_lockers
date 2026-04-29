@@ -4,9 +4,12 @@
     $locale = app()->getLocale();
     $metaTitleKey = $locale === 'sr' ? 'home_meta_title_sr' : 'home_meta_title';
     $metaDescKey = $locale === 'sr' ? 'home_meta_description_sr' : 'home_meta_description';
-    $heroHeadline = \App\Helpers\SiteSettings::heroHeadline($locale);
-    $heroSubhead = \App\Helpers\SiteSettings::heroSubhead($locale);
-    $heroImage = \App\Helpers\SiteSettings::heroImage();
+    $homePage = \App\Models\Page::seoFor('home', $locale);
+    $heroHeadline = $homePage?->section('hero.title') ?: \App\Helpers\SiteSettings::heroHeadline($locale);
+    $heroSubhead = $homePage?->section('hero.subtitle') ?: \App\Helpers\SiteSettings::heroSubhead($locale);
+    $heroImage = $homePage?->section('hero.image') ?: \App\Helpers\SiteSettings::heroImage();
+    $heroCtaPrimary = $homePage?->section('hero.cta_primary');
+    $heroCtaSecondary = $homePage?->section('hero.cta_secondary');
     $locationsCount = $locations->count();
     $minPriceEur = \App\Models\PricingRule::active()->min('price_eur');
 @endphp
@@ -40,11 +43,11 @@
 
         <div class="mt-10 sm:mt-10 flex flex-row items-center justify-center gap-3 sm:gap-4">
             <a href="{{ route($lp . 'locations.index') }}" class="btn-primary flex-1 sm:flex-none inline-flex items-center justify-center gap-2">
-                <span class="sm:hidden">{{ __('Book Now') }}</span>
-                <span class="hidden sm:inline">{{ __('Book Now') }}{{ $minPriceEur ? ' — '.__('From').' €'.rtrim(rtrim(number_format($minPriceEur, 2), '0'), '.') : '' }}</span>
+                <span class="sm:hidden">{{ $heroCtaPrimary ?: __('Book Now') }}</span>
+                <span class="hidden sm:inline">{{ $heroCtaPrimary ?: __('Book Now') }}{{ $minPriceEur ? ' — '.__('From').' €'.rtrim(rtrim(number_format($minPriceEur, 2), '0'), '.') : '' }}</span>
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
             </a>
-            <a href="#how-it-works" data-scroll-to="how-it-works" class="btn-outline flex-1 sm:flex-none text-center">{{ __('How It Works') }}</a>
+            <a href="#how-it-works" data-scroll-to="how-it-works" class="btn-outline flex-1 sm:flex-none text-center">{{ $heroCtaSecondary ?: __('How It Works') }}</a>
         </div>
     </div>
 
@@ -481,7 +484,10 @@ function reviewSubmitForm() {
 @if($faqs->count())
 <section class="py-16 lg:py-24">
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="text-3xl font-bold text-center mb-12">{{ $home?->section('faq.title') ?: __('Frequently Asked Questions') }}</h2>
+        <h2 class="text-3xl font-bold text-center mb-{{ $home?->section('faq.subtitle') ? '4' : '12' }}">{{ $home?->section('faq.title') ?: __('Frequently Asked Questions') }}</h2>
+        @if($home?->section('faq.subtitle'))
+        <p class="text-center text-[#A0A0A0] mb-12">{{ $home->section('faq.subtitle') }}</p>
+        @endif
         <div class="space-y-3">
             @foreach($faqs as $faq)
             <div class="card !p-0 overflow-hidden" x-data="{ open: false }">

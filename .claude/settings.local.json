@@ -161,7 +161,17 @@
       "Bash(php -r 'require '\\\\''vendor/autoload.php'\\\\''; $app = require '\\\\''bootstrap/app.php'\\\\''; $app->make\\(Illuminate\\\\Contracts\\\\Console\\\\Kernel::class\\)->bootstrap\\(\\); $b = App\\\\Models\\\\Booking::with\\('\\\\''items'\\\\'','\\\\''location'\\\\''\\)->find\\(24\\); $html = view\\('\\\\''emails.booking-confirmed'\\\\'', ['\\\\''booking'\\\\'' => $b]\\)->render\\(\\); echo strlen\\($html\\), '\\\\'' bytes; has-items-list: '\\\\'', \\(str_contains\\($html, '\\\\''<ul'\\\\''\\) ? '\\\\''yes'\\\\'' : '\\\\''no'\\\\''\\), PHP_EOL;')",
       "Bash(php -r 'require '\\\\''vendor/autoload.php'\\\\''; $app = require '\\\\''bootstrap/app.php'\\\\''; $app->make\\(Illuminate\\\\Contracts\\\\Console\\\\Kernel::class\\)->bootstrap\\(\\); $b = App\\\\Models\\\\Booking::with\\('\\\\''items'\\\\'','\\\\''location'\\\\''\\)->find\\(24\\); $html = view\\('\\\\''emails.booking-reminder'\\\\'', ['\\\\''booking'\\\\'' => $b]\\)->render\\(\\); echo strlen\\($html\\), '\\\\'' bytes; has-time: '\\\\'', \\(preg_match\\('\\\\''/font-size:24px/'\\\\'', $html\\) ? '\\\\''yes'\\\\'' : '\\\\''no'\\\\''\\), PHP_EOL;')",
       "Bash(grep -vE \"//\")",
-      "Bash(grep -v \"console\\\\.\\\\|throw\\\\|//\")"
+      "Bash(grep -v \"console\\\\.\\\\|throw\\\\|//\")",
+      "Bash(grep -n \"class Customer\\\\|customer_id\\\\|App\\\\\\\\\\\\\\\\Models\\\\\\\\\\\\\\\\Customer\\\\|guest_customer\" app/Services/Booking/BookingService.php app/Models/Booking.php)",
+      "Bash(/c/xampp/mysql/bin/mysql -u root luggage_lockers -e \"SET FOREIGN_KEY_CHECKS=0; ALTER TABLE settings DISCARD TABLESPACE;\")",
+      "Bash(cp /c/xampp/mysql/moje_baze/luggage_lockers/settings.ibd /c/xampp/mysql/data/luggage_lockers/settings.ibd)",
+      "Bash(/c/xampp/mysql/bin/mysql -u root luggage_lockers -e \"SET FOREIGN_KEY_CHECKS=0; ALTER TABLE settings IMPORT TABLESPACE; SELECT COUNT\\(*\\) FROM settings;\")",
+      "Bash(/c/xampp/mysql/bin/mysql -u root luggage_lockers -e ' *)",
+      "Read(//tmp/new_migrations/**)",
+      "Bash(rm -f /c/xampp/mysql/data/luggage_lockers/locations.ibd /c/xampp/mysql/data/luggage_lockers/lockers.ibd)",
+      "Bash(rm -rf /c/xampp/mysql/data/luggage_lockers_BROKEN_*)",
+      "Bash(rm -f /tmp/restore_all.php /tmp/restore_loc_lockers.php)",
+      "Bash(grep -n 'class BookingItem\\\\|protected $fillable\\\\|locker_size\\\\|qty' /c/Users/Barbie/OneDrive/IT/Projects/GitHub/luggage_lockers/app/Models/BookingItem.php)"
     ]
   }
 }

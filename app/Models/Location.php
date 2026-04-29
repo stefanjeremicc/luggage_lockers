@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Location extends Model
 {
     protected $fillable = [
-        'name', 'name_sr', 'slug', 'address', 'address_sr', 'city', 'city_sr', 'lat', 'lng',
+        'name', 'name_sr', 'slug', 'slug_sr', 'address', 'address_sr', 'city', 'city_sr', 'lat', 'lng',
         'description', 'description_sr', 'opening_time', 'closing_time',
         'is_24h', 'timezone', 'phone', 'whatsapp', 'email',
         'google_maps_url', 'meta_title', 'meta_title_sr',
@@ -50,6 +50,11 @@ class Location extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    public function slugFor(string $locale): string
+    {
+        return $locale === 'sr' && $this->slug_sr ? $this->slug_sr : (string) $this->slug;
     }
 
     public function nameFor(string $locale): string

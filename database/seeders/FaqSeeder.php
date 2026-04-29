@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Faq;
+use App\Models\FaqCategory;
 use Illuminate\Database\Seeder;
 
 class FaqSeeder extends Seeder
@@ -84,8 +85,22 @@ class FaqSeeder extends Seeder
             ],
         ];
 
+        // Map legacy category-name strings to faq_categories.id (introduced by
+        // 2026_04_23_100000_create_faq_categories_and_update_faqs migration).
+        // The seeder is idempotent: existing categories are reused.
+        $categoryIds = [];
+        foreach (['General', 'Pricing', 'Security', 'Booking'] as $name) {
+            $categoryIds[$name] = FaqCategory::firstOrCreate(['name' => $name])->id;
+        }
+
         foreach ($faqs as $faq) {
-            Faq::create(array_merge($faq, ['locale' => 'en', 'is_active' => true]));
+            Faq::create([
+                'question' => $faq['question'],
+                'answer' => $faq['answer'],
+                'faq_category_id' => $categoryIds[$faq['category']] ?? null,
+                'sort_order' => $faq['sort_order'],
+                'is_active' => true,
+            ]);
         }
     }
 }

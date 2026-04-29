@@ -301,8 +301,10 @@ export default () => ({
                 for (const s of ['standard', 'large']) {
                     if (data[s]) this.availability[s] = data[s];
                 }
-                // Clamp each size to its available count.
-                for (const s of ['standard', 'large']) {
+                // Only clamp sizes we actually queried — others may have qty selected
+                // before a duration is picked, and we shouldn't reset them to 0.
+                const queriedSizes = new Set(items.map(i => i.size));
+                for (const s of queriedSizes) {
                     const max = this.availability[s]?.available ?? 0;
                     if (this.qtys[s] > max) this.qtys[s] = max;
                 }

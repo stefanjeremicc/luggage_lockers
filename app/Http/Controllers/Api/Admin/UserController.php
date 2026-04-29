@@ -35,7 +35,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'username' => 'nullable|string|max:255|unique:users,username',
-            'email' => 'required|email|unique:users,email',
+            'email' => 'nullable|email|unique:users,email',
             'password' => 'required|string|min:8',
             'role' => ['required', Rule::in(['admin', 'super_admin'])],
             'location_ids' => 'nullable|array',
@@ -54,7 +54,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
             'username' => ['sometimes', 'nullable', 'string', 'max:255', Rule::unique('users', 'username')->ignore($user->id)],
-            'email' => ['sometimes', 'required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
+            'email' => ['sometimes', 'nullable', 'email', Rule::unique('users', 'email')->ignore($user->id)],
             'role' => ['sometimes', Rule::in(['admin', 'super_admin'])],
             'location_ids' => 'sometimes|nullable|array',
             'location_ids.*' => 'integer|exists:locations,id',

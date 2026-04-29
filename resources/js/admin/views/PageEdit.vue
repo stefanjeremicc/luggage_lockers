@@ -126,6 +126,11 @@
                     </div>
 
                     <div class="border-t border-[#2A2A2A] pt-4 mt-2">
+                        <h3 class="text-sm font-semibold text-[#F59E0B] uppercase tracking-wide mb-3">How it works — heading</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                            <input v-model="data[loc].sections.how_it_works_heading.title" placeholder="Title (e.g. How To Use Our Lockers)" class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-3 py-2 text-sm text-white focus:border-[#F59E0B] focus:outline-none">
+                            <input v-model="data[loc].sections.how_it_works_heading.subtitle" placeholder="Subtitle" class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-3 py-2 text-sm text-white focus:border-[#F59E0B] focus:outline-none">
+                        </div>
                         <h3 class="text-sm font-semibold text-[#F59E0B] uppercase tracking-wide mb-3">How it works (4 steps)</h3>
                         <div class="space-y-3">
                             <div v-for="(step, i) in data[loc].sections.how_it_works" :key="i" class="bg-[#111] border border-[#2A2A2A] rounded-lg p-3 space-y-2">
@@ -190,6 +195,7 @@ const activeLocale = ref('en');
 
 const blankSections = () => slug === 'home' ? ({
     hero: { title: '', subtitle: '', cta_primary: '', cta_secondary: '', image: '' },
+    how_it_works_heading: { title: '', subtitle: '' },
     how_it_works: [
         { icon: 'computer', title: '', desc: '' },
         { icon: 'search', title: '', desc: '' },
@@ -215,6 +221,7 @@ const normalizeSections = (raw) => {
     if (!raw || typeof raw !== 'object') return base;
     return {
         hero: { ...base.hero, ...(raw.hero || {}) },
+        how_it_works_heading: { ...base.how_it_works_heading, ...(raw.how_it_works_heading || {}) },
         how_it_works: Array.isArray(raw.how_it_works) && raw.how_it_works.length === 4
             ? raw.how_it_works.map((s, i) => ({ ...base.how_it_works[i], ...s }))
             : base.how_it_works,
