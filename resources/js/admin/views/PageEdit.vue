@@ -212,7 +212,11 @@ const pageType = ref('page');
 const locationId = ref(null);
 const locations = ref([]);
 
-const hasContent = computed(() => pageType.value === 'landing' || ['about', 'terms', 'privacy'].includes(slug));
+// Slugs that expose a rich-text body editor in admin. Other system pages (home,
+// faq, pricing, locations, booking-*) are SEO-only because their body is
+// rendered from structured data (sections, listings, dynamic models).
+const CONTENT_EDITABLE_SLUGS = ['about', 'terms', 'privacy', 'contact', 'booking-confirmation', 'booking-cancel'];
+const hasContent = computed(() => pageType.value === 'landing' || CONTENT_EDITABLE_SLUGS.includes(slug));
 const isLanding = computed(() => pageType.value === 'landing');
 
 const normalizeSections = (raw) => {

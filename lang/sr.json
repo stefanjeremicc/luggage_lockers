@@ -281,5 +281,15 @@
     "Booking": "Rezervacija",
     "Instant — 60 seconds": "Trenutno — 60 sekundi",
     "Luggage Storage Belgrade": "Čuvanje prtljaga Beograd",
-    "Secure 24/7 luggage storage at :name, :address. Smart lockers, instant booking from €:price.": "Sigurno čuvanje prtljaga 24/7 na :name, :address. Pametni ormani, trenutna rezervacija od €:price."
+    "Secure 24/7 luggage storage at :name, :address. Smart lockers, instant booking from €:price.": "Sigurno čuvanje prtljaga 24/7 na :name, :address. Pametni ormani, trenutna rezervacija od €:price.",
+    "Luggage storage near :poi": "Garderoba blizu :poi",
+    "Near :poi": "Blizu :poi",
+    "Nearest locations": "Najbliže lokacije",
+    "How to book": "Kako rezervisati",
+    "as the crow flies": "vazdušnom linijom",
+    "Pick a location, book online in 60 seconds, and pay cash on arrival.": "Izaberi lokaciju, rezerviši online za 60 sekundi i plati gotovinom po dolasku.",
+    "About Us": "O nama",
+    "Terms & Conditions": "Uslovi korišćenja",
+    "Privacy Policy": "Politika privatnosti",
+    "No active locations yet.": "Trenutno nema aktivnih lokacija."
 }

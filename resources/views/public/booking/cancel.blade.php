@@ -28,7 +28,8 @@
     ];
 @endphp
 
-@section('title', __('Cancel Booking') . ' — ' . \App\Helpers\SiteSettings::siteName())
+@section('title', $pageSeo?->meta_title ?: (__('Cancel Booking') . ' — ' . \App\Helpers\SiteSettings::siteName()))
+@section('meta_description', $pageSeo?->meta_description ?: '')
 
 @push('schema')
 <meta name="robots" content="noindex, nofollow">
