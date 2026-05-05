@@ -20,20 +20,14 @@ class GuestController extends Controller
             'whatsapp_opt_in' => 'boolean',
         ]);
 
-        $customer = Customer::firstOrCreate(
-            ['email' => $validated['email']],
-            array_merge($validated, ['uuid' => Str::uuid()])
-        );
-
-        // Update name/phone if existing customer
-        if (!$customer->wasRecentlyCreated) {
-            $customer->update([
-                'full_name' => $validated['full_name'],
-                'phone' => $validated['phone'],
-                'country_code' => $validated['country_code'],
-                'whatsapp_opt_in' => $validated['whatsapp_opt_in'] ?? false,
-            ]);
-        }
+        // Always create a fresh customer per guest booking so the name/email/phone
+        // entered on the form are snapshotted to that booking. Reusing+updating an
+        // existing record by email would retroactively change the displayed name on
+        // every past booking that points to that customer_id.
+        $customer = Customer::create(array_merge($validated, [
+            'uuid' => Str::uuid(),
+            'whatsapp_opt_in' => $validated['whatsapp_opt_in'] ?? false,
+        ]));
 
         $token = $customer->createToken('guest-booking')->plainTextToken;
 

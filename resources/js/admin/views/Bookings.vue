@@ -46,6 +46,8 @@
                         <dd class="booking-value">{{ formatDate(b.check_in) || '—' }}</dd></div>
                     <div><dt class="booking-label">Check-out</dt>
                         <dd class="booking-value">{{ formatDate(b.check_out) || '—' }}</dd></div>
+                    <div v-if="b.created_at"><dt class="booking-label">Created</dt>
+                        <dd class="booking-value text-[#A0A0A0]">{{ formatDate(b.created_at) }}</dd></div>
                     <div class="items-start"><dt class="booking-label">Items</dt>
                         <dd>
                             <div v-if="pinRows(b).length" class="flex flex-col gap-1.5">
@@ -62,14 +64,14 @@
                             </div>
                             <span v-else class="booking-value text-[#6B7280]">—</span>
                         </dd></div>
-                    <div><dt class="booking-label">Payment</dt>
+                    <div v-if="false"><dt class="booking-label">Payment</dt>
                         <dd><span class="booking-pill" :class="b.payment_status === 'paid' ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-[#EF4444]/20 text-[#EF4444]'">{{ b.payment_status === 'paid' ? 'Paid' : 'Unpaid' }}</span></dd></div>
                     <div><dt class="booking-label">Total</dt>
                         <dd class="booking-value text-[#F59E0B]">€{{ Number(b.total_eur).toFixed(2) }}</dd></div>
                 </dl>
 
                 <div class="mt-4 pt-3 border-t border-[#2A2A2A] grid grid-cols-2 gap-2" @click.stop>
-                    <button v-if="b.payment_status !== 'paid' && !isFinal(b)" @click="markPaid(b.id)"
+                    <button v-if="false && b.payment_status !== 'paid' && !isFinal(b)" @click="markPaid(b.id)"
                         class="bg-[#10B981]/15 text-[#10B981] rounded-lg px-3 py-2.5 text-xs font-semibold active:bg-[#10B981]/25">Mark paid</button>
                     <button v-if="['confirmed','active'].includes(b.booking_status)" @click="reissuePin(b.id)"
                         class="bg-[#F59E0B]/15 text-[#F59E0B] rounded-lg px-3 py-2.5 text-xs font-semibold active:bg-[#F59E0B]/25">New PIN</button>
@@ -127,7 +129,8 @@
                                     <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center" :class="sizeClass(p.size || 'standard')">{{ (p.size || 'standard') === 'large' ? 'L' : 'S' }}</span>
                                     <span class="font-mono font-semibold text-white">{{ p.locker_number || '—' }}</span>
                                     <span class="font-mono font-bold text-[#F59E0B]">({{ p.pin || '——' }})</span>
-                                    <span :title="p.ttlock_registered ? 'Registered on smart lock' : 'Not yet on smart lock'"
+                                    <span v-if="['confirmed','active'].includes(b.booking_status)"
+                                        :title="p.ttlock_registered ? 'PIN active on smart lock' : 'PIN waiting for gateway sync'"
                                         class="w-1.5 h-1.5 rounded-full" :class="p.ttlock_registered ? 'bg-[#10B981]' : 'bg-[#F59E0B]'"></span>
                                 </div>
                             </div>
@@ -143,7 +146,7 @@
                         <td class="px-4 py-3 whitespace-nowrap">
                             <div class="flex flex-col gap-1">
                                 <span class="px-2 py-0.5 rounded-full text-xs w-fit" :class="statusClass(b.booking_status)">{{ b.booking_status }}</span>
-                                <span class="px-2 py-0.5 rounded-full text-xs w-fit"
+                                <span v-if="false" class="px-2 py-0.5 rounded-full text-xs w-fit"
                                     :class="b.payment_status === 'paid' ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-[#EF4444]/20 text-[#EF4444]'">
                                     {{ b.payment_status === 'paid' ? 'Paid' : 'Unpaid' }}
                                 </span>
@@ -155,7 +158,7 @@
                                     class="action-icon" aria-label="Details">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                 </button>
-                                <button v-if="b.payment_status !== 'paid' && !isFinal(b)" @click="markPaid(b.id)" title="Mark cash paid"
+                                <button v-if="false && b.payment_status !== 'paid' && !isFinal(b)" @click="markPaid(b.id)" title="Mark cash paid"
                                     class="action-icon text-[#10B981] hover:bg-[#10B981]/15" aria-label="Mark paid">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
                                 </button>
@@ -228,6 +231,8 @@
                         <dd class="booking-value">{{ formatDate(detailsBooking.check_in) || '—' }}</dd></div>
                     <div><dt class="booking-label">Check-out</dt>
                         <dd class="booking-value">{{ formatDate(detailsBooking.check_out) || '—' }}</dd></div>
+                    <div v-if="detailsBooking.created_at"><dt class="booking-label">Created</dt>
+                        <dd class="booking-value text-[#A0A0A0]">{{ formatDate(detailsBooking.created_at) }}</dd></div>
                     <div class="items-start"><dt class="booking-label">Items</dt>
                         <dd>
                             <div v-if="pinRows(detailsBooking).length" class="flex flex-col gap-1.5">
@@ -244,7 +249,7 @@
                             </div>
                             <span v-else class="booking-value text-[#6B7280]">—</span>
                         </dd></div>
-                    <div><dt class="booking-label">Payment</dt>
+                    <div v-if="false"><dt class="booking-label">Payment</dt>
                         <dd><span class="booking-pill" :class="detailsBooking.payment_status === 'paid' ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-[#EF4444]/20 text-[#EF4444]'">{{ detailsBooking.payment_status === 'paid' ? 'Paid' : 'Unpaid' }}</span></dd></div>
                     <div><dt class="booking-label">Total</dt>
                         <dd class="booking-value text-[#F59E0B]">€{{ Number(detailsBooking.total_eur).toFixed(2) }}</dd></div>
@@ -253,35 +258,34 @@
                 </dl>
 
                     <div v-if="detailsBooking.notification_logs?.length" class="pt-4 border-t border-[#2A2A2A]">
-                        <div class="booking-label mb-3">Notification history</div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full">
-                                <thead>
-                                    <tr>
-                                        <th class="booking-label text-left pb-2 pr-3">Channel</th>
-                                        <th class="booking-label text-left pb-2 pr-3">Event</th>
-                                        <th class="booking-label text-left pb-2 pr-3">Recipient</th>
-                                        <th class="booking-label text-left pb-2 pr-3">When</th>
-                                        <th class="booking-label text-right pb-2">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="log in detailsBooking.notification_logs" :key="log.id" class="border-t border-[#2A2A2A]/60">
-                                        <td class="booking-value py-2 pr-3 whitespace-nowrap">{{ log.channel === 'email' ? 'Email' : 'WhatsApp' }}</td>
-                                        <td class="booking-value py-2 pr-3 whitespace-nowrap">{{ eventLabel(log.template) }}</td>
-                                        <td class="booking-value py-2 pr-3 truncate max-w-[200px]">{{ log.recipient }}</td>
-                                        <td class="booking-value py-2 pr-3 whitespace-nowrap">{{ formatDate(log.sent_at || log.created_at) }}</td>
-                                        <td class="py-2 text-right whitespace-nowrap">
-                                            <span class="booking-pill" :class="statusBadge(log.status)">{{ statusText(log.status) }}</span>
-                                            <button v-if="log.payload" @click="previewNotification(detailsBooking.id, log.id)"
-                                                class="booking-value text-[#F59E0B] hover:underline ml-2">View</button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                        <button @click="notifBooking = detailsBooking"
+                            class="w-full bg-[#111] border border-[#2A2A2A] hover:border-[#3A3A3A] rounded-lg px-4 py-3 flex items-center justify-between transition">
+                            <span class="booking-label">Notification history</span>
+                            <span class="flex items-center gap-2">
+                                <span class="booking-value text-[#A0A0A0] text-xs">{{ detailsBooking.notification_logs.length }} sent</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-[#A0A0A0]"><path d="M9 18l6-6-6-6"/></svg>
+                            </span>
+                        </button>
                     </div>
             </div>
+        </Modal>
+
+        <!-- Notification history modal — opened from booking details, works on desktop and mobile -->
+        <Modal :model-value="!!notifBooking" @update:model-value="v => !v && (notifBooking = null)"
+            size="lg" title="Notification history" :subtitle="notifBooking ? '#' + (notifBooking.uuid?.slice(0, 8) || '') : ''">
+            <ul v-if="notifBooking" class="flex flex-col gap-2">
+                <li v-for="log in notifBooking.notification_logs" :key="log.id"
+                    class="bg-[#111] border border-[#2A2A2A]/60 rounded-lg px-3 py-2 grid grid-cols-[auto_1fr_auto_auto] items-center gap-x-3 gap-y-1">
+                    <span class="booking-pill shrink-0" :class="statusBadge(log.status)">{{ statusText(log.status) }}</span>
+                    <div class="min-w-0 flex flex-col">
+                        <span class="booking-value font-medium truncate">{{ eventLabel(log.template) }}</span>
+                        <span class="booking-value text-[#A0A0A0] text-xs truncate">{{ log.channel === 'email' ? 'Email' : 'WhatsApp' }} · {{ log.recipient }}</span>
+                    </div>
+                    <span class="booking-value text-[#6B7280] text-xs whitespace-nowrap">{{ formatDate(log.sent_at || log.created_at) }}</span>
+                    <button v-if="log.payload" @click="previewNotification(notifBooking.id, log.id)"
+                        class="booking-value text-[#F59E0B] hover:underline text-xs whitespace-nowrap">View</button>
+                </li>
+            </ul>
         </Modal>
 
         <!-- Extend modal -->
@@ -329,6 +333,7 @@ const page = ref(1);
 const loading = ref(false);
 const openMenuId = ref(null);
 const detailsBooking = ref(null);
+const notifBooking = ref(null);
 const extendOpen = ref(null);
 const extendDuration = ref('24h');
 
