@@ -42,6 +42,10 @@ class AppServiceProvider extends ServiceProvider
             $view->with('lp', app()->getLocale() === 'sr' ? 'sr.' : '');
         });
 
+        if ($this->app->runningInConsole()) {
+            return;
+        }
+
         View::share('settings', SiteSettings::all());
 
         View::composer('public.partials.footer', function ($view) {
