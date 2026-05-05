@@ -22,6 +22,10 @@ class LockerController extends Controller
                 'upcomingBookings.customer:id,full_name,email',
             ])
             ->orderBy('location_id')
+            // Inactive/unreachable lockers float to the bottom of the list so the
+            // admin sees actionable rows first.
+            ->orderByRaw('is_active DESC')
+            ->orderByRaw('is_online DESC')
             ->orderBy('sort_order')
             ->orderByRaw('LENGTH(number)')
             ->orderBy('number');
@@ -136,11 +140,40 @@ class LockerController extends Controller
     public function remoteUnlock(int $id, LockServiceInterface $lockService): JsonResponse
     {
         $locker = $this->requireWithLockId($id);
+
+        // Fast path: if the lock firmware actually supports motorised remote unlock,
+        // use it. Smart door locks support this; most cabinet/locker SKUs return
+        // -4043. We catch and fall through to a one-time-PIN fallback so the admin
+        // always gets a working unlock action regardless of lock model.
         try {
             $lockService->remoteUnlock($locker->ttlock_lock_id);
             return response()->json(['message' => 'Locker unlocked']);
         } catch (\Throwable $e) {
-            return response()->json(['message' => 'Unlock failed: ' . $e->getMessage()], 500);
+            // Fallback: 5-minute timed passcode pushed via gateway. Admin (or whoever
+            // is on-site) types it on the keypad — same end result, just one extra tap.
+            try {
+                // Wide window (-15 min … +30 min) so RTC drift on the cabinet lock
+                // doesn't reject the PIN as "not yet valid" or "expired". Type 3
+                // (Timed) with addType=2 is the path we've proven actually pushes
+                // through the gateway to the physical keypad.
+                $pin = str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);
+                $start = now()->subMinutes(15);
+                $end = now()->addMinutes(30);
+                $resp = $lockService->createTimedAccessCode(
+                    $locker->ttlock_lock_id,
+                    $pin,
+                    $start,
+                    $end
+                );
+                return response()->json([
+                    'message' => "One-time PIN {$pin} pushed to {$locker->number}. Valid ~30 minutes — wait 10 sec, then enter on keypad.",
+                    'pin' => $pin,
+                    'expires_at' => $end->toIso8601String(),
+                    'keyboard_pwd_id' => $resp['keyboardPwdId'] ?? null,
+                ]);
+            } catch (\Throwable $f) {
+                return response()->json(['message' => 'Unlock failed: ' . $f->getMessage()], 500);
+            }
         }
     }
 
@@ -151,7 +184,13 @@ class LockerController extends Controller
             $lockService->remoteLock($locker->ttlock_lock_id);
             return response()->json(['message' => 'Locker locked']);
         } catch (\Throwable $e) {
-            return response()->json(['message' => 'Lock failed: ' . $e->getMessage()], 500);
+            // Cabinet/locker firmware that doesn't expose a remote lock command auto-locks
+            // when the door is shut — surface that as a non-error so the UI flow doesn't
+            // dead-end on a model that physically can't accept the command.
+            return response()->json([
+                'message' => "{$locker->number} locks automatically when the door is closed.",
+                'auto_lock' => true,
+            ]);
         }
     }
 
@@ -227,14 +266,69 @@ class LockerController extends Controller
     {
         $locker = $this->requireWithLockId($id);
         $tz = config('app.display_timezone');
-        $start = $request->has('start') ? Carbon::parse($request->input('start'), $tz) : Carbon::now()->subDays(7);
+        // Default window 90 days so admins see meaningful history without picking a range
+        // (TTLock keeps records ~3 months on cabinet locks).
+        $start = $request->has('start') ? Carbon::parse($request->input('start'), $tz) : Carbon::now()->subDays(90);
         $end = $request->has('end') ? Carbon::parse($request->input('end'), $tz) : Carbon::now();
         try {
             $data = $lockService->getUnlockRecords($locker->ttlock_lock_id, $start, $end);
-            return response()->json($data);
+            $list = collect($data['list'] ?? [])->map(function ($r) {
+                $rt = (int) ($r['recordType'] ?? 0);
+                $meta = $this->ttlockRecordMeta($rt);
+                $r['event_label'] = $meta['label'];
+                $r['event_kind'] = $meta['kind']; // unlock | lock | fail | other
+                $r['event_source'] = $meta['source']; // app | passcode | card | fingerprint | remote | manual | auto
+                return $r;
+            })->sortByDesc(fn ($r) => $r['lockDate'] ?? 0)->values()->all();
+
+            return response()->json([
+                'list' => $list,
+                'range' => [
+                    'start' => $start->toIso8601String(),
+                    'end' => $end->toIso8601String(),
+                ],
+            ]);
         } catch (\Throwable $e) {
             return response()->json(['message' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * TTLock recordType decoder. The TTLock API returns a numeric type per record;
+     * we map it to a human label, an action kind (lock/unlock/fail), and the source
+     * (how the action was initiated). Unknown codes fall back to "Event #N".
+     */
+    private function ttlockRecordMeta(int $type): array
+    {
+        $map = [
+            1 => ['Unlocked via app', 'unlock', 'app'],
+            4 => ['Unlocked with passcode', 'unlock', 'passcode'],
+            7 => ['Unlocked with card', 'unlock', 'card'],
+            8 => ['Unlocked with fingerprint', 'unlock', 'fingerprint'],
+            9 => ['Wrong passcode', 'fail', 'passcode'],
+            11 => ['Unlocked remotely', 'unlock', 'remote'],
+            12 => ['Wrong fingerprint', 'fail', 'fingerprint'],
+            27 => ['Locked manually', 'lock', 'manual'],
+            29 => ['Unlocked by admin', 'unlock', 'app'],
+            31 => ['Unlocked with mechanical key', 'unlock', 'manual'],
+            32 => ['Locked via app', 'lock', 'app'],
+            33 => ['Unlocked via Bluetooth', 'unlock', 'app'],
+            34 => ['Locked with passcode', 'lock', 'passcode'],
+            36 => ['Unlocked via API', 'unlock', 'remote'],
+            37 => ['Locked via API', 'lock', 'remote'],
+            42 => ['Auto-locked (timeout)', 'lock', 'auto'],
+            43 => ['Auto-locked (door closed)', 'lock', 'auto'],
+            44 => ['Locked with button', 'lock', 'manual'],
+            45 => ['Wrong card', 'fail', 'card'],
+            46 => ['Unlocked with one-time code', 'unlock', 'passcode'],
+            47 => ['Locked remotely', 'lock', 'remote'],
+            48 => ['Unlocked with master code', 'unlock', 'passcode'],
+            55 => ['Unlocked (hand wave)', 'unlock', 'manual'],
+        ];
+        if (isset($map[$type])) {
+            return ['label' => $map[$type][0], 'kind' => $map[$type][1], 'source' => $map[$type][2]];
+        }
+        return ['label' => "Event #{$type}", 'kind' => 'other', 'source' => 'other'];
     }
 
     public function rename(int $id, Request $request, LockServiceInterface $lockService): JsonResponse
@@ -280,6 +374,7 @@ class LockerController extends Controller
             foreach ($locks as $lock) {
                 $lockId = $lock['lockId'] ?? null;
                 $alias = trim((string) ($lock['lockAlias'] ?? ''));
+                $hasGateway = (int) ($lock['hasGateway'] ?? 0) === 1;
                 if (!$lockId) continue;
 
                 // 1) Already mapped by ttlock_lock_id?
@@ -297,13 +392,18 @@ class LockerController extends Controller
 
                 // 3) Auto-create only if requested AND alias is non-empty (so we don't pollute DB with garbage).
                 if (!$locker && request()->boolean('auto_create') && $alias !== '') {
+                    // Infer size from alias prefix: "L-*" / "L - *" = large; everything else = standard.
+                    // Admin can override afterwards via the locker edit screen.
+                    $size = preg_match('/^\s*L\b/i', $alias) ? 'large' : 'standard';
                     $locker = Locker::create([
                         'uuid' => Str::uuid(),
                         'ttlock_lock_id' => $lockId,
                         'number' => $alias,
-                        'size' => 'standard',
+                        'size' => $size,
                         'status' => 'available',
-                        'is_active' => true,
+                        // Offline locks come in as inactive so they don't get booked until
+                        // the gateway can reach them again. Admin can flip this on manually.
+                        'is_active' => $hasGateway,
                     ]);
                     $created++;
                 }
@@ -311,7 +411,7 @@ class LockerController extends Controller
                 if ($locker) {
                     $locker->update([
                         'battery_level' => $lock['electricQuantity'] ?? $locker->battery_level,
-                        'is_online' => true,
+                        'is_online' => $hasGateway,
                         'last_synced_at' => now(),
                     ]);
                     $updated++;

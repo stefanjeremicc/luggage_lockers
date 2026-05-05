@@ -146,40 +146,36 @@
 
         <div v-if="tab === 'history'">
             <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
-                <div class="flex items-center justify-between mb-3">
-                    <h3 class="font-semibold">Unlock history (last 7 days)</h3>
-                    <button @click="loadHistory" class="text-xs text-[#A0A0A0] hover:text-white">Refresh</button>
+                <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+                    <div>
+                        <h3 class="font-semibold">Activity history</h3>
+                        <p class="text-xs text-[#6B7280] mt-0.5">Open / close events from the lock — last 90 days</p>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs">
+                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#10B981]"></span>{{ historyStats.unlock }} unlocks</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#3B82F6]"></span>{{ historyStats.lock }} locks</span>
+                        <span v-if="historyStats.fail" class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#EF4444]"></span>{{ historyStats.fail }} failed</span>
+                        <button @click="loadHistory" class="text-[#A0A0A0] hover:text-white ml-2">Refresh</button>
+                    </div>
                 </div>
-                <div v-if="history.length === 0" class="text-sm text-[#A0A0A0]">No records.</div>
-                <template v-else>
-                    <!-- Mobile: cards -->
-                    <div class="md:hidden space-y-2">
-                        <div v-for="r in history" :key="r.lockRecordId" class="bg-[#111] border border-[#2A2A2A] rounded-lg p-3 flex items-center justify-between">
-                            <div class="min-w-0">
-                                <div class="text-sm">{{ recordType(r.recordType) }}</div>
-                                <div class="text-xs text-[#A0A0A0] truncate">{{ r.username || r.keyboardPwd || '—' }}</div>
-                                <div class="text-[10px] text-[#6B7280] mt-0.5">{{ new Date(r.lockDate).toLocaleString() }}</div>
-                            </div>
-                            <span class="text-xs px-2 py-0.5 rounded-full shrink-0" :class="r.success === 1 ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'">{{ r.success === 1 ? 'OK' : 'Fail' }}</span>
+
+                <div v-if="history.length === 0" class="text-sm text-[#A0A0A0] py-8 text-center">No records in the last 90 days.</div>
+
+                <ol v-else class="relative border-l border-[#2A2A2A] ml-2 space-y-3">
+                    <li v-for="r in history" :key="r.lockRecordId" class="ml-4 pl-3">
+                        <span class="absolute -left-1.5 w-3 h-3 rounded-full ring-2 ring-[#1A1A1A]"
+                            :class="dotClass(r.event_kind)"></span>
+                        <div class="bg-[#111] border border-[#2A2A2A]/60 rounded-lg px-3 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <span class="text-xs px-2 py-0.5 rounded-full font-medium" :class="kindClass(r.event_kind)">
+                                {{ kindIcon(r.event_kind) }} {{ r.event_label }}
+                            </span>
+                            <span v-if="r.username" class="booking-value text-[#A0A0A0] text-xs break-all">{{ r.username }}</span>
+                            <span v-else-if="r.keyboardPwd" class="booking-value font-mono text-[#F59E0B] text-xs">PIN {{ r.keyboardPwd }}</span>
+                            <span class="booking-value text-[#6B7280] text-xs ml-auto whitespace-nowrap">{{ formatHistoryTime(r.lockDate) }}</span>
+                            <span v-if="r.success !== 1" class="text-xs px-2 py-0.5 rounded-full bg-[#EF4444]/15 text-[#EF4444] font-semibold">FAILED</span>
                         </div>
-                    </div>
-                    <!-- Desktop: table -->
-                    <div class="hidden md:block overflow-x-auto">
-                        <table class="w-full text-sm">
-                            <thead class="text-xs text-[#A0A0A0] border-b border-[#2A2A2A]">
-                                <tr><th class="text-left py-2">Time</th><th class="text-left">Type</th><th class="text-left">User / Code</th><th class="text-left">Success</th></tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="r in history" :key="r.lockRecordId" class="border-b border-[#2A2A2A]/40">
-                                    <td class="py-2 text-xs">{{ new Date(r.lockDate).toLocaleString() }}</td>
-                                    <td class="text-xs">{{ recordType(r.recordType) }}</td>
-                                    <td class="text-xs">{{ r.username || r.keyboardPwd || '—' }}</td>
-                                    <td class="text-xs" :class="r.success === 1 ? 'text-green-400' : 'text-red-400'">{{ r.success === 1 ? 'OK' : 'Fail' }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </template>
+                    </li>
+                </ol>
             </div>
         </div>
 
@@ -197,7 +193,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue';
+import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuth } from '../composables/useAuth';
 import { useToast } from '../composables/useToast';
@@ -298,15 +294,17 @@ const doAction = async (endpoint, method = 'POST') => {
         const res = await apiFetch(`/api/admin/lockers/${id}/${endpoint}`, { method });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Failed');
-        toast.success(data.message || 'Done');
+        // Backend may return a one-time PIN when the lock model can't unlock motorised.
+        // Show it in a longer toast so the admin has time to read and use it.
+        if (data.pin) {
+            toast.success(`PIN ${data.pin} — wait ~10 s for gateway, then enter on keypad. Valid ~30 min.`, { duration: 30000 });
+        } else {
+            toast.success(data.message || 'Done');
+        }
         if (endpoint === 'sync') await load();
     } catch (e) {
         const msg = friendlyError(e.message);
         toast.error(msg);
-        if (e.message?.includes('-4043')) {
-            if (endpoint === 'remote-unlock') unsupported.unlock = true;
-            if (endpoint === 'remote-lock') unsupported.lock = true;
-        }
     } finally { busy.value = false; }
 };
 
@@ -416,6 +414,46 @@ const pwdRange = (p) => {
     return `${s} → ${e}`;
 };
 const recordType = (t) => ({ 1: 'App', 4: 'Passcode', 7: 'Card', 8: 'Fingerprint', 11: 'Remote' }[t] || `type=${t}`);
+
+const historyStats = computed(() => {
+    const s = { unlock: 0, lock: 0, fail: 0, other: 0 };
+    for (const r of history.value) {
+        if (r.success !== 1) { s.fail++; continue; }
+        s[r.event_kind] = (s[r.event_kind] || 0) + 1;
+    }
+    return s;
+});
+
+const dotClass = (kind) => ({
+    unlock: 'bg-[#10B981]',
+    lock: 'bg-[#3B82F6]',
+    fail: 'bg-[#EF4444]',
+}[kind] || 'bg-[#6B7280]');
+
+const kindClass = (kind) => ({
+    unlock: 'bg-[#10B981]/15 text-[#10B981]',
+    lock: 'bg-[#3B82F6]/15 text-[#3B82F6]',
+    fail: 'bg-[#EF4444]/15 text-[#EF4444]',
+}[kind] || 'bg-[#2A2A2A] text-[#A0A0A0]');
+
+const kindIcon = (kind) => ({ unlock: '🔓', lock: '🔒', fail: '⚠' }[kind] || '•');
+
+const formatHistoryTime = (ts) => {
+    if (!ts) return '—';
+    const d = new Date(ts);
+    const now = new Date();
+    const diffMs = now - d;
+    const diffMin = Math.floor(diffMs / 60000);
+    const diffHr = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHr / 24);
+    let rel = '';
+    if (diffMin < 1) rel = 'just now';
+    else if (diffMin < 60) rel = `${diffMin}m ago`;
+    else if (diffHr < 24) rel = `${diffHr}h ago`;
+    else if (diffDay < 7) rel = `${diffDay}d ago`;
+    const abs = d.toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    return rel ? `${abs} · ${rel}` : abs;
+};
 
 watch(tab, (t) => {
     if (t === 'passcodes' && passcodes.value.length === 0) loadPasscodes();

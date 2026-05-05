@@ -111,6 +111,10 @@ const sortedLockers = computed(() =>
     [...lockers.value].sort((a, b) => {
         const locCmp = naturalCmp(a.location?.name || 'zzz', b.location?.name || 'zzz');
         if (locCmp !== 0) return locCmp;
+        // Inactive/offline lockers drop to the bottom so the admin sees actionable rows first.
+        const aRank = (a.is_active ? 0 : 2) + (a.is_online ? 0 : 1);
+        const bRank = (b.is_active ? 0 : 2) + (b.is_online ? 0 : 1);
+        if (aRank !== bRank) return aRank - bRank;
         return naturalCmp(a.number, b.number);
     })
 );

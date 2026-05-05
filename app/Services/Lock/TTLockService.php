@@ -90,6 +90,10 @@ class TTLockService implements LockServiceInterface
             'keyboardPwdType' => 3, // Timed
             'startDate' => $start->getTimestampMs(),
             'endDate' => $end->getTimestampMs(),
+            // addType=2 makes TTLock cloud push the passcode through the gateway
+            // to the physical lock. Default (1) only stores it cloud-side and
+            // expects an app-paired Bluetooth sync, so the keypad rejects the PIN.
+            'addType' => 2,
         ]);
     }
 
@@ -169,6 +173,8 @@ class TTLockService implements LockServiceInterface
             $params['startDate'] = $start->getTimestampMs();
             $params['endDate'] = $end->getTimestampMs();
         }
+        // Push to physical lock via gateway, not just cloud storage.
+        $params['addType'] = 2;
         return $this->request('POST', '/v3/keyboardPwd/add', $params);
     }
 
