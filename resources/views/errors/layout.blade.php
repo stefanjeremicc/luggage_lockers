@@ -1,7 +1,10 @@
 {{-- Shared chrome for branded HTTP error pages. Falls back to a tiny inline
-     stylesheet so the page renders even if Vite assets aren't built yet. --}}
+     stylesheet so the page renders even if Vite assets aren't built yet.
+
+     Locale detection: SetLocale middleware doesn't fire for unmatched routes,
+     so each child error view computes $isSr from the request path. --}}
 <!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}">
+<html lang="{{ ($isSr ?? false) ? 'sr' : 'en' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -18,8 +21,6 @@
         .desc  { color: #A0A0A0; max-width: 32rem; margin: 0 auto 2rem; line-height: 1.6; }
         .btn   { display: inline-block; background: #F59E0B; color: #000; padding: 0.875rem 1.75rem; border-radius: 0.5rem; font-weight: 600; text-decoration: none; }
         .btn:hover { background: #D97706; }
-        .alt   { display: block; margin-top: 1rem; color: #6B7280; font-size: 0.875rem; }
-        .alt a { color: #A0A0A0; text-decoration: underline; }
     </style>
 </head>
 <body>
