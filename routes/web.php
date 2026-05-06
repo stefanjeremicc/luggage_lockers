@@ -10,6 +10,13 @@ use App\Http\Controllers\Public\ReviewController as PublicReviewController;
 use App\Http\Middleware\SetLocale;
 use Illuminate\Support\Facades\Route;
 
+// robots.txt — dynamic so the Sitemap directive uses the request's host (works
+// transparently for staging subdomains, no per-environment file edits needed).
+Route::get('/robots.txt', function () {
+    $body = "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api\nDisallow: /booking/\nDisallow: /sr/rezervacija/\n\nSitemap: " . url('/sitemap.xml') . "\n";
+    return response($body, 200)->header('Content-Type', 'text/plain');
+})->name('robots');
+
 // Sitemap
 Route::get('/sitemap.xml', function () {
     $locations = \App\Models\Location::active()->get();
@@ -75,3 +82,17 @@ Route::prefix('sr')->middleware(SetLocale::class)->name('sr.')->group(function (
     // SEO landing pages (SR)
     Route::get('/blizu/{slug}', [PageController::class, 'near'])->name('near');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Legacy Shopify URL redirects → homepage (301)
+|--------------------------------------------------------------------------
+| The previous site was a Shopify shop with /pages, /products, /collections,
+| /blogs paths. Old links/backlinks/Google index still point at them. We send
+| every legacy path to the new homepage so we don't lose the inbound traffic
+| or accumulate 404s. Permanent (301) so search engines transfer link equity.
+*/
+Route::redirect('/pages/{any}', '/', 301)->where('any', '.*');
+Route::redirect('/products/{any}', '/', 301)->where('any', '.*');
+Route::redirect('/collections/{any}', '/', 301)->where('any', '.*');
+Route::redirect('/blogs/{any}', '/', 301)->where('any', '.*');

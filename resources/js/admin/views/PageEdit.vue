@@ -32,14 +32,14 @@
                 <p class="text-[11px] text-[#6B7280] mt-1">Booking CTAs on this landing will deep-link to this location.</p>
             </div>
             <div class="flex gap-2">
-                <button v-for="loc in ['en', 'sr']" :key="loc" @click="activeLocale = loc"
+                <button type="button" v-for="loc in ['en', 'sr']" :key="`tab-${loc}`" @click="activeLocale = loc"
                     class="px-4 py-2 rounded-lg text-sm transition border"
                     :class="activeLocale === loc ? 'bg-[#F59E0B] text-black border-[#F59E0B]' : 'border-[#2A2A2A] text-[#A0A0A0] hover:border-[#F59E0B]'">
                     {{ loc === 'en' ? 'English' : 'Srpski' }}
                 </button>
             </div>
 
-            <div v-for="loc in ['en', 'sr']" v-show="activeLocale === loc" :key="loc"
+            <div v-for="loc in [activeLocale]" :key="loc"
                 class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 space-y-4">
 
                 <div>

@@ -304,7 +304,13 @@
                     </div>
                     <span class="text-lg font-bold">{{ $settings['google_rating'] ?? '4.9' }}</span>
                 </div>
-                <span class="text-sm sm:text-base text-[#A0A0A0]">{{ __('based on') }} <a href="{{ $settings['google_reviews_url'] ?? '#' }}" target="_blank" class="text-[#F59E0B] hover:underline">{{ $settings['google_review_count'] ?? '70+' }} {{ __('Google reviews') }}</a></span>
+                <span class="text-sm sm:text-base text-[#A0A0A0]">
+                    @if(!empty($settings['google_reviews_url']))
+                        {{ __('based on') }} <a href="{{ $settings['google_reviews_url'] }}" target="_blank" rel="noopener" class="text-[#F59E0B] hover:underline">{{ $settings['google_review_count'] ?? '70+' }} {{ __('Google reviews') }}</a>
+                    @else
+                        {{ __('based on') }} {{ $settings['google_review_count'] ?? '70+' }} {{ __('Google reviews') }}
+                    @endif
+                </span>
             </div>
         </div>
 
@@ -328,9 +334,11 @@
             @endforeach
         </div>
 
+        @if(!empty($settings['google_reviews_url']))
         <div class="text-center mt-8">
-            <a href="{{ $settings['google_reviews_url'] ?? '#' }}" target="_blank" rel="noopener" class="text-[#F59E0B] hover:underline text-sm">{{ __('See all reviews on Google') }} &rarr;</a>
+            <a href="{{ $settings['google_reviews_url'] }}" target="_blank" rel="noopener" class="text-[#F59E0B] hover:underline text-sm">{{ __('See all reviews on Google') }} &rarr;</a>
         </div>
+        @endif
 
         {{-- Review submit modal --}}
         <div x-data="reviewSubmitForm()"
