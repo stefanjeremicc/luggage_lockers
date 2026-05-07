@@ -16,9 +16,20 @@ class TTLockService implements LockServiceInterface
 
     public function __construct()
     {
-        $this->baseUrl = config('services.ttlock.base_url', 'https://euapi.ttlock.com');
-        $this->clientId = config('services.ttlock.client_id', '');
-        $this->clientSecret = config('services.ttlock.client_secret', '');
+        $this->baseUrl = config('services.ttlock.base_url') ?: 'https://euapi.ttlock.com';
+        $this->clientId = (string) (config('services.ttlock.client_id') ?? '');
+        $this->clientSecret = (string) (config('services.ttlock.client_secret') ?? '');
+    }
+
+    /**
+     * Whether TTLock credentials are configured. When false the service is
+     * effectively offline — calls return cached locker state from DB instead
+     * of throwing, so the admin UI keeps working on staging where the
+     * provider isn't wired up.
+     */
+    public function isConfigured(): bool
+    {
+        return $this->clientId !== '' && $this->clientSecret !== '';
     }
 
     private function getAccessToken(): string
@@ -42,6 +53,14 @@ class TTLockService implements LockServiceInterface
 
     private function request(string $method, string $endpoint, array $params = [], bool $auth = true): array
     {
+        // Short-circuit when TTLock isn't wired up (e.g. on a staging subdomain
+        // without provider credentials). Throw a typed runtime error so the
+        // controllers' try/catch blocks degrade gracefully instead of returning
+        // a 500 to the admin SPA.
+        if (!$this->isConfigured()) {
+            throw new \RuntimeException('TTLock provider is not configured (TTLOCK_CLIENT_ID empty).');
+        }
+
         $startTime = microtime(true);
 
         if ($auth) {
