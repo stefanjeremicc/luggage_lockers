@@ -3,7 +3,7 @@
         <div class="flex items-center justify-between mb-6">
             <div>
                 <h1 class="text-2xl font-bold">Notification Templates</h1>
-                <p class="text-sm text-[#A0A0A0] mt-1">Email, WhatsApp and SMS message templates. Use <code v-pre class="text-[#F59E0B]">{{ variable }}</code> placeholders.</p>
+                <p class="text-sm text-[#A0A0A0] mt-1">Email message templates. Use <code v-pre class="text-[#F59E0B]">{{ variable }}</code> placeholders.</p>
             </div>
             <Btn variant="primary" @click="openNew">
                 <template #icon>
@@ -113,10 +113,13 @@ const editing = ref(null);
 const saving = ref(false);
 
 const bodyHint = 'Use {{ variable }} for dynamic content (e.g. customer name, locker number).';
+// WhatsApp + SMS channels hidden until those providers are wired up — only
+// email currently delivers. Keep the strings in code so we can re-enable
+// in one line when WhatsApp Business / SMS gateway gets integrated.
 const channelOptions = [
     { value: 'email', label: 'Email' },
-    { value: 'whatsapp', label: 'WhatsApp' },
-    { value: 'sms', label: 'SMS' },
+    // { value: 'whatsapp', label: 'WhatsApp' },
+    // { value: 'sms', label: 'SMS' },
 ];
 const localeOptions = [
     { value: 'en', label: 'English' },

@@ -9,7 +9,7 @@ h1{color:#10B981;text-align:center}h2{color:#F59E0B;font-size:16px;margin-top:20
 <h1>Booking Confirmed!</h1>
 
 <div class="highlight">
-<p style="color:#F59E0B;font-size:14px;margin:0">You will receive your PIN code shortly via email or WhatsApp.</p>
+<p style="color:#F59E0B;font-size:14px;margin:0">You will receive your PIN code shortly via email.</p>
 </div>
 
 <h2>Booking Details</h2>

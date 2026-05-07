@@ -114,7 +114,7 @@ const groups = [
         fields: [
             { key: 'site_name', label: 'Site name', type: 'text', max: 100, required: true },
             { key: 'company_phone', label: 'Phone number', type: 'phone', required: true,
-                hint: 'One number used for call, WhatsApp, and display across the site.' },
+                hint: 'Number for call and contact display across the site.' },
             { key: 'company_email', label: 'Email', type: 'email', max: 150, required: true },
             { key: 'site_address', label: 'Street address', type: 'text', max: 200,
                 hint: 'Used in footer, schema.org, and contact page.' },
@@ -225,14 +225,15 @@ const groups = [
         fields: [
             { key: 'notifications_admin_email', label: 'Admin email', type: 'email', max: 150,
                 hint: 'Where booking copies (and dev-mode redirects) go.' },
-            { key: 'notifications_admin_whatsapp', label: 'Admin WhatsApp', type: 'phone',
-                hint: 'International format (e.g. +381649679212).' },
+            // Admin WhatsApp number hidden until WhatsApp Business is wired up.
+            // { key: 'notifications_admin_whatsapp', label: 'Admin WhatsApp', type: 'phone',
+            //     hint: 'International format (e.g. +381649679212).' },
             { key: 'notifications_dev_mode', label: 'Dev mode — redirect everything to admin', type: 'bool',
-                hint: 'When ON, customer gets NOTHING — all booking emails + WhatsApp go to admin only. Use during testing.' },
+                hint: 'When ON, customer gets NOTHING — all booking emails go to admin only. Use during testing.' },
             { key: 'notifications_notify_admin', label: 'Always notify admin (alongside customer)', type: 'bool',
-                hint: 'When ON, admin gets a copy of every booking notification (BCC for email, separate WhatsApp). Ignored if dev mode is also on.' },
+                hint: 'When ON, admin gets a copy of every booking email (BCC). Ignored if dev mode is also on.' },
             { key: 'notifications_disabled', label: 'Disable all notifications (kill switch)', type: 'bool',
-                hint: 'When ON, NO emails or WhatsApp are sent — useful when running seeders or imports.' },
+                hint: 'When ON, NO emails are sent — useful when running seeders or imports.' },
         ],
     },
 ];

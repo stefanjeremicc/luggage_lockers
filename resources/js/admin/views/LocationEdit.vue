@@ -17,7 +17,7 @@
             <!-- 1. Contact & status -->
             <Card title="Contact & status" title-variant="section">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Field label="Phone" hint="Single number used for both call (tel:) and WhatsApp chat link.">
+                    <Field label="Phone" hint="Phone number used for call (tel:) link.">
                         <PhoneInput v-model="form.phone" />
                     </Field>
                     <Field label="Email">
@@ -54,7 +54,7 @@
                     <Field label="Hero image" hint="Shown on the location detail page header.">
                         <ImageUploader v-model="form.image_url" folder="locations" />
                     </Field>
-                    <Field label="Social share image (Open Graph)" hint="Used when shared on Facebook, X, WhatsApp. Recommended 1200×630.">
+                    <Field label="Social share image (Open Graph)" hint="Used when shared on Facebook, X, LinkedIn. Recommended 1200×630.">
                         <ImageUploader v-model="form.og_image" folder="locations" />
                     </Field>
                 </div>

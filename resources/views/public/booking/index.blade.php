@@ -355,10 +355,8 @@
                                 <input type="checkbox" x-model="guestForm.agree_terms" id="agree_terms">
                                 <label for="agree_terms" class="text-sm text-[#A0A0A0]">{{ __('I agree to the') }} <a href="{{ route($lp . 'terms') }}" class="text-[#F59E0B] hover:underline" target="_blank">{{ __('Terms & Conditions') }}</a> *</label>
                             </div>
-                            <div class="flex items-center gap-3">
-                                <input type="checkbox" x-model="guestForm.whatsapp_opt_in" id="whatsapp">
-                                <label for="whatsapp" class="text-sm text-[#A0A0A0]">{{ __('Send booking updates via WhatsApp') }}</label>
-                            </div>
+                            {{-- WhatsApp opt-in hidden until WhatsApp Business is wired up.
+                                 Notification stack is email-only on staging. --}}
                         </div>
                     </div>
 

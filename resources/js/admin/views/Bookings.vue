@@ -279,7 +279,7 @@
                     <span class="booking-pill shrink-0" :class="statusBadge(log.status)">{{ statusText(log.status) }}</span>
                     <div class="min-w-0 flex flex-col">
                         <span class="booking-value font-medium truncate">{{ eventLabel(log.template) }}</span>
-                        <span class="booking-value text-[#A0A0A0] text-xs truncate">{{ log.channel === 'email' ? 'Email' : 'WhatsApp' }} · {{ log.recipient }}</span>
+                        <span class="booking-value text-[#A0A0A0] text-xs truncate">{{ 'Email' }} · {{ log.recipient }}</span>
                     </div>
                     <span class="booking-value text-[#6B7280] text-xs whitespace-nowrap">{{ formatDate(log.sent_at || log.created_at) }}</span>
                     <button v-if="log.payload" @click="previewNotification(notifBooking.id, log.id)"
@@ -475,7 +475,7 @@ const previewNotification = async (bookingId, logId) => {
 const reissuePin = async (id) => {
     const ok = await confirmDialog.ask({
         title: 'Re-issue PIN?',
-        message: 'A new PIN will be generated and registered on the smart lock. The old PIN will stop working. Customer will receive the new PIN via email/WhatsApp.',
+        message: 'A new PIN will be generated and registered on the smart lock. The old PIN will stop working. Customer will receive the new PIN via email.',
         confirmText: 'Generate new PIN',
         cancelText: 'Keep current',
     });

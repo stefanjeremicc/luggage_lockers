@@ -56,7 +56,7 @@
         @elseif(!$authorized)
             <div class="text-center mb-6">
                 <h1 class="text-2xl sm:text-3xl font-bold mb-2">{{ __('Cancel Booking') }}</h1>
-                <p class="text-[#A0A0A0] text-sm">{{ __('Use the cancel link from your confirmation email or WhatsApp message.') }}</p>
+                <p class="text-[#A0A0A0] text-sm">{{ __('Use the cancel link from your confirmation email.') }}</p>
             </div>
         @else
             <div x-show="!cancelled">

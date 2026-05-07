@@ -40,7 +40,7 @@
                 <svg class="w-10 h-10 text-[#10B981]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
             </div>
             <h1 class="text-2xl sm:text-3xl font-bold text-[#10B981]">{{ __('Booking Confirmed!') }}</h1>
-            <p class="text-[#A0A0A0] mt-3 text-sm leading-relaxed px-4">{{ __('You will receive your PIN code via email/WhatsApp shortly.') }}</p>
+            <p class="text-[#A0A0A0] mt-3 text-sm leading-relaxed px-4">{{ __('You will receive your PIN code via email shortly.') }}</p>
         </div>
 
         {{-- Email reminder banner (no codes shown — they're only in the email) --}}
@@ -48,7 +48,7 @@
             <svg class="w-5 h-5 text-[#F59E0B] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
             <div class="text-sm">
                 <p class="text-white font-medium">{{ __('Check your inbox') }}</p>
-                <p class="text-[#A0A0A0] text-xs mt-1 leading-relaxed">{{ __('We have sent your entry door code, locker PIN, and step-by-step instructions to your email and WhatsApp. They arrive within a minute.') }}</p>
+                <p class="text-[#A0A0A0] text-xs mt-1 leading-relaxed">{{ __('We have sent your entry door code, locker PIN, and step-by-step instructions to your email. They arrive within a minute.') }}</p>
             </div>
         </div>
 

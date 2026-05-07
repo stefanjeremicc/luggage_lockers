@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p *)",
+      "Bash(php -l *)",
+      "Bash(npx vite)",
+      "Bash(npx vite build)",
+      "Bash(npx vite build *)",
+      "Bash(curl -s -o /dev/null -w *)",
+      "Bash(curl -sI *)",
+      "Bash(curl -I *)",
+      "Bash(curl -s http://localhost:* *)",
+      "Bash(curl -s http://127.0.0.1:* *)",
+      "Bash(curl -s \"http://localhost:* *)",
+      "Bash(curl -s \"http://127.0.0.1:* *)",
+
+      "Bash(curl -s -u *)",
+      "Bash(MSYS_NO_PATHCONV=1 curl -s -u *)",
+      "Bash(MSYS_NO_PATHCONV=1 curl -s *)",
+      "Bash(curl -s --upload-file *)",
+      "Bash(curl --upload-file *)",
+      "Bash(curl -s --user *)",
+      "Bash(curl -s https://webby.rs:* *)",
+      "Bash(curl -s ftp://webby.rs/* *)",
+      "Bash(timeout *)",
+      "Bash(tar *)",
+      "Bash(rm /tmp/* *)",
+      "Bash(rm -f /tmp/* *)",
+      "Bash(cp /tmp/* *)",
+      "Bash(cat /tmp/* *)",
+      "Bash(ls /tmp/* *)",
+      "Bash(LK=$* *)"
+    ]
+  }
+}

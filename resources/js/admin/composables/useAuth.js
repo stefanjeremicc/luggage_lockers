@@ -39,12 +39,22 @@ export function useAuth() {
     };
 
     const apiFetch = async (url, options = {}) => {
+        // LiteSpeed + Imunify on the staging host strip non-standard HTTP verbs
+        // (PUT, PATCH, DELETE) and respond 500 with empty body before the
+        // request hits PHP. Tunnel them through POST with the
+        // X-HTTP-Method-Override header — Laravel/Symfony respects it and
+        // dispatches to the original verb's route. Behaviour on real PHP-FPM
+        // boxes is identical, so this works in any environment.
+        const method = (options.method || 'GET').toUpperCase();
+        const tunnel = ['PUT', 'PATCH', 'DELETE'].includes(method);
         const res = await fetch(url, {
             ...options,
+            method: tunnel ? 'POST' : method,
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token.value}`,
+                ...(tunnel ? { 'X-HTTP-Method-Override': method } : {}),
                 ...(options.headers || {}),
             },
         });
