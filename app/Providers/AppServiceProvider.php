@@ -54,7 +54,10 @@ class AppServiceProvider extends ServiceProvider
 
         // Resolve per-route SEO from the pages table (and dynamic models for
         // locations.show / blog.show / near). $pageSeo flows into the head via
-        // resources/views/public/partials/seo-meta.blade.php.
-        View::composer('layouts.public', SeoComposer::class);
+        // resources/views/public/partials/seo-meta.blade.php AND into child
+        // views' @section('title', $pageSeo?->...) closures — so the composer
+        // has to attach to both the layout and every public view that
+        // overrides the title from inside its own scope.
+        View::composer(['layouts.public', 'public.*'], SeoComposer::class);
     }
 }
