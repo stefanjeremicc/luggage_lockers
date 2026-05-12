@@ -26,7 +26,7 @@ class BookingService
 
     public function create(array $data): Booking
     {
-        return DB::transaction(function () use ($data) {
+        $booking = DB::transaction(function () use ($data) {
             // Normalise legacy (locker_size + locker_qty) → items[]. Multi-size bookings
             // come in as $data['items'] = [{size, qty, duration?}, ...]. Each item may
             // optionally specify its own duration; otherwise the global $data['duration']
@@ -187,13 +187,38 @@ class BookingService
 
             $booking->load('lockers', 'location', 'customer', 'items');
 
-            SendBookingConfirmation::dispatch($booking->id)->afterCommit();
-            foreach ($bookingLockerIds as $blId) {
-                CreateTTLockAccessCode::dispatch($blId)->afterCommit();
-            }
-
             return $booking;
         });
+
+        // Run notifications and TTLock PIN registration synchronously AFTER the
+        // transaction commits. The customer expects the confirmation email and a
+        // working PIN within seconds of the booking POST returning, not whenever
+        // the next queue:work cron tick fires (up to 60s away on shared cPanel).
+        //
+        // Wrapped in try/catch + fallback-to-queue so a transient SMTP or TTLock
+        // failure does not roll back the booking the customer already paid for.
+        try {
+            SendBookingConfirmation::dispatchSync($booking->id);
+        } catch (\Throwable $e) {
+            \Log::error('Sync booking_confirmed failed, falling back to queue', [
+                'booking_id' => $booking->id, 'error' => $e->getMessage(),
+            ]);
+            SendBookingConfirmation::dispatch($booking->id);
+        }
+
+        $bookingLockerIds = BookingLocker::where('booking_id', $booking->id)->pluck('id');
+        foreach ($bookingLockerIds as $blId) {
+            try {
+                CreateTTLockAccessCode::dispatchSync($blId);
+            } catch (\Throwable $e) {
+                \Log::error('Sync TTLock PIN registration failed, falling back to queue', [
+                    'booking_locker_id' => $blId, 'error' => $e->getMessage(),
+                ]);
+                CreateTTLockAccessCode::dispatch($blId);
+            }
+        }
+
+        return $booking;
     }
 
     /**
