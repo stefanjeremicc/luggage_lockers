@@ -59,6 +59,16 @@ curl -s --upload-file "$TARBALL" \
     "ftp://$CPANEL_HOST/deploy.tar.gz"
 ok "uploaded as ~/deploy.tar.gz"
 
+# Always upload the latest on-server deploy.sh too. The repo-tracked
+# scripts/on-server-deploy.sh is the source of truth; we sync it on every
+# deploy so server-side fixes don't drift from git.
+if [ -f scripts/on-server-deploy.sh ]; then
+    curl -s --upload-file scripts/on-server-deploy.sh \
+        --user "$CPANEL_USER:$CPANEL_PASS" \
+        "ftp://$CPANEL_HOST/deploy.sh"
+    ok "uploaded scripts/on-server-deploy.sh as ~/deploy.sh"
+fi
+
 # Also push code via git (server's own clone will git pull)
 step "Pushing code to GitHub"
 git push origin master 2>&1 | tail -3
@@ -68,21 +78,24 @@ ok "pushed"
 step "Removing previous deploy marker + triggering on-server deploy"
 curl_api "/execute/Fileman/delete_files?file=/home/webbyrs/.deploy_done" >/dev/null
 
-# Remove any previous cron line, then schedule a one-shot
+# Remove any previous cron line, then schedule a recurring one. The on-server
+# deploy.sh is idempotent and gated by ! -f .deploy_done, so it self-stops
+# after one successful run. We use */2 (every 2 min) because cPanel on
+# Unlimited.rs has been observed to delay * * * * * crons by 5+ minutes.
 list_resp=$(curl_api "/json-api/cpanel?cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Cron&cpanel_jsonapi_func=listcron")
 for lk in $(printf "%s" "$list_resp" | grep -oE '"linekey":[0-9]+' | grep -oE '[0-9]+'); do
     curl_api "/json-api/cpanel?cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Cron&cpanel_jsonapi_func=remove_line&linekey=$lk" >/dev/null
 done
 
-CMD='[ ! -f /home/webbyrs/.deploy_done ] && cd /home/webbyrs/luggage_lockers && /usr/bin/git pull --ff-only && /bin/bash /home/webbyrs/deploy.sh > /home/webbyrs/deploy_run.log 2>&1'
+CMD='[ ! -f /home/webbyrs/.deploy_done ] && /bin/bash /home/webbyrs/deploy.sh > /home/webbyrs/deploy_run.log 2>&1'
 curl_api "/json-api/cpanel?cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Cron&cpanel_jsonapi_func=add_line" \
     --data-urlencode "command=$CMD" \
-    --data-urlencode "minute=*" --data-urlencode "hour=*" --data-urlencode "day=*" --data-urlencode "month=*" --data-urlencode "weekday=*" >/dev/null
-ok "cron scheduled (runs within 60s)"
+    --data-urlencode "minute=*/2" --data-urlencode "hour=*" --data-urlencode "day=*" --data-urlencode "month=*" --data-urlencode "weekday=*" >/dev/null
+ok "cron scheduled (every 2 min, self-stops once .deploy_done is touched)"
 
 # -- 5. Wait for marker -------------------------------------------------------
-step "Waiting for on-server deploy to finish (max 5 min)"
-DEADLINE=$(( $(date +%s) + 300 ))
+step "Waiting for on-server deploy to finish (max 10 min)"
+DEADLINE=$(( $(date +%s) + 600 ))
 while [ "$(date +%s)" -lt "$DEADLINE" ]; do
     if curl_api "/execute/Fileman/list_files?dir=/home/webbyrs&include_hidden=1" | grep -q '"file":"\.deploy_done"'; then
         ok "deploy completed on server"
