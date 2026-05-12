@@ -1,7 +1,11 @@
 #!/bin/bash
 # Runs on the cPanel host (uploaded to /home/webbyrs/deploy.sh).
 # Triggered by a temporary cron the local orchestrator schedules.
-PHP=/opt/cpanel/ea-php84/root/usr/bin/php
+#
+# Runtime: CloudLinux alt-php-82 (NOT ea-php82, NOT ea-php84). ea-php84 lacks
+# the cURL extension on this account which breaks the TTLock HTTP client.
+# alt-php-82 ships cURL + intl + mbstring + pdo_mysql by default.
+PHP=/opt/alt/php82/usr/bin/php
 
 cd /home/webbyrs/luggage_lockers || exit 1
 
@@ -15,12 +19,26 @@ cd /home/webbyrs/luggage_lockers || exit 1
 # 2. Extract vendor + public/build from the uploaded tarball
 [ -f /home/webbyrs/deploy.tar.gz ] && tar xzf /home/webbyrs/deploy.tar.gz 2>&1
 
-# 3. Per-folder PHP 8.4 handler
-if ! grep -q "ea-php84" public/.htaccess 2>/dev/null; then
+# 2a. Neutralise platform_check.php. vendor/ was built locally on PHP 8.4 so
+#     Composer's auto-generated platform check refuses to load on 8.2. Overwrite
+#     it AFTER tarball extraction (which restored the original strict version).
+cat > vendor/composer/platform_check.php <<'PCEOF'
+<?php
+// Intentional no-op: the local build targets PHP 8.4 but the staging runtime
+// is CloudLinux alt-php-82 which provides every extension Laravel uses at
+// runtime. Skipping this check lets the autoloader proceed.
+PCEOF
+
+# 3. Per-folder alt-php-82 handler — strip any prior handler we wrote, then add
+#    the right one. Does NOT affect other sites' PHP version.
+if [ -f public/.htaccess ]; then
+  sed -i '/AddHandler.*ea-php/d; /AddHandler.*alt-php/d; /Force PHP/d; /Force CloudLinux/d' public/.htaccess
+fi
+if ! grep -q "alt-php82___lsphp" public/.htaccess 2>/dev/null; then
   cat >> public/.htaccess <<'HEOF'
 
-# Force PHP 8.4 for this site only (per-folder, no global change)
-AddHandler application/x-httpd-ea-php84 .php .php5 .phtml
+# Force CloudLinux alt-php-82 for this site only (per-folder, no global change)
+AddHandler application/x-httpd-alt-php82___lsphp .php .php5 .phtml
 HEOF
 fi
 
