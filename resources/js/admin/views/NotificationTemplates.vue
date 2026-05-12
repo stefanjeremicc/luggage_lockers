@@ -20,23 +20,28 @@
         </div>
 
         <div v-else class="space-y-3">
-            <div v-for="t in templates" :key="t.id"
+            <div v-for="group in groupedTemplates" :key="group.key"
                 class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 hover:border-[#3A3A3A] transition">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <div class="font-mono font-medium text-white">{{ t.key }}</div>
-                        <div class="text-xs text-[#A0A0A0] mt-1 flex items-center gap-3">
-                            <span class="px-2 py-0.5 bg-[#2A2A2A] rounded-full uppercase">{{ t.channel }}</span>
-                            <span class="uppercase">{{ t.locale }}</span>
-                            <span v-if="t.subject">· {{ t.subject }}</span>
-                            <span v-if="!t.is_active" class="text-[#EF4444]">· Inactive</span>
-                        </div>
+                <div class="flex items-center justify-between gap-4">
+                    <div class="min-w-0">
+                        <div class="font-mono font-medium text-white">{{ group.key }}</div>
+                        <div v-if="group.subject" class="text-xs text-[#A0A0A0] mt-1 truncate">{{ group.subject }}</div>
                     </div>
-                    <div class="flex items-center gap-1 shrink-0">
-                        <IconBtn @click="openEdit(t)" title="Edit">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                        </IconBtn>
-                        <IconBtn variant="danger" @click="remove(t)" title="Delete">
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button v-for="loc in localeOptions" :key="loc.value"
+                            @click="openLocale(group, loc.value)"
+                            :title="group.variants[loc.value] ? `Edit ${loc.label}` : `Add ${loc.label} variant`"
+                            class="px-3 py-1.5 rounded-lg text-xs font-semibold uppercase transition flex items-center gap-1.5"
+                            :class="group.variants[loc.value]
+                                ? (group.variants[loc.value].is_active
+                                    ? 'bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/30 hover:bg-[#F59E0B]/20'
+                                    : 'bg-[#2A2A2A] text-[#A0A0A0] border border-[#3A3A3A] hover:text-white')
+                                : 'bg-transparent text-[#666] border border-dashed border-[#3A3A3A] hover:text-[#A0A0A0] hover:border-[#555]'">
+                            <span>{{ loc.value }}</span>
+                            <span v-if="group.variants[loc.value] && !group.variants[loc.value].is_active" class="text-[10px] opacity-70">(inactive)</span>
+                            <span v-else-if="!group.variants[loc.value]" class="text-[10px] opacity-70">+</span>
+                        </button>
+                        <IconBtn variant="danger" @click="removeGroup(group)" title="Delete all locales for this key">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
                         </IconBtn>
                     </div>
@@ -91,7 +96,7 @@
     </div>
 </template>
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useAuth } from '../composables/useAuth';
 import { useToast } from '../composables/useToast';
 import { useConfirm } from '../composables/useConfirm';
@@ -133,6 +138,49 @@ const blank = () => ({
 
 const openNew = () => (editing.value = blank());
 const openEdit = (t) => (editing.value = { ...t });
+
+// Group templates by key, keeping only email channel (WhatsApp/SMS UI hidden globally).
+// Each group exposes { key, subject, variants: { en, sr } } so the list can render
+// one card per template key with locale badges instead of a 4x duplicated flat list.
+const groupedTemplates = computed(() => {
+    const groups = new Map();
+    for (const t of templates.value) {
+        if (t.channel !== 'email') continue;
+        if (!groups.has(t.key)) {
+            groups.set(t.key, { key: t.key, subject: '', variants: {} });
+        }
+        const g = groups.get(t.key);
+        g.variants[t.locale] = t;
+        // Prefer English subject for the card preview; fall back to whatever is first.
+        if (!g.subject || t.locale === 'en') g.subject = t.subject || g.subject;
+    }
+    return Array.from(groups.values()).sort((a, b) => a.key.localeCompare(b.key));
+});
+
+const openLocale = (group, locale) => {
+    const existing = group.variants[locale];
+    if (existing) {
+        openEdit(existing);
+    } else {
+        // Pre-fill a new variant for this key + locale so the user can fill subject/body.
+        editing.value = { ...blank(), key: group.key, locale };
+    }
+};
+
+const removeGroup = async (group) => {
+    const variants = Object.values(group.variants);
+    const ok = await confirmDialog.ask({
+        title: 'Delete template?',
+        message: `"${group.key}" will be permanently removed (${variants.length} locale${variants.length === 1 ? '' : 's'}).`,
+        variant: 'danger',
+    });
+    if (!ok) return;
+    await Promise.all(variants.map(v =>
+        apiFetch(`/api/admin/notification-templates/${v.id}`, { method: 'DELETE' })
+    ));
+    templates.value = templates.value.filter(x => x.key !== group.key);
+    toast.success('Deleted');
+};
 
 const fetch = async () => {
     loading.value = true;
