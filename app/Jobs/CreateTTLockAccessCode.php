@@ -40,16 +40,16 @@ class CreateTTLockAccessCode implements ShouldQueue
             return;
         }
 
-        // Pre-flight: if no gateway is online, the passcode will land in TTLock cloud
-        // but never reach the physical lock. Refuse to create — let job retry/backoff.
-        $gatewayOnline = TtlockGateway::where('is_online', true)->exists();
-        if (!$gatewayOnline) {
-            Log::warning('TTLock passcode creation deferred: no gateway online', [
+        // Register the PIN in TTLock cloud regardless of gateway state. The cloud
+        // accepts the passcode immediately (visible in the TTLock mobile app and
+        // returned via API), and if a gateway is online it pushes to the physical
+        // lock within ~30s. Without a gateway the PIN syncs the next time the app
+        // is near the lock over Bluetooth — better than blocking the booking flow
+        // waiting for a gateway that may not exist for this site.
+        if (!TtlockGateway::where('is_online', true)->exists()) {
+            Log::info('TTLock passcode created without active gateway — will sync via BLE on next app visit', [
                 'booking_locker_id' => $bl->id,
-                'attempt' => $this->attempts(),
             ]);
-            $this->release(60);
-            return;
         }
 
         // TTLock cloud's passcode namespace is per-account, not per-booking. A PIN we
