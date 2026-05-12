@@ -82,9 +82,15 @@ curl_api "/execute/Fileman/delete_files?file=/home/webbyrs/.deploy_done" >/dev/n
 # deploy.sh is idempotent and gated by ! -f .deploy_done, so it self-stops
 # after one successful run. We use */2 (every 2 min) because cPanel on
 # Unlimited.rs has been observed to delay * * * * * crons by 5+ minutes.
+# Only remove cron lines that reference our deploy.sh — the permanent
+# queue worker cron (queue:work --once) must survive.
 list_resp=$(curl_api "/json-api/cpanel?cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Cron&cpanel_jsonapi_func=listcron")
-for lk in $(printf "%s" "$list_resp" | grep -oE '"linekey":[0-9]+' | grep -oE '[0-9]+'); do
-    curl_api "/json-api/cpanel?cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Cron&cpanel_jsonapi_func=remove_line&linekey=$lk" >/dev/null
+printf "%s" "$list_resp" | node -e '
+let d="";process.stdin.on("data",c=>d+=c);process.stdin.on("end",()=>{
+  const r=JSON.parse(d).cpanelresult.data||[];
+  r.forEach(c=>{ if(c.command && /deploy\.sh/.test(c.command)) console.log(c.linekey); });
+});' | while read lk; do
+    [ -n "$lk" ] && curl_api "/json-api/cpanel?cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Cron&cpanel_jsonapi_func=remove_line&linekey=$lk" >/dev/null
 done
 
 CMD='[ ! -f /home/webbyrs/.deploy_done ] && /bin/bash /home/webbyrs/deploy.sh > /home/webbyrs/deploy_run.log 2>&1'
@@ -105,9 +111,15 @@ while [ "$(date +%s)" -lt "$DEADLINE" ]; do
 done
 
 # Clean up scheduled cron now that it ran
+# Only remove cron lines that reference our deploy.sh — the permanent
+# queue worker cron (queue:work --once) must survive.
 list_resp=$(curl_api "/json-api/cpanel?cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Cron&cpanel_jsonapi_func=listcron")
-for lk in $(printf "%s" "$list_resp" | grep -oE '"linekey":[0-9]+' | grep -oE '[0-9]+'); do
-    curl_api "/json-api/cpanel?cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Cron&cpanel_jsonapi_func=remove_line&linekey=$lk" >/dev/null
+printf "%s" "$list_resp" | node -e '
+let d="";process.stdin.on("data",c=>d+=c);process.stdin.on("end",()=>{
+  const r=JSON.parse(d).cpanelresult.data||[];
+  r.forEach(c=>{ if(c.command && /deploy\.sh/.test(c.command)) console.log(c.linekey); });
+});' | while read lk; do
+    [ -n "$lk" ] && curl_api "/json-api/cpanel?cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Cron&cpanel_jsonapi_func=remove_line&linekey=$lk" >/dev/null
 done
 
 # -- 6. Smoke test ------------------------------------------------------------

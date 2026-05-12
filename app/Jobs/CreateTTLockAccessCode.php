@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\BookingLocker;
 use App\Models\TtlockGateway;
+use App\Services\Booking\BookingService;
 use App\Services\Lock\LockServiceInterface;
 use App\Services\Notification\BookingNotifier;
 use Illuminate\Bus\Queueable;
@@ -25,7 +26,7 @@ class CreateTTLockAccessCode implements ShouldQueue
         private int $bookingLockerId,
     ) {}
 
-    public function handle(LockServiceInterface $lockService): void
+    public function handle(LockServiceInterface $lockService, BookingService $bookingService): void
     {
         $bl = BookingLocker::with(['booking.customer', 'booking.location', 'locker'])->findOrFail($this->bookingLockerId);
 
@@ -51,14 +52,40 @@ class CreateTTLockAccessCode implements ShouldQueue
             return;
         }
 
-        $pin = Crypt::decryptString($bl->pin_code_encrypted);
-
-        $response = $lockService->createTimedAccessCode(
-            $bl->locker->ttlock_lock_id,
-            $pin,
-            $bl->booking->check_in,
-            $bl->booking->check_out
-        );
+        // TTLock cloud's passcode namespace is per-account, not per-booking. A PIN we
+        // generated locally may collide with one already registered by another lock
+        // under the same TTLock account (error -3007). On collision we regenerate the
+        // PIN inline a few times before giving up — Laravel-level retries would just
+        // replay the same encrypted PIN and fail identically.
+        $maxInlineRetries = 5;
+        $response = null;
+        for ($attempt = 1; $attempt <= $maxInlineRetries; $attempt++) {
+            $pin = Crypt::decryptString($bl->pin_code_encrypted);
+            try {
+                $response = $lockService->createTimedAccessCode(
+                    $bl->locker->ttlock_lock_id,
+                    $pin,
+                    $bl->booking->check_in,
+                    $bl->booking->check_out
+                );
+                break;
+            } catch (\RuntimeException $e) {
+                if (!str_contains($e->getMessage(), '-3007')) {
+                    throw $e;
+                }
+                Log::warning('TTLock passcode collision, regenerating', [
+                    'booking_locker_id' => $bl->id,
+                    'inline_attempt' => $attempt,
+                ]);
+                $bl->update([
+                    'pin_code_encrypted' => Crypt::encryptString($bookingService->generatePin()),
+                ]);
+                $bl->refresh();
+                if ($attempt === $maxInlineRetries) {
+                    throw $e;
+                }
+            }
+        }
 
         $bl->update([
             'ttlock_keyboard_pwd_id' => $response['keyboardPwdId'] ?? null,

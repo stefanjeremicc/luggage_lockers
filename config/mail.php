@@ -47,6 +47,18 @@ return [
             'password' => env('MAIL_PASSWORD'),
             'timeout' => null,
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
+            // Local SMTP relay on shared hosting (Unlimited.rs s53) terminates STARTTLS
+            // with a cert CN that doesn't always match the hostname we configured —
+            // Symfony Mailer would refuse the upgrade and emails would never send.
+            // verify_peer=false skips the cert check; the connection itself is still
+            // encrypted, just not verified. Safe for trusted local relay.
+            'stream' => [
+                'ssl' => [
+                    'verify_peer' => env('MAIL_VERIFY_PEER', false),
+                    'verify_peer_name' => env('MAIL_VERIFY_PEER_NAME', false),
+                    'allow_self_signed' => true,
+                ],
+            ],
         ],
 
         'ses' => [
