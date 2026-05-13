@@ -3,10 +3,12 @@ import Alpine from 'alpinejs';
 // Import Alpine components
 import bookingFlow from './booking-flow';
 import calendarPicker from './calendar-picker';
+import timePicker from './time-picker';
 
 // Register components
 Alpine.data('bookingFlow', bookingFlow);
 Alpine.data('calendarPicker', calendarPicker);
+Alpine.data('timePicker', timePicker);
 
 // Smooth-scroll for in-page section links without polluting the URL hash.
 // Mark a link with data-scroll-to="elementId" and we scroll there with an

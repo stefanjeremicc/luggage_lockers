@@ -174,23 +174,82 @@
                         </div>
                     </div>
 
-                    {{-- Arrival Time --}}
-                    <div class="card mb-6">
+                    {{-- Arrival Time (custom HH:MM picker — matches date picker design) --}}
+                    <div class="card mb-6" x-data="timePicker()" @click.outside="open = false">
                         <h3 class="font-semibold mb-4 flex items-center gap-2">
                             <svg class="w-5 h-5 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             {{ __('What time will you arrive?') }}
                         </h3>
 
-                        {{-- Free-form HH:MM input with validation. Must be in the future when the
-                             selected date is today; any time is allowed for future dates. --}}
-                        <input type="time" x-model="time"
-                               :min="timeInputMin"
-                               class="w-full bg-[#1a1a1a] border border-[#2A2A2A] rounded-lg px-4 py-3 text-white text-lg focus:border-[#F59E0B] focus:outline-none"
-                               step="60" required>
-                        <p x-show="time && !isTimeValid" x-cloak class="text-xs text-[#EF4444] mt-2">
-                            {{ __('Please choose a future time.') }}
-                        </p>
-                        <p x-show="time && isTimeValid && checkoutPreview" x-cloak class="text-xs text-[#A0A0A0] mt-2">
+                        {{-- Trigger pill (matches "Pick date" styling) --}}
+                        <div class="relative">
+                            <button @click="onOpen()" type="button"
+                                    class="w-full bg-[#1a1a1a] border border-[#2A2A2A] hover:border-[#3A3A3A] rounded-lg px-4 py-3 text-left flex items-center justify-between transition"
+                                    :class="time ? 'text-white' : 'text-[#A0A0A0]'">
+                                <span x-text="time || '{{ __('Select arrival time...') }}'"></span>
+                                <svg class="w-4 h-4 text-[#A0A0A0] transition-transform" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+
+                            {{-- Picker panel --}}
+                            <div x-show="open"
+                                 x-transition:enter="transition ease-out duration-200"
+                                 x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
+                                 x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                                 x-cloak
+                                 class="mt-4 sm:absolute sm:top-full sm:left-0 sm:mt-2 sm:z-30 sm:w-72 bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl p-5 shadow-2xl">
+
+                                <div class="text-center text-sm font-semibold mb-3">{{ __('What time will you arrive?') }}</div>
+
+                                <div class="grid grid-cols-2 gap-3">
+                                    {{-- Hours column --}}
+                                    <div>
+                                        <div class="text-[10px] uppercase tracking-wider text-[#A0A0A0] text-center mb-1">{{ __('Hour') }}</div>
+                                        <div class="h-44 overflow-y-auto custom-scrollbar bg-[#0F0F0F] rounded-lg p-1" x-ref="hoursList">
+                                            <template x-for="h in hours" :key="'h-'+h.value">
+                                                <button type="button" @click="selectHour(h.value)"
+                                                        :disabled="h.disabled"
+                                                        class="w-full text-center py-2 rounded-md text-sm font-medium transition"
+                                                        :class="h.value === selHour
+                                                            ? 'bg-[#F59E0B] text-black'
+                                                            : (h.disabled
+                                                                ? 'text-[#3A3A3A] cursor-not-allowed'
+                                                                : 'text-[#A0A0A0] hover:bg-[#2A2A2A] hover:text-white')"
+                                                        x-text="h.label">
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </div>
+                                    {{-- Minutes column --}}
+                                    <div>
+                                        <div class="text-[10px] uppercase tracking-wider text-[#A0A0A0] text-center mb-1">{{ __('Minute') }}</div>
+                                        <div class="h-44 overflow-y-auto custom-scrollbar bg-[#0F0F0F] rounded-lg p-1" x-ref="minutesList">
+                                            <template x-for="m in minutes" :key="'m-'+m.value">
+                                                <button type="button" @click="selectMinute(m.value)"
+                                                        :disabled="m.disabled"
+                                                        class="w-full text-center py-2 rounded-md text-sm font-medium transition"
+                                                        :class="m.value === selMinute
+                                                            ? 'bg-[#F59E0B] text-black'
+                                                            : (m.disabled
+                                                                ? 'text-[#3A3A3A] cursor-not-allowed'
+                                                                : 'text-[#A0A0A0] hover:bg-[#2A2A2A] hover:text-white')"
+                                                        x-text="m.label">
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center justify-between mt-4 pt-3 border-t border-[#2A2A2A]">
+                                    <button @click="open = false" type="button" class="text-xs text-[#A0A0A0] hover:text-white transition">{{ __('Cancel') }}</button>
+                                    <button @click="confirm()" type="button"
+                                            class="text-xs font-medium transition"
+                                            :class="(selHour !== null && selMinute !== null) ? 'text-[#F59E0B] hover:text-white' : 'text-[#2A2A2A] cursor-not-allowed'"
+                                            :disabled="selHour === null || selMinute === null">{{ __('Confirm') }}</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p x-show="checkoutPreview" x-cloak class="text-xs text-[#A0A0A0] mt-3">
                             {{ __('Check-out') }}: <span class="text-white font-medium" x-text="checkoutPreview"></span>
                         </p>
                     </div>
