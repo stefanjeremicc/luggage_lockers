@@ -212,27 +212,27 @@
                     <h3 class="text-sm font-semibold uppercase tracking-wide text-[#F59E0B] mb-4">{{ __('Contact this location') }}</h3>
                     <div class="space-y-2.5">
                         @if($location->phone)
-                        <div class="grid grid-cols-2 gap-2">
-                            <a href="tel:{{ $location->phone }}" class="flex items-center gap-2 p-3 rounded-lg bg-[#111] border border-[#2A2A2A] hover:border-[#F59E0B]/40 transition">
-                                <div class="w-9 h-9 rounded-lg bg-[#F59E0B]/10 flex items-center justify-center shrink-0">
-                                    <svg class="w-4 h-4 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-                                </div>
-                                <div class="min-w-0">
-                                    <p class="text-[10px] uppercase tracking-wide text-[#6B7280]">{{ __('Call') }}</p>
-                                    <p class="text-sm font-medium text-white truncate">{{ $location->phone }}</p>
-                                </div>
-                            </a>
-                            {{-- WhatsApp contact button hidden until Business API is wired up. --}}
-                        </div>
+                        {{-- Phone row used to live inside grid-cols-2 alongside a hidden
+                             WhatsApp button, which forced the number to truncate. Full
+                             width now so the whole number shows. --}}
+                        <a href="tel:{{ $location->phone }}" class="flex items-center gap-3 p-3 rounded-lg bg-[#111] border border-[#2A2A2A] hover:border-[#F59E0B]/40 transition">
+                            <div class="w-9 h-9 rounded-lg bg-[#F59E0B]/10 flex items-center justify-center shrink-0">
+                                <svg class="w-4 h-4 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-[10px] uppercase tracking-wide text-[#6B7280]">{{ __('Call') }}</p>
+                                <p class="text-sm font-medium text-white break-all">{{ $location->phone }}</p>
+                            </div>
+                        </a>
                         @endif
                         @if($location->email)
                         <a href="mailto:{{ $location->email }}" class="flex items-center gap-3 p-3 rounded-lg bg-[#111] border border-[#2A2A2A] hover:border-[#F59E0B]/40 transition">
                             <div class="w-9 h-9 rounded-lg bg-[#F59E0B]/10 flex items-center justify-center shrink-0">
                                 <svg class="w-4 h-4 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                             </div>
-                            <div class="min-w-0">
+                            <div class="min-w-0 flex-1">
                                 <p class="text-[10px] uppercase tracking-wide text-[#6B7280]">{{ __('Email') }}</p>
-                                <p class="text-sm font-medium text-white truncate">{{ $location->email }}</p>
+                                <p class="text-sm font-medium text-white break-all">{{ $location->email }}</p>
                             </div>
                         </a>
                         @endif
