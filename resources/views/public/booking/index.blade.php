@@ -434,13 +434,25 @@
                                     <p class="text-[#A0A0A0] text-xs">{{ $location->address }}</p>
                                 </div>
                             </div>
+                            {{-- Check-in card (green) --}}
                             <div class="flex items-center gap-4 text-sm">
-                                <div class="w-9 h-9 rounded-xl bg-[#F59E0B]/10 flex items-center justify-center shrink-0">
-                                    <svg class="w-4 h-4 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                <div class="w-9 h-9 rounded-xl bg-[#10B981]/10 flex items-center justify-center shrink-0">
+                                    <svg class="w-4 h-4 text-[#10B981]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
                                 </div>
                                 <div>
+                                    <p class="text-[10px] uppercase tracking-wider text-[#10B981] font-semibold">{{ __('Check-in') }}</p>
                                     <p class="font-medium text-white" x-text="formatConfirmDate()"></p>
-                                    <p class="text-xs text-[#A0A0A0] mt-0.5" x-show="checkoutPreview" x-cloak>{{ __('Check-out') }}: <span class="text-white" x-text="checkoutPreview"></span></p>
+                                </div>
+                            </div>
+
+                            {{-- Check-out card (red) --}}
+                            <div class="flex items-center gap-4 text-sm" x-show="checkoutPreview" x-cloak>
+                                <div class="w-9 h-9 rounded-xl bg-[#EF4444]/10 flex items-center justify-center shrink-0">
+                                    <svg class="w-4 h-4 text-[#EF4444]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] uppercase tracking-wider text-[#EF4444] font-semibold">{{ __('Check-out') }}</p>
+                                    <p class="font-medium text-white" x-text="checkoutPreview"></p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-4 text-sm">
@@ -561,12 +573,10 @@
                                 <template x-if="orderSummary && orderSummary.lines.length">
                                     <div class="space-y-1">
                                         <template x-for="line in orderSummary.lines" :key="line.size + '|' + line.duration">
-                                            <div class="flex items-baseline justify-between gap-2">
-                                                <p class="text-white font-medium text-sm">
-                                                    <span x-text="line.qty"></span> × <span x-text="sizeLabelFor(line.size)"></span>
-                                                </p>
-                                                <span class="text-[#A0A0A0] text-xs whitespace-nowrap" x-text="line.duration_label"></span>
-                                            </div>
+                                            <p class="text-sm">
+                                                <span class="text-white font-medium"><span x-text="line.qty"></span> × <span x-text="sizeLabelFor(line.size)"></span></span>
+                                                <span class="text-[#A0A0A0]"> — <span x-text="line.duration_label"></span></span>
+                                            </p>
                                         </template>
                                     </div>
                                 </template>
