@@ -6,6 +6,9 @@
     $address = $location->addressFor($locale);
     $city = $location->cityFor($locale);
     $description = $location->descriptionFor($locale);
+    // Hero used to be a full-bleed location photo, now replaced by a
+    // gradient. Keep computing the path because og:image still references
+    // it for social-card previews.
     $heroImage = $location->image_url ?: "/images/locations/{$location->slug}.webp";
     $metaTitle = $location->metaTitleFor($locale) ?: ($name . ' — ' . __('Luggage Storage Belgrade'));
     $metaDescription = $location->metaDescriptionFor($locale) ?: __('Secure 24/7 luggage storage at :name, :address. Smart lockers, instant booking from €:price.', [
@@ -44,34 +47,23 @@
     </div>
 </div>
 
-{{-- Hero --}}
-<section class="relative">
-    <div class="absolute inset-0 h-[420px] sm:h-[480px]">
-        <img src="{{ $heroImage }}" alt="{{ $name }}" class="w-full h-full object-cover"
-             onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1A1A1A,#0A0A0A)';">
-        <div class="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/70 to-[#0A0A0A]/30"></div>
-    </div>
-
-    <div class="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-32 pb-10">
+{{-- Hero — solid gradient instead of full-bleed location photo. Location
+     photos are uneven quality and were dominating the page; a clean
+     gradient + branded badges keeps the focus on the title + CTA. --}}
+<section class="relative bg-gradient-to-br from-[#1A1A1A] via-[#141414] to-[#0A0A0A] border-b border-[#1A1A1A]">
+    <div class="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-24 pb-12">
         <div class="max-w-3xl">
             <div class="flex flex-wrap items-center gap-2 mb-4">
                 @if($location->is_24h)
-                <span class="text-xs bg-[#10B981]/20 text-[#10B981] px-3 py-1.5 rounded-full font-medium border border-[#10B981]/30 backdrop-blur">{{ __('Open 24/7') }}</span>
+                <span class="text-xs bg-[#10B981]/20 text-[#10B981] px-3 py-1.5 rounded-full font-medium border border-[#10B981]/30">{{ __('Open 24/7') }}</span>
                 @else
-                <span class="text-xs bg-[#F59E0B]/20 text-[#F59E0B] px-3 py-1.5 rounded-full font-medium border border-[#F59E0B]/30 backdrop-blur">
+                <span class="text-xs bg-[#F59E0B]/20 text-[#F59E0B] px-3 py-1.5 rounded-full font-medium border border-[#F59E0B]/30">
                     {{ \Illuminate\Support\Str::of($location->opening_time)->limit(5, '') }} – {{ \Illuminate\Support\Str::of($location->closing_time)->limit(5, '') }}
                 </span>
                 @endif
-                @if($location->lockers_count > 0)
-                <span class="text-xs bg-black/50 text-white px-3 py-1.5 rounded-full font-medium border border-[#2A2A2A] backdrop-blur">
-                    {{ $location->lockers_count }} {{ trans_choice('{1} :count locker|[2,*] :count lockers', $location->lockers_count, ['count' => $location->lockers_count]) }}
-                </span>
-                @endif
-                @if($location->available_count > 0)
-                <span class="text-xs bg-[#10B981]/20 text-[#10B981] px-3 py-1.5 rounded-full font-medium border border-[#10B981]/30 backdrop-blur">
-                    {{ $location->available_count }} {{ __('available now') }}
-                </span>
-                @endif
+                {{-- Locker-count badges intentionally removed: the per-location
+                     count and "X available now" pills were leaking inventory
+                     information customers don't need at the top of the page. --}}
             </div>
             <h1 class="text-4xl sm:text-6xl font-bold leading-tight">{{ $name }}</h1>
             <p class="text-[#E0E0E0] mt-3 flex items-center gap-2 text-base sm:text-lg">
@@ -190,17 +182,15 @@
                             @if($sizeSummary->has($sizeKey) && $sizeSummary[$sizeKey])
                                 @php $info = $sizeSummary[$sizeKey]; @endphp
                                 <div class="bg-[#111] border border-[#2A2A2A] rounded-xl overflow-hidden hover:border-[#F59E0B]/40 transition">
-                                    <div class="aspect-[4/3] bg-[#0A0A0A] overflow-hidden">
-                                        <img src="{{ $info->image }}" alt="{{ __(ucfirst($sizeKey)) }}" class="w-full h-full object-cover"
+                                    {{-- object-contain so the whole dimension drawing fits inside —
+                                         the booking-flow images include caption text that gets cropped
+                                         if we use object-cover here. --}}
+                                    <div class="aspect-[4/3] bg-[#0A0A0A] overflow-hidden flex items-center justify-center">
+                                        <img src="{{ $info->image }}" alt="{{ __(ucfirst($sizeKey)) }}" class="w-full h-full object-contain"
                                              onerror="this.style.display='none'">
                                     </div>
                                     <div class="p-4 space-y-2">
-                                        <div class="flex items-center justify-between gap-2">
-                                            <p class="font-semibold text-base">{{ __(ucfirst($sizeKey)) }}</p>
-                                            <span class="text-[10px] uppercase tracking-wide font-semibold {{ $sizeKey === 'standard' ? 'bg-cyan-500/20 text-cyan-400' : 'bg-fuchsia-500/20 text-fuchsia-400' }} px-2 py-0.5 rounded">
-                                                {{ $info->count }} {{ __('here') }}
-                                            </span>
-                                        </div>
+                                        <p class="font-semibold text-base">{{ __(ucfirst($sizeKey)) }}</p>
                                         @if($info->dimensions && is_array($info->dimensions))
                                         <p class="text-xs text-[#A0A0A0]">
                                             {{ $info->dimensions['width'] ?? '?' }}×{{ $info->dimensions['depth'] ?? '?' }}×{{ $info->dimensions['height'] ?? '?' }} cm
@@ -280,7 +270,6 @@
                         <span class="text-xs px-2 py-0.5 rounded-full bg-[#F59E0B]/15 text-[#F59E0B]">{{ number_format($nearby->distance_km, 1) }} km</span>
                     </div>
                     <p class="text-sm text-[#A0A0A0]">{{ $nearby->addressFor($locale) }}</p>
-                    <p class="text-xs text-[#6B7280] mt-2">{{ $nearby->lockers_count }} {{ __('lockers available') }}</p>
                 </a>
                 @endforeach
             </div>

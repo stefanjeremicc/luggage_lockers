@@ -54,11 +54,14 @@ class LocationController extends Controller
                     ->value('price_eur');
 
                 $sample = $sampleLockers->get($sizeKey);
+                // Prefer the admin-configured dimension drawing (same image the
+                // booking flow shows) over the legacy interior-photo .webp.
+                $adminImage = \App\Helpers\SiteSettings::lockerInfo($sizeKey)['image'] ?? null;
                 return [$sizeKey => (object) [
                     'count' => $sizes->get($sizeKey),
                     'from_price' => $minPrice ? (int) $minPrice : null,
                     'dimensions' => $sample?->dimensions_cm,
-                    'image' => "/images/lockers/{$sizeKey}.webp",
+                    'image' => $adminImage ?: "/images/lockers/{$sizeKey}-dimensions.jpg",
                 ]];
             });
 
