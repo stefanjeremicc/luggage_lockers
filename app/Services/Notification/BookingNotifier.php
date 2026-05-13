@@ -144,6 +144,72 @@ class BookingNotifier
     }
 
     /**
+     * Render the "Booking Details" card used at the top of customer emails —
+     * mirrors the confirmation-page card on the website: green CHECK-IN row,
+     * red CHECK-OUT row, amber LOCKERS row, all stacked under the location.
+     *
+     * Pure HTML string; embedded in the template via {{ booking_details_block }}.
+     */
+    private static function bookingDetailsBlock(Booking $booking, string $locale, array $vars): string
+    {
+        $L = static fn (string $en, string $sr) => $locale === 'sr' ? $sr : $en;
+        $name = e($vars['location_name'] ?? '');
+        $addr = e($vars['location_address'] ?? '');
+        $checkIn = e($vars['check_in_full'] ?? '');
+        $checkOut = e($vars['check_out_full'] ?? '');
+        $items = e($vars['items_summary'] ?? '');
+        $duration = e($vars['duration_label'] ?? '');
+        $total = e($vars['total_eur'] ?? '0.00');
+
+        $row = static fn (string $iconBg, string $iconColor, string $icon, string $labelHtml) =>
+            '<tr><td style="padding:14px 0;border-bottom:1px solid #2A2A2A">'
+            .'<table style="width:100%;border-collapse:collapse"><tr>'
+            .'<td style="width:42px;vertical-align:top">'
+            .'<div style="width:36px;height:36px;border-radius:10px;background:'.$iconBg.';line-height:36px;text-align:center;font-size:18px">'.$icon.'</div>'
+            .'</td>'
+            .'<td style="vertical-align:top;padding-left:8px">'.$labelHtml.'</td>'
+            .'</tr></table></td></tr>';
+
+        $locationRow = $row(
+            'rgba(245,158,11,0.10)', '#F59E0B', '📍',
+            '<div style="font-weight:600;color:#fff;font-size:14px">'.$name.'</div>'
+            .'<div style="color:#A0A0A0;font-size:13px;margin-top:2px">'.$addr.'</div>'
+        );
+
+        $checkInRow = $row(
+            'rgba(16,185,129,0.10)', '#10B981', '🟢',
+            '<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#10B981;font-weight:700">'.$L('Check-in', 'Dolazak').'</div>'
+            .'<div style="font-weight:600;color:#fff;font-size:14px;margin-top:2px">'.$checkIn.'</div>'
+        );
+
+        $checkOutRow = $row(
+            'rgba(239,68,68,0.10)', '#EF4444', '🔴',
+            '<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#EF4444;font-weight:700">'.$L('Check-out', 'Odlazak').'</div>'
+            .'<div style="font-weight:600;color:#fff;font-size:14px;margin-top:2px">'.$checkOut.'</div>'
+        );
+
+        $lockersRow = '<tr><td style="padding:14px 0">'
+            .'<table style="width:100%;border-collapse:collapse"><tr>'
+            .'<td style="width:42px;vertical-align:top">'
+            .'<div style="width:36px;height:36px;border-radius:10px;background:rgba(245,158,11,0.10);line-height:36px;text-align:center;font-size:18px">📦</div>'
+            .'</td>'
+            .'<td style="vertical-align:top;padding-left:8px">'
+            .'<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#F59E0B;font-weight:700">'.$L('Lockers', 'Ormarići').'</div>'
+            .'<div style="font-weight:600;color:#fff;font-size:14px;margin-top:2px">'.$items.' <span style="color:#A0A0A0;font-weight:400"> — '.$duration.'</span></div>'
+            .'</td>'
+            .'<td style="vertical-align:top;text-align:right;color:#F59E0B;font-weight:600;white-space:nowrap">€'.$total.'</td>'
+            .'</tr></table></td></tr>';
+
+        return '<div style="background:#1A1A1A;border:1px solid #2A2A2A;border-radius:12px;padding:0 18px;margin:16px 0">'
+            .'<div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#A0A0A0;font-weight:700;padding:14px 0 6px;border-bottom:1px solid #2A2A2A">'
+            .$L('Booking Details', 'Detalji rezervacije')
+            .'</div>'
+            .'<table style="width:100%;border-collapse:collapse">'
+            .$locationRow.$checkInRow.$checkOutRow.$lockersRow
+            .'</table></div>';
+    }
+
+    /**
      * Translate the booking's duration_label into the requested locale.
      * `duration_label` was rendered at booking-creation time using whatever
      * locale the customer's browser was in. To send a SR confirmation for an
@@ -227,7 +293,7 @@ class BookingNotifier
             $totalQty = (int) ($booking->locker_qty ?? 1);
         }
 
-        return [
+        $baseVars = [
             'customer_name' => $booking->customer->full_name,
             'location_name' => $booking->location->name,
             'location_address' => $booking->location->address.', '.($booking->location->city ?: 'Belgrade'),
@@ -252,6 +318,8 @@ class BookingNotifier
             'support_email' => Setting::getValue('support_email', 'info@belgradeluggagelocker.com'),
             'site_name' => Setting::getValue('site_name', 'Belgrade Luggage Locker'),
         ];
+        $baseVars['booking_details_block'] = self::bookingDetailsBlock($booking, $locale, $baseVars);
+        return $baseVars;
     }
 
     private static function sendEmail(Booking $booking, string $key, string $locale, array $vars): void

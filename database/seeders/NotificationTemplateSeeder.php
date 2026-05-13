@@ -47,12 +47,8 @@ class NotificationTemplateSeeder extends Seeder
                 'body' => $this->emailShell('Booking Confirmed!', '#10B981',
                     '<p class="info">Hello <strong style="color:#fff">{{ customer_name }}</strong>, your booking is confirmed.</p>'.
 
-                    '<div class="highlight" style="text-align:left">'.
-                    '<p style="margin:0;color:#fff;font-size:16px"><strong>{{ items_summary }} — {{ duration_label }}</strong></p>'.
-                    '<p style="margin:8px 0 0;color:#A0A0A0;font-size:14px">{{ check_in_full }} to {{ check_out_full }}</p>'.
-                    '<p style="margin:4px 0 0;color:#A0A0A0;font-size:13px"><em>You\'re welcome to arrive up to {{ tolerance_minutes }} minutes early.</em></p>'.
-                    '<p style="margin:4px 0 0;color:#A0A0A0;font-size:13px"><em>Luggage is fully secured and you can access it 24/7.</em></p>'.
-                    '</div>'.
+                    '{{ booking_details_block }}'.
+                    '<p style="color:#A0A0A0;font-size:13px;font-style:italic;margin:8px 0 0">You\'re welcome to arrive up to {{ tolerance_minutes }} minutes early. Luggage is fully secured and you can access it 24/7.</p>'.
 
                     '<h2>Pay Station Information</h2>'.
                     '<div class="info">'.
@@ -79,7 +75,7 @@ class NotificationTemplateSeeder extends Seeder
                     '<div class="info" style="text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid #2A2A2A">'.
                     '<p>You are all set!</p>'.
                     '<p>If you have any questions or need help checking in, please let us know.</p>'.
-                    '<p style="margin-top:16px"><strong style="color:#fff">{{ support_phone }}</strong> · <a href="mailto:{{ support_email }}" style="color:#F59E0B">{{ support_email }}</a></p>'.
+                    '<p style="margin-top:16px"><a href="tel:{{ support_phone }}" style="color:#F59E0B;text-decoration:none;font-weight:bold">{{ support_phone }}</a> · <a href="mailto:{{ support_email }}" style="color:#F59E0B">{{ support_email }}</a></p>'.
                     '<p style="margin-top:16px;color:#6B7280">Enjoy Belgrade!<br>— {{ site_name }}</p>'.
                     '<p style="margin-top:12px;font-size:12px"><a href="{{ cancel_url }}" style="color:#6B7280">Need to cancel?</a></p>'.
                     '</div>'),
@@ -91,12 +87,8 @@ class NotificationTemplateSeeder extends Seeder
                 'body' => $this->emailShell('Rezervacija potvrđena!', '#10B981',
                     '<p class="info">Zdravo <strong style="color:#fff">{{ customer_name }}</strong>, vaša rezervacija je potvrđena.</p>'.
 
-                    '<div class="highlight" style="text-align:left">'.
-                    '<p style="margin:0;color:#fff;font-size:16px"><strong>{{ items_summary }} — {{ duration_label }}</strong></p>'.
-                    '<p style="margin:8px 0 0;color:#A0A0A0;font-size:14px">{{ check_in_full }} do {{ check_out_full }}</p>'.
-                    '<p style="margin:4px 0 0;color:#A0A0A0;font-size:13px"><em>Možete doći i do {{ tolerance_minutes }} minuta ranije.</em></p>'.
-                    '<p style="margin:4px 0 0;color:#A0A0A0;font-size:13px"><em>Prtljag je potpuno bezbedan i pristup imate 24/7.</em></p>'.
-                    '</div>'.
+                    '{{ booking_details_block }}'.
+                    '<p style="color:#A0A0A0;font-size:13px;font-style:italic;margin:8px 0 0">Možete doći i do {{ tolerance_minutes }} minuta ranije. Prtljag je potpuno bezbedan i pristup imate 24/7.</p>'.
 
                     '<h2>Informacije o plaćanju</h2>'.
                     '<div class="info">'.
@@ -123,7 +115,7 @@ class NotificationTemplateSeeder extends Seeder
                     '<div class="info" style="text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid #2A2A2A">'.
                     '<p>Spremno!</p>'.
                     '<p>Ako imate bilo kakvo pitanje, javite nam se.</p>'.
-                    '<p style="margin-top:16px"><strong style="color:#fff">{{ support_phone }}</strong> · <a href="mailto:{{ support_email }}" style="color:#F59E0B">{{ support_email }}</a></p>'.
+                    '<p style="margin-top:16px"><a href="tel:{{ support_phone }}" style="color:#F59E0B;text-decoration:none;font-weight:bold">{{ support_phone }}</a> · <a href="mailto:{{ support_email }}" style="color:#F59E0B">{{ support_email }}</a></p>'.
                     '<p style="margin-top:16px;color:#6B7280">Uživajte u Beogradu!<br>— {{ site_name }}</p>'.
                     '<p style="margin-top:12px;font-size:12px"><a href="{{ cancel_url }}" style="color:#6B7280">Treba da otkažete?</a></p>'.
                     '</div>'),
@@ -274,16 +266,28 @@ class NotificationTemplateSeeder extends Seeder
 
     private function emailShell(string $title, string $titleColor, string $inner): string
     {
-        return '<!DOCTYPE html><html><head><meta charset="utf-8"><style>'.
-            'body{font-family:Arial,sans-serif;background:#0A0A0A;color:#fff;padding:20px}'.
-            '.card{background:#1A1A1A;border:1px solid #2A2A2A;border-radius:12px;padding:24px;max-width:600px;margin:0 auto}'.
-            '.info{color:#A0A0A0;font-size:14px;line-height:1.6}'.
-            '.btn{display:inline-block;background:#F59E0B;color:#000;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:16px}'.
-            '.highlight{background:#111;border:1px solid #2A2A2A;border-radius:8px;padding:16px;text-align:center;margin:16px 0}'.
-            'h1{color:'.$titleColor.';text-align:center}h2{color:#F59E0B;font-size:16px;margin-top:20px}'.
-            '</style></head><body><div class="card">'.
-            '<h1>'.$title.'</h1>'.
-            $inner.
-            '</div></body></html>';
+        // Anti-auto-link rules below: Gmail / iOS Mail / Outlook auto-detect
+        // phone numbers, addresses and emails and wrap them in <a> with their
+        // own blue colour. The `x-apple-data-detectors` selector + the
+        // format-detection meta tag stop that, so prose never goes blue.
+        return '<!DOCTYPE html><html><head><meta charset="utf-8">'
+            .'<meta name="format-detection" content="telephone=no, address=no, email=no, date=no">'
+            .'<meta name="x-apple-disable-message-reformatting">'
+            .'<style>'
+            .'body{font-family:Arial,sans-serif;background:#0A0A0A;color:#fff;padding:20px}'
+            .'.card{background:#1A1A1A;border:1px solid #2A2A2A;border-radius:12px;padding:24px;max-width:600px;margin:0 auto}'
+            .'.info{color:#A0A0A0;font-size:14px;line-height:1.6}'
+            .'.btn{display:inline-block;background:#F59E0B;color:#000 !important;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:16px}'
+            .'.highlight{background:#111;border:1px solid #2A2A2A;border-radius:8px;padding:16px;text-align:center;margin:16px 0}'
+            .'h1{color:'.$titleColor.';text-align:center}h2{color:#F59E0B;font-size:16px;margin-top:20px}'
+            // Override the blue auto-detected links on Apple Mail / iOS:
+            .'a[x-apple-data-detectors]{color:inherit !important;text-decoration:none !important;font-size:inherit !important;font-family:inherit !important;font-weight:inherit !important;line-height:inherit !important}'
+            // Generic anchor — every link in our emails is intentionally amber
+            // or gray, never the browser/client default blue.
+            .'a{color:#F59E0B;text-decoration:none}'
+            .'</style></head><body><div class="card">'
+            .'<h1>'.$title.'</h1>'
+            .$inner
+            .'</div></body></html>';
     }
 }
