@@ -288,16 +288,35 @@ class BookingService
             'cancel_reason' => $reason,
         ]);
 
-        // Remove TTLock keyboard passwords for any lockers attached to this booking
-        foreach (BookingLocker::where('booking_id', $booking->id)->pluck('id') as $blId) {
-            DeleteTTLockAccessCode::dispatch($blId)->afterCommit();
+        // Run TTLock cleanup + customer email SYNCHRONOUSLY so admin sees the
+        // outcome in the same HTTP round-trip. Customer also gets the email
+        // before the response returns, eliminating the queue-tick delay.
+        // Each leg is wrapped in try/catch so a transient TTLock or SMTP
+        // failure falls back to the queued retry path rather than rolling
+        // back a cancel that the admin already committed to.
+        foreach (BookingLocker::where('booking_id', $booking->id)->whereNotNull('ttlock_keyboard_pwd_id')->pluck('id') as $blId) {
+            try {
+                DeleteTTLockAccessCode::dispatchSync($blId);
+            } catch (\Throwable $e) {
+                Log::error('Sync TTLock delete on cancel failed; queued for retry', [
+                    'booking_locker_id' => $blId, 'error' => $e->getMessage(),
+                ]);
+                DeleteTTLockAccessCode::dispatch($blId);
+            }
         }
 
         $templateKey = $initiatedBy === 'admin'
             ? 'booking_cancelled_by_admin'
             : 'booking_cancelled_by_customer';
 
-        SendBookingCancelled::dispatch($booking->id, $templateKey)->afterCommit();
+        try {
+            SendBookingCancelled::dispatchSync($booking->id, $templateKey);
+        } catch (\Throwable $e) {
+            Log::error('Sync cancellation email failed; queued for retry', [
+                'booking_id' => $booking->id, 'error' => $e->getMessage(),
+            ]);
+            SendBookingCancelled::dispatch($booking->id, $templateKey);
+        }
 
         return $booking;
     }
