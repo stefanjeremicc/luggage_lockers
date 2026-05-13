@@ -16,7 +16,9 @@ class NotificationTemplateSeeder extends Seeder
             'booking_confirmed_admin',
             'booking_cancelled_by_customer',
             'booking_cancelled_by_admin',
+            'booking_cancelled_admin',
             'pin_reissued',
+            'pin_reissued_admin',
             'review_request',
         ];
         NotificationTemplate::whereNotIn('key', $activeKeys)->delete();
@@ -227,6 +229,51 @@ class NotificationTemplateSeeder extends Seeder
                     '<p style="margin:6px 0 0"><a href="mailto:{{ support_email }}" style="color:#F59E0B">{{ support_email }}</a></p>'.
                     '</div>'.
                     '<p class="info" style="text-align:center;margin-top:20px;color:#6B7280">— {{ site_name }}</p>'),
+            ],
+
+            // ─── booking_cancelled_admin (admin alert when ANY cancel happens) ───────────────
+            [
+                'key' => 'booking_cancelled_admin', 'channel' => 'email', 'locale' => 'en',
+                'subject' => 'Cancelled — Booking #{{ booking_id }} ({{ initiated_by_label }}) — {{ location_name }}',
+                'variables' => array_merge($commonVars, ['customer_email', 'customer_phone', 'booking_id', 'initiated_by_label', 'cancelled_at', 'cancel_reason']),
+                'body' => $this->emailShell('Booking Cancelled', '#EF4444',
+                    '<div class="info">'.
+                    '<table style="width:100%;border-collapse:collapse;font-size:14px">'.
+                    '<tr><td style="padding:6px 0;color:#A0A0A0;width:40%">Booking</td><td style="padding:6px 0;color:#fff"><strong>#{{ booking_id }}</strong></td></tr>'.
+                    '<tr><td style="padding:6px 0;color:#A0A0A0">Cancelled by</td><td style="padding:6px 0;color:#EF4444;font-weight:600">{{ initiated_by_label }}</td></tr>'.
+                    '<tr><td style="padding:6px 0;color:#A0A0A0">Cancelled at</td><td style="padding:6px 0;color:#fff"><span class="no-link">{{ cancelled_at }}</span></td></tr>'.
+                    '<tr><td style="padding:6px 0;color:#A0A0A0">Reason</td><td style="padding:6px 0;color:#fff">{{ cancel_reason }}</td></tr>'.
+                    '<tr><td colspan="2" style="padding:8px 0"><hr style="border:0;border-top:1px solid #2A2A2A"></td></tr>'.
+                    '<tr><td style="padding:6px 0;color:#A0A0A0">Customer</td><td style="padding:6px 0;color:#fff"><strong>{{ customer_name }}</strong></td></tr>'.
+                    '<tr><td style="padding:6px 0;color:#A0A0A0">Email</td><td style="padding:6px 0"><a href="mailto:{{ customer_email }}" style="color:#F59E0B">{{ customer_email }}</a></td></tr>'.
+                    '<tr><td style="padding:6px 0;color:#A0A0A0">Phone</td><td style="padding:6px 0"><a href="tel:{{ customer_phone }}" style="color:#F59E0B">{{ customer_phone }}</a></td></tr>'.
+                    '<tr><td style="padding:6px 0;color:#A0A0A0">Location</td><td style="padding:6px 0;color:#fff">{{ location_name }}</td></tr>'.
+                    '<tr><td style="padding:6px 0;color:#A0A0A0">Locker</td><td style="padding:6px 0;color:#fff"><strong>{{ locker_number }}</strong></td></tr>'.
+                    '<tr><td style="padding:6px 0;color:#A0A0A0">Type</td><td style="padding:6px 0;color:#fff">{{ items_summary }}</td></tr>'.
+                    '<tr><td style="padding:6px 0;color:#A0A0A0">Period</td><td style="padding:6px 0;color:#fff"><span class="no-link">{{ check_in_full }} → {{ check_out_full }}</span></td></tr>'.
+                    '<tr><td style="padding:6px 0;color:#A0A0A0">Total</td><td style="padding:6px 0;color:#fff">€{{ total_eur }}</td></tr>'.
+                    '</table></div>'.
+                    '<p class="info" style="margin-top:12px;font-size:12px">TTLock passcode has been removed from the lock. Customer has been notified.</p>'),
+            ],
+
+            // ─── pin_reissued_admin (admin alert when PIN reissued from dashboard) ───────────────
+            [
+                'key' => 'pin_reissued_admin', 'channel' => 'email', 'locale' => 'en',
+                'subject' => 'PIN reissued — Booking #{{ booking_id }} — {{ location_name }}',
+                'variables' => array_merge($commonVars, ['customer_email', 'customer_phone', 'booking_id']),
+                'body' => $this->emailShell('PIN Reissued', '#F59E0B',
+                    '<div class="info">'.
+                    '<table style="width:100%;border-collapse:collapse;font-size:14px">'.
+                    '<tr><td style="padding:6px 0;color:#A0A0A0;width:40%">Booking</td><td style="padding:6px 0;color:#fff"><strong>#{{ booking_id }}</strong></td></tr>'.
+                    '<tr><td style="padding:6px 0;color:#A0A0A0">Customer</td><td style="padding:6px 0;color:#fff"><strong>{{ customer_name }}</strong></td></tr>'.
+                    '<tr><td style="padding:6px 0;color:#A0A0A0">Email</td><td style="padding:6px 0"><a href="mailto:{{ customer_email }}" style="color:#F59E0B">{{ customer_email }}</a></td></tr>'.
+                    '<tr><td style="padding:6px 0;color:#A0A0A0">Phone</td><td style="padding:6px 0"><a href="tel:{{ customer_phone }}" style="color:#F59E0B">{{ customer_phone }}</a></td></tr>'.
+                    '<tr><td style="padding:6px 0;color:#A0A0A0">Location</td><td style="padding:6px 0;color:#fff">{{ location_name }}</td></tr>'.
+                    '<tr><td style="padding:6px 0;color:#A0A0A0">Locker</td><td style="padding:6px 0;color:#fff"><strong>{{ locker_number }}</strong></td></tr>'.
+                    '<tr><td style="padding:6px 0;color:#A0A0A0">New PIN</td><td style="padding:6px 0;color:#F59E0B;font-family:monospace;font-weight:bold">{{ pin_code }}</td></tr>'.
+                    '<tr><td style="padding:6px 0;color:#A0A0A0">Period</td><td style="padding:6px 0;color:#fff"><span class="no-link">{{ check_in_full }} → {{ check_out_full }}</span></td></tr>'.
+                    '</table></div>'.
+                    '<p class="info" style="margin-top:12px;font-size:12px">Old PIN was deleted from TTLock. New PIN is live on the lock. Customer has been notified.</p>'),
             ],
 
             // ─── pin_reissued (admin reissued the locker PIN) ───────────────

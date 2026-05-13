@@ -102,10 +102,9 @@ class BookingNotifier
     }
 
     /**
-     * Dispatch a "your PIN was just reissued" notice. Used by the admin
-     * "Reissue PIN" flow — customer needs to know the previous PIN is dead
-     * and the new one is now live. Goes to the customer (locale-aware) and
-     * BCC every admin address for the audit trail.
+     * Dispatch a "your PIN was just reissued" notice to the customer only.
+     * Pair with sendPinReissuedAdmin() for the admin-side alert (different
+     * content: concise table, not the styled customer card).
      */
     public static function sendPinReissued(Booking $booking): void
     {
@@ -116,6 +115,71 @@ class BookingNotifier
         $vars = self::buildVars($booking, $locale) + self::pinVars($booking, $locale);
 
         self::sendEmail($booking, 'pin_reissued', $locale, $vars);
+    }
+
+    /** Admin-side compact "PIN reissued" alert (separate from the customer email). */
+    public static function sendPinReissuedAdmin(Booking $booking): void
+    {
+        self::sendAdminTemplate($booking, 'pin_reissued_admin', []);
+    }
+
+    /**
+     * Admin-side compact "Booking cancelled" alert. `$initiatedBy` is either
+     * 'customer' (self-service cancel link) or 'admin' (dashboard click).
+     */
+    public static function sendBookingCancelledAdmin(Booking $booking, string $initiatedBy = 'customer'): void
+    {
+        $tz = config('app.display_timezone');
+        $cancelledAt = $booking->cancelled_at?->copy()->setTimezone($tz)->format('M j, Y \a\t H:i') ?? '—';
+        self::sendAdminTemplate($booking, 'booking_cancelled_admin', [
+            'initiated_by_label' => $initiatedBy === 'admin' ? 'admin (dashboard)' : 'customer (self-service link)',
+            'cancelled_at' => $cancelledAt,
+            'cancel_reason' => $booking->cancel_reason ?: '—',
+        ]);
+    }
+
+    /**
+     * Render any *_admin template against the booking + base vars, plus
+     * whatever extra strings the caller wants to splice in. One mail per
+     * configured admin address so each gets the alert in their own inbox.
+     */
+    private static function sendAdminTemplate(Booking $booking, string $key, array $extraVars): void
+    {
+        if (self::disabled()) return;
+
+        $adminEmails = self::adminEmails();
+        if (!$adminEmails) {
+            Log::info("Admin alert {$key} skipped — no admin email configured", ['booking' => $booking->id]);
+            return;
+        }
+
+        $booking->loadMissing(['customer', 'location', 'bookingLockers.locker']);
+        $locale = 'en'; // Admin emails are always English.
+        $vars = self::buildVars($booking, $locale) + self::pinVars($booking, $locale) + [
+            'customer_email' => $booking->customer->email ?? '—',
+            'customer_phone' => $booking->customer->phone ?? '—',
+            'booking_id' => $booking->id,
+        ] + $extraVars;
+
+        $rendered = NotificationTemplate::render($key, $locale, 'email', $vars);
+        if (!$rendered) {
+            Log::warning("{$key} template not found", ['locale' => $locale]);
+            return;
+        }
+
+        foreach ($adminEmails as $to) {
+            try {
+                Mail::html($rendered['body'], function ($m) use ($to, $rendered) {
+                    $m->to($to)->subject($rendered['subject'] ?? 'Notification');
+                });
+                self::log($booking, 'email', $key, $to, 'sent', null, [
+                    'subject' => $rendered['subject'], 'body_html' => $rendered['body'],
+                ]);
+            } catch (\Throwable $e) {
+                Log::error("Admin alert {$key} send failed", ['booking' => $booking->id, 'to' => $to, 'error' => $e->getMessage()]);
+                self::log($booking, 'email', $key, $to, 'failed', $e->getMessage(), null);
+            }
+        }
     }
 
     /**
@@ -364,14 +428,26 @@ class BookingNotifier
         $isDevMode = self::devMode();
         $notifyAdmin = self::notifyAdmin();
 
+        // Keys that already have a dedicated `_admin` template + matching
+        // BookingNotifier::send*Admin call. Don't BCC admin on the customer
+        // copy for these — admin gets their own concise version separately,
+        // and duplicate inboxes were noisy.
+        $hasAdminCompanion = [
+            'booking_confirmed',
+            'booking_cancelled_by_customer',
+            'booking_cancelled_by_admin',
+            'pin_reissued',
+        ];
+
         // Recipient policy:
         //  - Dev mode ON  → first admin only (suppresses real customer).
         //  - Dev mode OFF → customer; if notify_admin is also ON, BCC every admin
         //    address (drop any that match the customer to avoid double-send).
+        //    Skip the BCC entirely for keys that have their own admin template.
         $primary = $isDevMode
             ? ($adminEmails[0] ?? $customerEmail)
             : $customerEmail;
-        $bccs = (!$isDevMode && $notifyAdmin)
+        $bccs = (!$isDevMode && $notifyAdmin && !in_array($key, $hasAdminCompanion, true))
             ? array_values(array_filter($adminEmails, fn ($e) => $e && $e !== $customerEmail))
             : [];
 

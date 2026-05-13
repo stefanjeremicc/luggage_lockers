@@ -318,6 +318,16 @@ class BookingService
             SendBookingCancelled::dispatch($booking->id, $templateKey);
         }
 
+        // Admin gets its own concise alert (different content from the
+        // customer-facing apology email). Sent sync alongside, but a failure
+        // here is logged + ignored — admin notification is a nice-to-have, not
+        // worth bubbling up as a 500 to the user/admin who already cancelled.
+        try {
+            BookingNotifier::sendBookingCancelledAdmin($booking->fresh(['customer','location','bookingLockers.locker']), $initiatedBy);
+        } catch (\Throwable $e) {
+            Log::error('Admin cancellation alert failed', ['booking_id' => $booking->id, 'error' => $e->getMessage()]);
+        }
+
         return $booking;
     }
 }

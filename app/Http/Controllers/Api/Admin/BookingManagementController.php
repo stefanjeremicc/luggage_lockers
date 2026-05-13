@@ -144,10 +144,20 @@ class BookingManagementController extends Controller
         // 4. Dispatch the customer-facing "your PIN has changed" email so they
         //    know the previous code is dead. Synchronous so admin can verify
         //    the send in the same admin click round-trip.
+        $fresh = $booking->fresh(['customer', 'location', 'bookingLockers.locker']);
         try {
-            \App\Services\Notification\BookingNotifier::sendPinReissued($booking->fresh(['customer', 'location', 'bookingLockers.locker']));
+            \App\Services\Notification\BookingNotifier::sendPinReissued($fresh);
         } catch (\Throwable $e) {
             \Log::error('pin_reissued send failed', ['booking_id' => $booking->id, 'error' => $e->getMessage()]);
+        }
+
+        // 5. Admin-side compact "PIN reissued" notification (separate from the
+        //    customer-facing email so admin gets the operational facts, not the
+        //    styled card).
+        try {
+            \App\Services\Notification\BookingNotifier::sendPinReissuedAdmin($fresh);
+        } catch (\Throwable $e) {
+            \Log::error('pin_reissued_admin send failed', ['booking_id' => $booking->id, 'error' => $e->getMessage()]);
         }
 
         return response()->json(['message' => "Re-issued PIN for {$reissued} locker(s). Customer has been notified."]);
