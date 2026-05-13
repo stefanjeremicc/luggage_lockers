@@ -49,7 +49,7 @@ class NotificationTemplateSeeder extends Seeder
                     '<p class="info">Hello <strong style="color:#fff">{{ customer_name }}</strong>, your booking is confirmed.</p>'.
 
                     '{{ booking_details_block }}'.
-                    '<p style="color:#A0A0A0;font-size:13px;font-style:italic;margin:8px 0 0">You\'re welcome to arrive up to {{ tolerance_minutes }} minutes early. Luggage is fully secured and you can access it 24/7.</p>'.
+                    '<p class="no-link" style="color:#A0A0A0;font-size:13px;font-style:italic;margin:8px 0 0">You\'re welcome to arrive up to {{ tolerance_minutes }} minutes early. Luggage is fully secured and you can access it 24/7.</p>'.
 
                     '<h2>Pay Station Information</h2>'.
                     '<div class="info">'.
@@ -89,7 +89,7 @@ class NotificationTemplateSeeder extends Seeder
                     '<p class="info">Zdravo <strong style="color:#fff">{{ customer_name }}</strong>, vaša rezervacija je potvrđena.</p>'.
 
                     '{{ booking_details_block }}'.
-                    '<p style="color:#A0A0A0;font-size:13px;font-style:italic;margin:8px 0 0">Možete doći i do {{ tolerance_minutes }} minuta ranije. Prtljag je potpuno bezbedan i pristup imate 24/7.</p>'.
+                    '<p class="no-link" style="color:#A0A0A0;font-size:13px;font-style:italic;margin:8px 0 0">Možete doći i do {{ tolerance_minutes }} minuta ranije. Prtljag je potpuno bezbedan i pristup imate 24/7.</p>'.
 
                     '<h2>Informacije o plaćanju</h2>'.
                     '<div class="info">'.
@@ -317,6 +317,11 @@ class NotificationTemplateSeeder extends Seeder
             .'h1{color:'.$titleColor.';text-align:center}h2{color:#F59E0B;font-size:16px;margin-top:20px}'
             // Override the blue auto-detected links on Apple Mail / iOS:
             .'a[x-apple-data-detectors]{color:inherit !important;text-decoration:none !important;font-size:inherit !important;font-family:inherit !important;font-weight:inherit !important;line-height:inherit !important}'
+            // Gmail / Outlook also auto-link dates, times, addresses and "24/7"
+            // and recolour them. Anything wrapped in `.no-link` (and its
+            // descendants) forces inherit so the surrounding white / amber
+            // styling wins regardless of the client.
+            .'.no-link, .no-link *, .no-link a, .no-link a span{color:inherit !important;text-decoration:none !important;pointer-events:none}'
             // Generic anchor — every link in our emails is intentionally amber
             // or gray, never the browser/client default blue.
             .'a{color:#F59E0B;text-decoration:none}'

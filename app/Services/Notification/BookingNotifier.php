@@ -209,13 +209,13 @@ class BookingNotifier
         $checkInRow = $row(
             $pill('rgba(16,185,129,0.10)', '#10B981', $iconIn),
             '<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#10B981;font-weight:700">'.$L('Check-in', 'Dolazak').'</div>'
-            .'<div style="font-weight:600;color:#fff;font-size:14px;margin-top:2px">'.$checkIn.'</div>'
+            .'<div class="no-link" style="font-weight:600;color:#fff;font-size:14px;margin-top:2px">'.$checkIn.'</div>'
         );
 
         $checkOutRow = $row(
             $pill('rgba(239,68,68,0.10)', '#EF4444', $iconOut),
             '<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#EF4444;font-weight:700">'.$L('Check-out', 'Odlazak').'</div>'
-            .'<div style="font-weight:600;color:#fff;font-size:14px;margin-top:2px">'.$checkOut.'</div>'
+            .'<div class="no-link" style="font-weight:600;color:#fff;font-size:14px;margin-top:2px">'.$checkOut.'</div>'
         );
 
         // Final row — no bottom border, plus right-aligned total cell.
