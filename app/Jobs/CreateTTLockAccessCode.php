@@ -6,7 +6,6 @@ use App\Models\BookingLocker;
 use App\Models\TtlockGateway;
 use App\Services\Booking\BookingService;
 use App\Services\Lock\LockServiceInterface;
-use App\Services\Notification\BookingNotifier;
 use Illuminate\Bus\Queueable;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -39,13 +38,15 @@ class CreateTTLockAccessCode implements ShouldQueue
     {
         $bl = BookingLocker::with(['booking.customer', 'booking.location', 'locker'])->findOrFail($this->bookingLockerId);
 
-        // No physical lock mapped → still notify the customer with the PIN so manual override works.
+        // No physical lock mapped → there's nothing to register with TTLock cloud,
+        // but the manual-override flow still relies on the booking's encrypted PIN.
+        // The customer-facing confirmation email is sent once, after the booking
+        // service has tried registering every locker, so we just return here.
         if (!$bl->locker->ttlock_lock_id) {
             Log::warning('TTLock skipped: locker has no ttlock_lock_id', [
                 'booking_locker_id' => $bl->id,
                 'locker_id' => $bl->locker_id,
             ]);
-            BookingNotifier::sendPinDelivered($bl);
             return;
         }
 
@@ -107,8 +108,8 @@ class CreateTTLockAccessCode implements ShouldQueue
         $bl->update([
             'ttlock_keyboard_pwd_id' => $response['keyboardPwdId'] ?? null,
         ]);
-
-        // After TTLock cloud has accepted the password, push the PIN to the customer.
-        BookingNotifier::sendPinDelivered($bl->fresh(['booking.customer', 'booking.location', 'locker']));
+        // Customer email is sent once by BookingService::create after every
+        // booking_locker has gone through this job, so all PINs land in a single
+        // confirmation message.
     }
 }

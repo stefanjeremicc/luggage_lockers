@@ -7,14 +7,15 @@ use App\Enums\PaymentStatus;
 use App\Jobs\CreateTTLockAccessCode;
 use App\Jobs\DeleteTTLockAccessCode;
 use App\Jobs\SendBookingCancelled;
-use App\Jobs\SendBookingConfirmation;
 use App\Models\Booking;
 use App\Models\BookingItem;
 use App\Models\BookingLocker;
 use App\Models\Locker;
+use App\Services\Notification\BookingNotifier;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class BookingService
@@ -190,22 +191,13 @@ class BookingService
             return $booking;
         });
 
-        // Run notifications and TTLock PIN registration synchronously AFTER the
-        // transaction commits. The customer expects the confirmation email and a
-        // working PIN within seconds of the booking POST returning, not whenever
-        // the next queue:work cron tick fires (up to 60s away on shared cPanel).
+        // Register every locker's PIN with TTLock cloud synchronously, then send
+        // ONE combined customer email + one admin alert. The customer should see
+        // a working PIN in TTLock and a confirmation in their inbox within a few
+        // seconds of the booking POST returning, not after a queue tick.
         //
-        // Wrapped in try/catch + fallback-to-queue so a transient SMTP or TTLock
-        // failure does not roll back the booking the customer already paid for.
-        try {
-            SendBookingConfirmation::dispatchSync($booking->id);
-        } catch (\Throwable $e) {
-            \Log::error('Sync booking_confirmed failed, falling back to queue', [
-                'booking_id' => $booking->id, 'error' => $e->getMessage(),
-            ]);
-            SendBookingConfirmation::dispatch($booking->id);
-        }
-
+        // Each sync call is guarded — a transient TTLock outage falls back to the
+        // queued retry/backoff path so we never roll back a paid booking.
         $bookingLockerIds = BookingLocker::where('booking_id', $booking->id)->pluck('id');
         foreach ($bookingLockerIds as $blId) {
             try {
@@ -216,6 +208,20 @@ class BookingService
                 ]);
                 CreateTTLockAccessCode::dispatch($blId);
             }
+        }
+
+        // Send the customer confirmation + admin alert after every locker has
+        // been processed (success or queue-fallback). buildVars decrypts PINs
+        // straight from booking_lockers, so the email matches what's in TTLock.
+        try {
+            BookingNotifier::sendBookingConfirmation($booking->fresh(['customer', 'location', 'bookingLockers.locker']));
+        } catch (\Throwable $e) {
+            \Log::error('Customer booking_confirmed send failed', ['booking_id' => $booking->id, 'error' => $e->getMessage()]);
+        }
+        try {
+            BookingNotifier::sendBookingConfirmedAdmin($booking);
+        } catch (\Throwable $e) {
+            \Log::error('Admin booking_confirmed send failed', ['booking_id' => $booking->id, 'error' => $e->getMessage()]);
         }
 
         return $booking;
@@ -270,7 +276,11 @@ class BookingService
         return str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);
     }
 
-    public function cancel(Booking $booking, ?string $reason = null): Booking
+    /**
+     * @param  string  $initiatedBy  'customer' (self-service cancel link) or 'admin' (cancel from dashboard).
+     *                               Controls which cancellation email template is rendered.
+     */
+    public function cancel(Booking $booking, ?string $reason = null, string $initiatedBy = 'customer'): Booking
     {
         $booking->update([
             'booking_status' => BookingStatus::Cancelled,
@@ -283,7 +293,11 @@ class BookingService
             DeleteTTLockAccessCode::dispatch($blId)->afterCommit();
         }
 
-        SendBookingCancelled::dispatch($booking->id)->afterCommit();
+        $templateKey = $initiatedBy === 'admin'
+            ? 'booking_cancelled_by_admin'
+            : 'booking_cancelled_by_customer';
+
+        SendBookingCancelled::dispatch($booking->id, $templateKey)->afterCommit();
 
         return $booking;
     }

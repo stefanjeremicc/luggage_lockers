@@ -101,7 +101,7 @@ class BookingApiController extends Controller
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
-        $booking = $service->cancel($booking, $request->input('reason'));
+        $booking = $service->cancel($booking, $request->input('reason'), 'customer');
 
         return response()->json([
             'message' => 'Booking cancelled successfully.',

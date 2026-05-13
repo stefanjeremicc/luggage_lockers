@@ -33,36 +33,114 @@ class BookingNotifier
     }
 
     /**
-     * Send the per-locker PIN to the customer, after TTLock cloud has accepted it.
+     * Send the single combined "booking confirmed" email to the customer,
+     * AFTER every locker's PIN has been registered with TTLock cloud. This is
+     * the only customer-facing confirmation now — the old two-step
+     * (booking_confirmed → locker_pin_delivered) flow was consolidated.
+     *
+     * Idempotent: if some booking_lockers have a PIN registered and others
+     * don't, we render what we have. Re-sends are guarded at the call site.
      */
-    public static function sendPinDelivered(BookingLocker $bl): void
+    public static function sendBookingConfirmation(Booking $booking): void
     {
         if (self::disabled()) {
-            Log::info('Notifications disabled — skipping PIN delivery', ['booking_locker' => $bl->id]);
+            Log::info('Notifications disabled — skipping booking_confirmed', ['booking' => $booking->id]);
             return;
         }
 
-        $booking = $bl->booking;
-        $booking->loadMissing(['customer', 'location']);
+        $booking->loadMissing(['customer', 'location', 'bookingLockers.locker']);
         $locale = $booking->customer->locale ?? 'en';
+        $vars = self::buildVars($booking) + self::pinVars($booking, $locale);
 
-        try {
-            $pin = Crypt::decryptString($bl->pin_code_encrypted);
-        } catch (\Throwable $e) {
-            Log::error('Failed to decrypt PIN for delivery', ['booking_locker' => $bl->id, 'error' => $e->getMessage()]);
-            return;
-        }
-
-        $vars = self::buildVars($booking) + [
-            'pin_code' => $pin,
-            'locker_number' => $bl->locker->number,
-        ];
-
-        self::sendEmail($booking, 'locker_pin_delivered', $locale, $vars);
+        self::sendEmail($booking, 'booking_confirmed', $locale, $vars);
 
         if ($booking->customer->whatsapp_opt_in && $booking->customer->phone) {
-            self::sendWhatsApp($booking, 'locker_pin_delivered', $locale, $vars);
+            self::sendWhatsApp($booking, 'booking_confirmed', $locale, $vars);
         }
+    }
+
+    /**
+     * Send the concise "new booking" alert to the admin inbox. Sent in parallel
+     * with the customer confirmation, never BCCed onto the customer email.
+     */
+    public static function sendBookingConfirmedAdmin(Booking $booking): void
+    {
+        if (self::disabled()) return;
+
+        $adminEmail = self::adminEmail();
+        if (!$adminEmail) {
+            Log::info('Admin booking confirmation skipped — no ADMIN_EMAIL_TO configured', ['booking' => $booking->id]);
+            return;
+        }
+
+        $booking->loadMissing(['customer', 'location', 'bookingLockers.locker']);
+        $locale = 'en'; // Admin emails always English regardless of customer locale.
+        $vars = self::buildVars($booking) + self::pinVars($booking, $locale) + [
+            'customer_email' => $booking->customer->email ?? '—',
+            'customer_phone' => $booking->customer->phone ?? '—',
+        ];
+
+        $rendered = NotificationTemplate::render('booking_confirmed_admin', $locale, 'email', $vars);
+        if (!$rendered) {
+            Log::warning('booking_confirmed_admin template not found', ['locale' => $locale]);
+            return;
+        }
+
+        try {
+            Mail::html($rendered['body'], function ($m) use ($adminEmail, $rendered) {
+                $m->to($adminEmail)->subject($rendered['subject'] ?? 'New booking');
+            });
+            self::log($booking, 'email', 'booking_confirmed_admin', $adminEmail, 'sent', null, [
+                'subject' => $rendered['subject'], 'body_html' => $rendered['body'],
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Admin booking email send failed', ['booking' => $booking->id, 'error' => $e->getMessage()]);
+            self::log($booking, 'email', 'booking_confirmed_admin', $adminEmail, 'failed', $e->getMessage(), null);
+        }
+    }
+
+    /**
+     * Build the lockers-with-PINs block for templates. Decrypts each
+     * booking_locker's PIN and renders a single HTML chunk plus convenience
+     * scalars (first PIN/number, used by single-locker templates).
+     */
+    private static function pinVars(Booking $booking, string $locale): array
+    {
+        $bls = $booking->bookingLockers ?? collect();
+        $labelEntry = $locale === 'sr' ? 'Šifra ULAZNIH VRATA' : 'ENTRY DOOR access code';
+        $labelLocker = $locale === 'sr' ? 'Šifra ORMARIĆA' : 'YOUR LOCKER';
+        $entryCode = (string) Setting::getValue('entry_door_code', '0717#');
+
+        $blocks = [];
+        $firstPin = null;
+        $firstNumber = null;
+        foreach ($bls as $bl) {
+            try {
+                $pin = Crypt::decryptString($bl->pin_code_encrypted);
+            } catch (\Throwable) {
+                continue;
+            }
+            $firstPin ??= $pin;
+            $firstNumber ??= $bl->locker->number ?? '';
+            $number = $bl->locker->number ?? '';
+            $blocks[] = '<div class="highlight">'
+                .'<p style="margin:0 0 6px;color:#A0A0A0;font-size:13px">'.e($labelLocker).' ('.e($number).') access code</p>'
+                .'<p style="margin:0;font-size:28px;color:#F59E0B;font-weight:bold;letter-spacing:6px">#'.e($pin).'</p>'
+                .'</div>';
+        }
+
+        // Entry door block goes first, then one block per locker.
+        $entryBlock = '<div class="highlight">'
+            .'<p style="margin:0 0 6px;color:#A0A0A0;font-size:13px">'.e($labelEntry).'</p>'
+            .'<p style="margin:0;font-size:28px;color:#F59E0B;font-weight:bold;letter-spacing:6px">#'.e($entryCode).'</p>'
+            .'</div>';
+
+        return [
+            'pin_code' => $firstPin ? '#'.$firstPin : '',
+            'locker_number' => $firstNumber ?? '',
+            'codes_block' => $entryBlock . implode('', $blocks),
+            'entry_door_code' => '#'.$entryCode,
+        ];
     }
 
     private static function buildVars(Booking $booking): array

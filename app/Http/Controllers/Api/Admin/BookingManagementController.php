@@ -193,7 +193,7 @@ class BookingManagementController extends Controller
     public function destroy(int $id, BookingService $service): JsonResponse
     {
         $booking = Booking::findOrFail($id);
-        $service->cancel($booking, 'Cancelled by admin');
+        $service->cancel($booking, 'Cancelled by admin', 'admin');
         return response()->json(['message' => 'Booking cancelled']);
     }
 

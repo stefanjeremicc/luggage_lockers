@@ -6,6 +6,8 @@ use App\Enums\BookingStatus;
 use App\Enums\LockerSize;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
+// BookingLocker lives in the same App\Models namespace — no explicit use needed
+// for the relation method but listed here for IDE clarity.
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -53,6 +55,16 @@ class Booking extends Model
     {
         return $this->belongsToMany(Locker::class, 'booking_lockers')
             ->withPivot('pin_code_encrypted', 'ttlock_keyboard_pwd_id', 'assigned_at', 'booking_item_id');
+    }
+
+    /**
+     * Direct hasMany to the pivot model so we can iterate booking_lockers rows
+     * (with their own id + ttlock_keyboard_pwd_id) without going through the
+     * belongsToMany pivot — needed for emails that render per-locker PINs.
+     */
+    public function bookingLockers(): HasMany
+    {
+        return $this->hasMany(BookingLocker::class);
     }
 
     public function items(): HasMany
