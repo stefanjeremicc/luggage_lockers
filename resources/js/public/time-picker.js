@@ -10,21 +10,40 @@ export default function timePicker() {
         selMinute: null,
 
         onOpen() {
-            // Seed the wheels from whatever's already in the parent so re-opening
-            // doesn't lose context.
+            // Seed the wheels:
+            //   1. If parent already has a time, restore it.
+            //   2. Otherwise, for today's date, pre-select "now + 1 minute" so
+            //      the customer literally cannot pick something in the past —
+            //      and they always see a highlighted starting point.
+            //   3. For future dates, default to 12:00 so the picker isn't empty.
             if (this.$root.time) {
                 const [h, m] = this.$root.time.split(':').map(Number);
                 this.selHour = h;
                 this.selMinute = m;
+            } else if (this._isToday) {
+                const next = this._nowPlusOne;
+                this.selHour = next.h;
+                this.selMinute = next.m;
             } else {
-                this.selHour = null;
-                this.selMinute = null;
+                this.selHour = 12;
+                this.selMinute = 0;
             }
             this.open = !this.open;
             if (this.open) {
                 // Scroll the selected value into view once Alpine has rendered.
                 this.$nextTick(() => this.scrollSelectedIntoView());
             }
+        },
+
+        /**
+         * Current wall-clock + 1 minute, wrapped across the hour boundary if
+         * needed. We pre-select this so the customer's default is always a
+         * future-valid time.
+         */
+        get _nowPlusOne() {
+            const d = new Date();
+            d.setMinutes(d.getMinutes() + 1);
+            return { h: d.getHours(), m: d.getMinutes() };
         },
 
         scrollSelectedIntoView() {
