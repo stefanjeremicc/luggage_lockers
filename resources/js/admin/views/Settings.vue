@@ -223,8 +223,8 @@ const groups = [
         key: 'notifications',
         label: 'Notifications — Admin & developer routing',
         fields: [
-            { key: 'notifications_admin_email', label: 'Admin email', type: 'email', max: 150,
-                hint: 'Where booking copies (and dev-mode redirects) go.' },
+            { key: 'notifications_admin_email', label: 'Admin email(s)', type: 'text', max: 500,
+                hint: 'Where booking copies go. Separate multiple addresses with a comma — e.g. "stefan@webby.rs, ops@example.com".' },
             // Admin WhatsApp number hidden until WhatsApp Business is wired up.
             // { key: 'notifications_admin_whatsapp', label: 'Admin WhatsApp', type: 'phone',
             //     hint: 'International format (e.g. +381649679212).' },

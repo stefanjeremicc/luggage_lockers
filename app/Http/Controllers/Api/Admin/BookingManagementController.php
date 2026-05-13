@@ -119,7 +119,7 @@ class BookingManagementController extends Controller
             // 1. Delete the old TTLock keyboard password BEFORE overwriting it locally —
             //    otherwise it stays valid on the lock indefinitely (security hole).
             if ($bl->ttlock_keyboard_pwd_id) {
-                DeleteTTLockAccessCode::dispatch($bl->id);
+                \App\Jobs\DeleteTTLockAccessCode::dispatchSync($bl->id);
             }
             // 2. Generate + persist new PIN, clear stale TTLock id so the create-job
             //    knows to register fresh.
@@ -128,12 +128,29 @@ class BookingManagementController extends Controller
                 'pin_code_encrypted' => Crypt::encryptString($pin),
                 'ttlock_keyboard_pwd_id' => null,
             ]);
-            // 3. Register the new PIN on the lock — this also re-sends the PIN to the customer.
-            CreateTTLockAccessCode::dispatch($bl->id);
+            // 3. Register the new PIN on the lock synchronously so the email we
+            //    send right after carries the live PIN, not the stale one.
+            try {
+                \App\Jobs\CreateTTLockAccessCode::dispatchSync($bl->id);
+            } catch (\Throwable $e) {
+                \Log::error('Sync TTLock create during reissue failed; falling back to queue', [
+                    'booking_locker_id' => $bl->id, 'error' => $e->getMessage(),
+                ]);
+                \App\Jobs\CreateTTLockAccessCode::dispatch($bl->id);
+            }
             $reissued++;
         }
 
-        return response()->json(['message' => "Re-issued PIN for {$reissued} locker(s). Customer will receive new PIN shortly."]);
+        // 4. Dispatch the customer-facing "your PIN has changed" email so they
+        //    know the previous code is dead. Synchronous so admin can verify
+        //    the send in the same admin click round-trip.
+        try {
+            \App\Services\Notification\BookingNotifier::sendPinReissued($booking->fresh(['customer', 'location', 'bookingLockers.locker']));
+        } catch (\Throwable $e) {
+            \Log::error('pin_reissued send failed', ['booking_id' => $booking->id, 'error' => $e->getMessage()]);
+        }
+
+        return response()->json(['message' => "Re-issued PIN for {$reissued} locker(s). Customer has been notified."]);
     }
 
     public function markPaid(int $id): JsonResponse
@@ -232,8 +249,16 @@ class BookingManagementController extends Controller
     public function resendConfirmation(int $id): JsonResponse
     {
         $booking = Booking::findOrFail($id);
-        SendBookingConfirmation::dispatch($booking->id);
-        return response()->json(['message' => 'Confirmation resent']);
+        // Run synchronously so the admin's "Resent" toast is truthful — if the
+        // SMTP call fails the response carries the error instead of silently
+        // queueing a job nobody watches.
+        try {
+            SendBookingConfirmation::dispatchSync($booking->id);
+            return response()->json(['message' => 'Confirmation resent to '.$booking->customer->email]);
+        } catch (\Throwable $e) {
+            \Log::error('Resend confirmation failed', ['booking_id' => $booking->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Resend failed: '.$e->getMessage()], 500);
+        }
     }
 
     public function export(Request $request): JsonResponse

@@ -22,9 +22,16 @@ class DeleteTTLockAccessCode implements ShouldQueue
 
     public function handle(LockServiceInterface $lockService): void
     {
-        $bl = BookingLocker::with('locker')->findOrFail($this->bookingLockerId);
+        // The booking_locker row may already be gone (admin force-delete, or
+        // the booking was wiped before this job ran). Silently swallow that —
+        // the only thing this job does is best-effort cleanup of a TTLock
+        // passcode we created. No row means no passcode to delete on our side.
+        $bl = BookingLocker::with('locker')->find($this->bookingLockerId);
+        if (!$bl) {
+            return;
+        }
 
-        if (!$bl->locker->ttlock_lock_id || !$bl->ttlock_keyboard_pwd_id) {
+        if (!$bl->locker?->ttlock_lock_id || !$bl->ttlock_keyboard_pwd_id) {
             return;
         }
 

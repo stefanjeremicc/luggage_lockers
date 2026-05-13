@@ -53,7 +53,10 @@ class SettingsController extends Controller
         'locker_large_dimensions' => 'nullable|string|max:60',
         'locker_large_image' => 'nullable|string|max:500',
         'entry_door_code' => 'nullable|string|max:20',
-        'notifications_admin_email' => 'nullable|email|max:150',
+        // Comma- or semicolon-separated list of admin email addresses; each
+        // entry must be a valid email. Empty string is allowed (disables admin
+        // copies). Validated via the `notification_admin_emails` rule below.
+        'notifications_admin_email' => ['nullable', 'string', 'max:500', 'regex:/^\s*(?:[^,;\s]+@[^,;\s]+\.[^,;\s]+\s*[,;]?\s*)*$/'],
         'notifications_admin_whatsapp' => ['nullable', 'regex:/^\+?[0-9]{7,15}$/'],
         'notifications_dev_mode' => 'nullable|in:0,1,true,false',
         'notifications_notify_admin' => 'nullable|in:0,1,true,false',

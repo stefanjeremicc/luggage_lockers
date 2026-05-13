@@ -16,6 +16,7 @@ class NotificationTemplateSeeder extends Seeder
             'booking_confirmed_admin',
             'booking_cancelled_by_customer',
             'booking_cancelled_by_admin',
+            'pin_reissued',
             'review_request',
         ];
         NotificationTemplate::whereNotIn('key', $activeKeys)->delete();
@@ -226,6 +227,40 @@ class NotificationTemplateSeeder extends Seeder
                     '<p style="margin:6px 0 0"><a href="mailto:{{ support_email }}" style="color:#F59E0B">{{ support_email }}</a></p>'.
                     '</div>'.
                     '<p class="info" style="text-align:center;margin-top:20px;color:#6B7280">— {{ site_name }}</p>'),
+            ],
+
+            // ─── pin_reissued (admin reissued the locker PIN) ───────────────
+            [
+                'key' => 'pin_reissued', 'channel' => 'email', 'locale' => 'en',
+                'subject' => 'Your locker PIN has been updated — {{ site_name }}',
+                'variables' => $commonVars,
+                'body' => $this->emailShell('PIN Updated', '#F59E0B',
+                    '<p class="info">Hi <strong style="color:#fff">{{ customer_name }}</strong>,</p>'.
+                    '<p class="info">Your previous locker PIN is no longer valid. We have issued a new one — please use the access codes below from now on.</p>'.
+                    '{{ booking_details_block }}'.
+                    '<h2>Updated Access Codes</h2>'.
+                    '{{ codes_block }}'.
+                    '<p class="info" style="font-size:13px;font-style:italic;margin-top:12px">If you did not expect this change, please get in touch right away.</p>'.
+                    '<div class="info" style="text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid #2A2A2A">'.
+                    '<p style="margin-top:8px"><a href="tel:{{ support_phone }}" style="color:#F59E0B;text-decoration:none;font-weight:bold">{{ support_phone }}</a> · <a href="mailto:{{ support_email }}" style="color:#F59E0B">{{ support_email }}</a></p>'.
+                    '<p style="margin-top:16px;color:#6B7280">— {{ site_name }}</p>'.
+                    '</div>'),
+            ],
+            [
+                'key' => 'pin_reissued', 'channel' => 'email', 'locale' => 'sr',
+                'subject' => 'Vaš PIN je promenjen — {{ site_name }}',
+                'variables' => $commonVars,
+                'body' => $this->emailShell('PIN je promenjen', '#F59E0B',
+                    '<p class="info">Zdravo <strong style="color:#fff">{{ customer_name }}</strong>,</p>'.
+                    '<p class="info">Vaš prethodni PIN za ormarić više nije važeći. Izdali smo novi — molimo koristite šifre ispod od sada.</p>'.
+                    '{{ booking_details_block }}'.
+                    '<h2>Nove pristupne šifre</h2>'.
+                    '{{ codes_block }}'.
+                    '<p class="info" style="font-size:13px;font-style:italic;margin-top:12px">Ako niste očekivali ovu izmenu, molimo javite nam se odmah.</p>'.
+                    '<div class="info" style="text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid #2A2A2A">'.
+                    '<p style="margin-top:8px"><a href="tel:{{ support_phone }}" style="color:#F59E0B;text-decoration:none;font-weight:bold">{{ support_phone }}</a> · <a href="mailto:{{ support_email }}" style="color:#F59E0B">{{ support_email }}</a></p>'.
+                    '<p style="margin-top:16px;color:#6B7280">— {{ site_name }}</p>'.
+                    '</div>'),
             ],
 
             // ─── review_request (30 min after check_out) ───────────────

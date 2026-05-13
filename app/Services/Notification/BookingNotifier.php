@@ -67,9 +67,9 @@ class BookingNotifier
     {
         if (self::disabled()) return;
 
-        $adminEmail = self::adminEmail();
-        if (!$adminEmail) {
-            Log::info('Admin booking confirmation skipped — no ADMIN_EMAIL_TO configured', ['booking' => $booking->id]);
+        $adminEmails = self::adminEmails();
+        if (!$adminEmails) {
+            Log::info('Admin booking confirmation skipped — no admin email configured', ['booking' => $booking->id]);
             return;
         }
 
@@ -86,17 +86,36 @@ class BookingNotifier
             return;
         }
 
-        try {
-            Mail::html($rendered['body'], function ($m) use ($adminEmail, $rendered) {
-                $m->to($adminEmail)->subject($rendered['subject'] ?? 'New booking');
-            });
-            self::log($booking, 'email', 'booking_confirmed_admin', $adminEmail, 'sent', null, [
-                'subject' => $rendered['subject'], 'body_html' => $rendered['body'],
-            ]);
-        } catch (\Throwable $e) {
-            Log::error('Admin booking email send failed', ['booking' => $booking->id, 'error' => $e->getMessage()]);
-            self::log($booking, 'email', 'booking_confirmed_admin', $adminEmail, 'failed', $e->getMessage(), null);
+        foreach ($adminEmails as $to) {
+            try {
+                Mail::html($rendered['body'], function ($m) use ($to, $rendered) {
+                    $m->to($to)->subject($rendered['subject'] ?? 'New booking');
+                });
+                self::log($booking, 'email', 'booking_confirmed_admin', $to, 'sent', null, [
+                    'subject' => $rendered['subject'], 'body_html' => $rendered['body'],
+                ]);
+            } catch (\Throwable $e) {
+                Log::error('Admin booking email send failed', ['booking' => $booking->id, 'to' => $to, 'error' => $e->getMessage()]);
+                self::log($booking, 'email', 'booking_confirmed_admin', $to, 'failed', $e->getMessage(), null);
+            }
         }
+    }
+
+    /**
+     * Dispatch a "your PIN was just reissued" notice. Used by the admin
+     * "Reissue PIN" flow — customer needs to know the previous PIN is dead
+     * and the new one is now live. Goes to the customer (locale-aware) and
+     * BCC every admin address for the audit trail.
+     */
+    public static function sendPinReissued(Booking $booking): void
+    {
+        if (self::disabled()) return;
+
+        $booking->loadMissing(['customer', 'location', 'bookingLockers.locker']);
+        $locale = $booking->customer->locale ?? 'en';
+        $vars = self::buildVars($booking, $locale) + self::pinVars($booking, $locale);
+
+        self::sendEmail($booking, 'pin_reissued', $locale, $vars);
     }
 
     /**
@@ -161,38 +180,48 @@ class BookingNotifier
         $duration = e($vars['duration_label'] ?? '');
         $total = e($vars['total_eur'] ?? '0.00');
 
-        $row = static fn (string $iconBg, string $iconColor, string $icon, string $labelHtml) =>
-            '<tr><td style="padding:14px 0;border-bottom:1px solid #2A2A2A">'
+        // Email-safe icon glyphs — single character per slot, sized + coloured
+        // to match the SVG pills on the website. We avoid emojis (renders
+        // differently per client) and inline SVG (Gmail strips it). The chars
+        // here are HTML entities widely supported in mail clients.
+        $iconPin    = '&#x2691;';   // ⚑  flag — for location
+        $iconIn     = '&#x2193;';   // ↓  down-arrow — entering / check-in
+        $iconOut    = '&#x2191;';   // ↑  up-arrow — leaving / check-out
+        $iconBox    = '&#x25A3;';   // ▣  square with smaller square — locker
+        $iconStyle  = 'font-size:18px;line-height:36px;font-weight:bold;display:block;text-align:center';
+
+        $pill = static fn (string $bg, string $color, string $icon) =>
+            '<div style="width:36px;height:36px;border-radius:10px;background:'.$bg.';color:'.$color.';'.$iconStyle.'">'.$icon.'</div>';
+
+        $row = static fn (string $pillHtml, string $labelHtml, bool $border = true) =>
+            '<tr><td style="padding:14px 0'.($border ? ';border-bottom:1px solid #2A2A2A' : '').'">'
             .'<table style="width:100%;border-collapse:collapse"><tr>'
-            .'<td style="width:42px;vertical-align:top">'
-            .'<div style="width:36px;height:36px;border-radius:10px;background:'.$iconBg.';line-height:36px;text-align:center;font-size:18px">'.$icon.'</div>'
-            .'</td>'
+            .'<td style="width:42px;vertical-align:top">'.$pillHtml.'</td>'
             .'<td style="vertical-align:top;padding-left:8px">'.$labelHtml.'</td>'
             .'</tr></table></td></tr>';
 
         $locationRow = $row(
-            'rgba(245,158,11,0.10)', '#F59E0B', '📍',
+            $pill('rgba(245,158,11,0.10)', '#F59E0B', $iconPin),
             '<div style="font-weight:600;color:#fff;font-size:14px">'.$name.'</div>'
             .'<div style="color:#A0A0A0;font-size:13px;margin-top:2px">'.$addr.'</div>'
         );
 
         $checkInRow = $row(
-            'rgba(16,185,129,0.10)', '#10B981', '🟢',
+            $pill('rgba(16,185,129,0.10)', '#10B981', $iconIn),
             '<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#10B981;font-weight:700">'.$L('Check-in', 'Dolazak').'</div>'
             .'<div style="font-weight:600;color:#fff;font-size:14px;margin-top:2px">'.$checkIn.'</div>'
         );
 
         $checkOutRow = $row(
-            'rgba(239,68,68,0.10)', '#EF4444', '🔴',
+            $pill('rgba(239,68,68,0.10)', '#EF4444', $iconOut),
             '<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#EF4444;font-weight:700">'.$L('Check-out', 'Odlazak').'</div>'
             .'<div style="font-weight:600;color:#fff;font-size:14px;margin-top:2px">'.$checkOut.'</div>'
         );
 
+        // Final row — no bottom border, plus right-aligned total cell.
         $lockersRow = '<tr><td style="padding:14px 0">'
             .'<table style="width:100%;border-collapse:collapse"><tr>'
-            .'<td style="width:42px;vertical-align:top">'
-            .'<div style="width:36px;height:36px;border-radius:10px;background:rgba(245,158,11,0.10);line-height:36px;text-align:center;font-size:18px">📦</div>'
-            .'</td>'
+            .'<td style="width:42px;vertical-align:top">'.$pill('rgba(245,158,11,0.10)', '#F59E0B', $iconBox).'</td>'
             .'<td style="vertical-align:top;padding-left:8px">'
             .'<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#F59E0B;font-weight:700">'.$L('Lockers', 'Ormarići').'</div>'
             .'<div style="font-weight:600;color:#fff;font-size:14px;margin-top:2px">'.$items.' <span style="color:#A0A0A0;font-weight:400"> — '.$duration.'</span></div>'
@@ -331,15 +360,20 @@ class BookingNotifier
         }
 
         $customerEmail = $booking->customer->email;
-        $adminEmail = self::adminEmail();
+        $adminEmails = self::adminEmails(); // array — supports multiple admin recipients
         $isDevMode = self::devMode();
         $notifyAdmin = self::notifyAdmin();
 
         // Recipient policy:
-        //  - Dev mode ON  → admin only (suppresses real customer).
-        //  - Dev mode OFF → customer; if notify_admin is also ON, BCC the admin.
-        $primary = $isDevMode ? ($adminEmail ?: $customerEmail) : $customerEmail;
-        $bccs = (!$isDevMode && $notifyAdmin && $adminEmail && $adminEmail !== $customerEmail) ? [$adminEmail] : [];
+        //  - Dev mode ON  → first admin only (suppresses real customer).
+        //  - Dev mode OFF → customer; if notify_admin is also ON, BCC every admin
+        //    address (drop any that match the customer to avoid double-send).
+        $primary = $isDevMode
+            ? ($adminEmails[0] ?? $customerEmail)
+            : $customerEmail;
+        $bccs = (!$isDevMode && $notifyAdmin)
+            ? array_values(array_filter($adminEmails, fn ($e) => $e && $e !== $customerEmail))
+            : [];
 
         $subject = $rendered['subject'] ?? '(no subject)';
         $body = $rendered['body'];
@@ -452,9 +486,27 @@ class BookingNotifier
         return self::boolPref('notifications_notify_admin', 'NOTIFY_ADMIN');
     }
 
+    /** First admin address — kept for callers that still expect a single string. */
     private static function adminEmail(): ?string
     {
-        return Setting::getValue('notifications_admin_email', null) ?: env('ADMIN_EMAIL_TO') ?: env('DEV_EMAIL_TO');
+        return self::adminEmails()[0] ?? null;
+    }
+
+    /**
+     * Parse the admin-email setting into a list. Accepts a comma- or
+     * semicolon-separated string so the dashboard can configure multiple
+     * notification recipients without code changes.
+     */
+    private static function adminEmails(): array
+    {
+        $raw = Setting::getValue('notifications_admin_email', null)
+            ?: env('ADMIN_EMAIL_TO')
+            ?: env('DEV_EMAIL_TO')
+            ?: '';
+        if (!$raw) return [];
+        $parts = preg_split('/[,;\s]+/', $raw, -1, PREG_SPLIT_NO_EMPTY);
+        // Keep only well-formed addresses; trim whitespace just in case.
+        return array_values(array_filter(array_map('trim', $parts), fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL)));
     }
 
     private static function adminWhatsApp(): ?string
