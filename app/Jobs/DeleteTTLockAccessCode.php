@@ -32,5 +32,9 @@ class DeleteTTLockAccessCode implements ShouldQueue
             $bl->locker->ttlock_lock_id,
             $bl->ttlock_keyboard_pwd_id
         );
+
+        // Clear our local pointer so the cleanup scheduler doesn't re-queue
+        // this row every tick once TTLock has accepted the delete.
+        $bl->update(['ttlock_keyboard_pwd_id' => null]);
     }
 }

@@ -52,14 +52,14 @@
                         <dd>
                             <div v-if="pinRows(b).length" class="flex flex-col gap-1.5">
                                 <div v-for="p in pinRows(b)" :key="p.number" class="flex items-center gap-2">
-                                    <span class="booking-pill" :class="sizeClass(p.size)">{{ p.size === 'large' ? 'L' : 'S' }}<template v-if="p.duration"> · {{ durationLabel(p.duration) }}</template></span>
+                                    <span class="booking-pill" :class="sizeClass(p.size)">{{ p.size === 'large' ? 'B' : 'R' }}<template v-if="p.duration"> · {{ durationLabel(p.duration) }}</template></span>
                                     <span class="booking-value font-mono">{{ p.number || '—' }}</span>
                                     <span class="booking-value font-mono text-[#F59E0B]">({{ p.pin || '——' }})</span>
                                 </div>
                             </div>
                             <div v-else-if="sizeBreakdown(b).length" class="flex flex-wrap gap-1">
                                 <span v-for="(line, i) in sizeBreakdown(b)" :key="i" class="booking-pill" :class="sizeClass(line.size)">
-                                    {{ line.qty }}× {{ line.size === 'large' ? 'L' : 'S' }}<template v-if="line.duration"> · {{ durationLabel(line.duration) }}</template>
+                                    {{ line.qty }}× {{ line.size === 'large' ? 'B' : 'R' }}<template v-if="line.duration"> · {{ durationLabel(line.duration) }}</template>
                                 </span>
                             </div>
                             <span v-else class="booking-value text-[#6B7280]">—</span>
@@ -126,7 +126,7 @@
                         <td class="px-4 py-3 whitespace-nowrap">
                             <div v-if="b.pins?.length" class="flex flex-col gap-1 text-xs">
                                 <div v-for="p in b.pins" :key="p.locker_number" class="flex items-center gap-1.5">
-                                    <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center" :class="sizeClass(p.size || 'standard')">{{ (p.size || 'standard') === 'large' ? 'L' : 'S' }}</span>
+                                    <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center" :class="sizeClass(p.size || 'standard')">{{ (p.size || 'standard') === 'large' ? 'B' : 'R' }}</span>
                                     <span class="font-mono font-semibold text-white">{{ p.locker_number || '—' }}</span>
                                     <span class="font-mono font-bold text-[#F59E0B]">({{ p.pin || '——' }})</span>
                                     <span v-if="['confirmed','active'].includes(b.booking_status)"
@@ -237,14 +237,14 @@
                         <dd>
                             <div v-if="pinRows(detailsBooking).length" class="flex flex-col gap-1.5">
                                 <div v-for="p in pinRows(detailsBooking)" :key="p.number" class="flex items-center gap-2">
-                                    <span class="booking-pill" :class="sizeClass(p.size)">{{ p.size === 'large' ? 'L' : 'S' }}<template v-if="p.duration"> · {{ durationLabel(p.duration) }}</template></span>
+                                    <span class="booking-pill" :class="sizeClass(p.size)">{{ p.size === 'large' ? 'B' : 'R' }}<template v-if="p.duration"> · {{ durationLabel(p.duration) }}</template></span>
                                     <span class="booking-value font-mono">{{ p.number || '—' }}</span>
                                     <span class="booking-value font-mono text-[#F59E0B]">({{ p.pin || '——' }})</span>
                                 </div>
                             </div>
                             <div v-else-if="sizeBreakdown(detailsBooking).length" class="flex flex-wrap gap-1">
                                 <span v-for="(line, i) in sizeBreakdown(detailsBooking)" :key="i" class="booking-pill" :class="sizeClass(line.size)">
-                                    {{ line.qty }}× {{ line.size === 'large' ? 'L' : 'S' }}<template v-if="line.duration"> · {{ durationLabel(line.duration) }}</template>
+                                    {{ line.qty }}× {{ line.size === 'large' ? 'B' : 'R' }}<template v-if="line.duration"> · {{ durationLabel(line.duration) }}</template>
                                 </span>
                             </div>
                             <span v-else class="booking-value text-[#6B7280]">—</span>

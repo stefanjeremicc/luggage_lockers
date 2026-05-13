@@ -22,6 +22,15 @@ class CreateTTLockAccessCode implements ShouldQueue
     public int $tries = 5;
     public array $backoff = [30, 60, 120, 300, 600];
 
+    /**
+     * How many minutes to pad on each side of the booking window when we
+     * register the passcode on TTLock cloud. The customer expects the keypad
+     * to accept the PIN a little before check-in and a little after check-out;
+     * the cleanup job (DeleteExpiredBookingPins) waits the same amount past
+     * check_out before deleting from TTLock, keeping the two ends symmetric.
+     */
+    public const TTLOCK_BUFFER_MINUTES = 30;
+
     public function __construct(
         private int $bookingLockerId,
     ) {}
@@ -57,6 +66,14 @@ class CreateTTLockAccessCode implements ShouldQueue
         // under the same TTLock account (error -3007). On collision we regenerate the
         // PIN inline a few times before giving up — Laravel-level retries would just
         // replay the same encrypted PIN and fail identically.
+        // Apply the ±buffer here, not on $booking. The booking row keeps the
+        // exact times the customer agreed to (and what they see in emails);
+        // TTLock just gets the relaxed window so the keypad is forgiving by
+        // ±30 min on each end. We .copy() before subMinutes/addMinutes so the
+        // model's own Carbon instances stay unmodified.
+        $ttlockStart = $bl->booking->check_in->copy()->subMinutes(self::TTLOCK_BUFFER_MINUTES);
+        $ttlockEnd   = $bl->booking->check_out->copy()->addMinutes(self::TTLOCK_BUFFER_MINUTES);
+
         $maxInlineRetries = 5;
         $response = null;
         for ($attempt = 1; $attempt <= $maxInlineRetries; $attempt++) {
@@ -65,8 +82,8 @@ class CreateTTLockAccessCode implements ShouldQueue
                 $response = $lockService->createTimedAccessCode(
                     $bl->locker->ttlock_lock_id,
                     $pin,
-                    $bl->booking->check_in,
-                    $bl->booking->check_out
+                    $ttlockStart,
+                    $ttlockEnd
                 );
                 break;
             } catch (\RuntimeException $e) {

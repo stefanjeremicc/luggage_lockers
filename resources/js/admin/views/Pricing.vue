@@ -20,13 +20,13 @@
                             <th class="px-2 sm:px-5 py-3 font-medium">
                                 <span class="inline-flex items-center gap-2 text-cyan-400">
                                     <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
-                                    Standard
+                                    Regular
                                 </span>
                             </th>
                             <th class="px-2 sm:px-5 py-3 font-medium">
                                 <span class="inline-flex items-center gap-2 text-fuchsia-400">
                                     <span class="w-2 h-2 rounded-full bg-fuchsia-400"></span>
-                                    Large
+                                    Big
                                 </span>
                             </th>
                         </tr>

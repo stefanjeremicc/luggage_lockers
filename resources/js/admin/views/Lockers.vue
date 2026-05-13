@@ -40,7 +40,7 @@
                 <div class="min-w-0" :class="{ 'opacity-60': !l.is_online || !l.is_active }">
                     <div class="flex items-center gap-2 flex-wrap">
                         <span class="font-mono font-bold text-lg">{{ l.number }}</span>
-                        <span class="text-xs px-2 py-0.5 rounded-full" :class="l.size === 'large' ? 'bg-fuchsia-500/20 text-fuchsia-400' : 'bg-cyan-500/20 text-cyan-400'">{{ l.size }}</span>
+                        <span class="text-xs px-2 py-0.5 rounded-full" :class="l.size === 'large' ? 'bg-fuchsia-500/20 text-fuchsia-400' : 'bg-cyan-500/20 text-cyan-400'">{{ l.size === 'large' ? 'Big' : 'Regular' }}</span>
                         <span v-if="!l.is_online" class="text-[10px] px-2 py-0.5 rounded-full bg-[#EF4444]/20 text-[#EF4444] font-semibold uppercase tracking-wide">Unreachable</span>
                         <span v-if="!l.is_active" class="text-[10px] px-2 py-0.5 rounded-full bg-[#6B7280]/20 text-[#A0A0A0] font-semibold uppercase tracking-wide">Deactivated</span>
                         <span v-if="l.current_bookings?.length" class="text-[10px] px-2 py-0.5 rounded-full bg-[#EF4444]/20 text-[#EF4444] font-semibold uppercase tracking-wide">Booked</span>

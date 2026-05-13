@@ -71,15 +71,23 @@ class BookingNotifier
         $checkIn = $booking->check_in->copy()->setTimezone($tz);
         $checkOut = $booking->check_out->copy()->setTimezone($tz);
 
-        // Build a multi-item summary like "2 x Large, 1 x Standard" from booking_items if present;
+        // Map internal size identifier to the customer-facing label. We kept the
+        // DB enum as `standard`/`large` so existing rows + pricing rules keep
+        // working, but every email/UI surface now reads "Regular" / "Big".
+        $sizeDisplay = static function ($size): string {
+            $key = is_object($size) ? $size->value : (string) $size;
+            return $key === 'large' ? 'Big' : 'Regular';
+        };
+
+        // Build a multi-item summary like "2 x Big, 1 x Regular" from booking_items if present;
         // fall back to legacy single-size rendering when items table is empty.
         $items = $booking->relationLoaded('items') ? $booking->items : $booking->items()->get();
         if ($items && $items->count() > 0) {
-            $itemsSummary = $items->map(fn($it) => $it->qty . ' x ' . ucfirst(is_object($it->locker_size) ? $it->locker_size->value : (string) $it->locker_size))->implode(', ');
+            $itemsSummary = $items->map(fn($it) => $it->qty . ' x ' . $sizeDisplay($it->locker_size))->implode(', ');
             $totalQty = (int) $items->sum('qty');
-            $sizeLabel = ucfirst(is_object($items->first()->locker_size) ? $items->first()->locker_size->value : (string) $items->first()->locker_size);
+            $sizeLabel = $sizeDisplay($items->first()->locker_size);
         } else {
-            $sizeLabel = is_object($booking->locker_size) ? ucfirst($booking->locker_size->value) : ucfirst((string) $booking->locker_size);
+            $sizeLabel = $sizeDisplay($booking->locker_size);
             $itemsSummary = ($booking->locker_qty ?? 1) . ' x ' . $sizeLabel;
             $totalQty = (int) ($booking->locker_qty ?? 1);
         }

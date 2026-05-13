@@ -3,7 +3,7 @@
         <div class="flex items-center gap-3 mb-6">
             <router-link to="/admin/lockers" class="text-[#A0A0A0] hover:text-white text-sm">← Back</router-link>
             <h1 class="text-2xl font-bold">{{ locker?.number || 'Loading...' }}</h1>
-            <span v-if="locker" class="text-xs px-2 py-0.5 rounded-full" :class="locker.size === 'large' ? 'bg-fuchsia-500/20 text-fuchsia-400' : 'bg-cyan-500/20 text-cyan-400'">{{ locker.size }}</span>
+            <span v-if="locker" class="text-xs px-2 py-0.5 rounded-full" :class="locker.size === 'large' ? 'bg-fuchsia-500/20 text-fuchsia-400' : 'bg-cyan-500/20 text-cyan-400'">{{ locker.size === 'large' ? 'Big' : 'Regular' }}</span>
         </div>
 
         <ConfirmModal v-model="confirmOpen" :title="confirmCfg.title" :message="confirmCfg.message" :variant="confirmCfg.variant" :confirm-text="confirmCfg.confirmText" @confirm="confirmCfg.onConfirm && confirmCfg.onConfirm()" />
@@ -179,13 +179,28 @@
             </div>
         </div>
 
-        <div v-if="tab === 'settings'">
+        <div v-if="tab === 'settings'" class="space-y-5">
             <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 max-w-xl">
                 <h3 class="font-semibold mb-3">Rename</h3>
                 <p class="text-xs text-[#A0A0A0] mb-2">Changes alias on TTLock side and in local DB.</p>
                 <div class="flex gap-2">
                     <input v-model="newAlias" class="flex-1 bg-[#111] border border-[#2A2A2A] rounded px-3 py-2 text-sm" />
                     <Btn variant="primary" size="sm" :disabled="busy" @click="rename">Save</Btn>
+                </div>
+            </div>
+
+            <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 max-w-xl">
+                <h3 class="font-semibold mb-3">Size</h3>
+                <p class="text-xs text-[#A0A0A0] mb-2">
+                    Drives pricing rules and which lockers match a customer's <em>Regular</em> / <em>Big</em> selection at checkout.
+                    Changing this re-classifies the locker only in our system — TTLock side is unaffected.
+                </p>
+                <div class="flex gap-2">
+                    <select v-model="newSize" class="flex-1 bg-[#111] border border-[#2A2A2A] rounded px-3 py-2 text-sm">
+                        <option value="standard">Regular</option>
+                        <option value="large">Big</option>
+                    </select>
+                    <Btn variant="primary" size="sm" :disabled="busy || newSize === locker?.size" @click="saveSize">Save</Btn>
                 </div>
             </div>
         </div>
@@ -246,6 +261,7 @@ const history = ref([]);
 const bookings = ref([]);
 const bookingsLoading = ref(false);
 const newAlias = ref('');
+const newSize = ref('standard');
 const newPwd = ref({ type: 3, code: '', name: '', start: '', end: '' });
 
 const loadBookings = async () => {
@@ -269,6 +285,7 @@ const load = async () => {
         locker.value = data.locker;
         detail.value = data.ttlock_detail;
         newAlias.value = data.locker?.number || '';
+        newSize.value = data.locker?.size || 'standard';
     } catch (e) { toast.error(friendlyError(e.message)); }
 };
 
@@ -382,6 +399,21 @@ const deletePasscode = (p) => {
             finally { busy.value = false; }
         },
     });
+};
+
+const saveSize = async () => {
+    busy.value = true;
+    try {
+        const res = await apiFetch(`/api/admin/lockers/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ size: newSize.value }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Update failed');
+        await load();
+        toast.success(`Size set to ${newSize.value === 'large' ? 'Big' : 'Regular'}`);
+    } catch (e) { toast.error(friendlyError(e.message)); }
+    finally { busy.value = false; }
 };
 
 const rename = () => {

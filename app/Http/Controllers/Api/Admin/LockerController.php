@@ -392,9 +392,10 @@ class LockerController extends Controller
 
                 // 3) Auto-create only if requested AND alias is non-empty (so we don't pollute DB with garbage).
                 if (!$locker && request()->boolean('auto_create') && $alias !== '') {
-                    // Infer size from alias prefix: "L-*" / "L - *" = large; everything else = standard.
-                    // Admin can override afterwards via the locker edit screen.
-                    $size = preg_match('/^\s*L\b/i', $alias) ? 'large' : 'standard';
+                    // Infer size from alias prefix: "B-*" or "L-*" = Big (large);
+                    // "R-*" or "S-*" = Regular (standard). Admin can override later
+                    // via the locker Settings → Size selector.
+                    $size = preg_match('/^\s*[BL]\b/i', $alias) ? 'large' : 'standard';
                     $locker = Locker::create([
                         'uuid' => Str::uuid(),
                         'ttlock_lock_id' => $lockId,

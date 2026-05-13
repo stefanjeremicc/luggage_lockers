@@ -38,8 +38,8 @@ export default () => ({
     i18n: {
         lockers_available: ':count lockers available',
         no_lockers: 'No lockers available',
-        standard: 'Standard',
-        large: 'Large',
+        standard: 'Regular',
+        large: 'Big',
         errors: {
             full_name: 'Please enter your full name',
             email_required: 'Email is required',

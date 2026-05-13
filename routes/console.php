@@ -1,7 +1,8 @@
 <?php
 
+use App\Jobs\DeleteExpiredBookingPins;
 use App\Jobs\HandleExpiredBookings;
-use App\Jobs\SendExpiryReminder;
+use App\Jobs\SendReviewRequest;
 use App\Jobs\SyncAccessCodes;
 use App\Jobs\SyncGateways;
 use App\Jobs\SyncLockerStatus;
@@ -13,4 +14,8 @@ Schedule::job(new SyncAccessCodes)->everyThreeMinutes();
 Schedule::job(new SyncGateways)->everyFiveMinutes();
 Schedule::job(new SyncUnlockRecords)->everyFifteenMinutes();
 Schedule::job(new HandleExpiredBookings)->everyMinute();
-Schedule::job(new SendExpiryReminder)->everyMinute();
+// TTLock passcodes are scheduled with a +30 min tail buffer. We clean them up
+// from TTLock cloud once the buffered window has elapsed (i.e. check_out + 30 min).
+Schedule::job(new DeleteExpiredBookingPins)->everyMinute();
+// Review-request email fires 30 min after the customer's actual check_out.
+Schedule::job(new SendReviewRequest)->everyFiveMinutes();
