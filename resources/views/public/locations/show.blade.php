@@ -30,6 +30,10 @@
     .leaflet-container { background: #0A0A0A; font-family: inherit; }
     .leaflet-control-attribution { background: rgba(15,15,15,0.85) !important; color: #6B7280 !important; font-size: 10px !important; }
     .leaflet-control-attribution a { color: #A0A0A0 !important; }
+    /* Leaflet ≥1.9 ships a small Ukrainian flag SVG next to the "Leaflet" link
+       in the attribution. Hide it — keeps the dark-themed footer cleaner. */
+    .leaflet-attribution-flag,
+    .leaflet-control-attribution svg { display: none !important; }
     .leaflet-control-zoom a { background: #1A1A1A !important; color: #F59E0B !important; border-color: #2A2A2A !important; }
     .leaflet-control-zoom a:hover { background: #2A2A2A !important; }
 </style>

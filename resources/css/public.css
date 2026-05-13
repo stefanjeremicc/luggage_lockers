@@ -536,6 +536,13 @@ body {
     100% { transform: translateX(-50%); }
 }
 
+/* Hide the Ukrainian flag SVG that Leaflet ≥1.9 ships in the attribution
+   control. Applies to every page on the site that mounts a Leaflet map
+   (homepage location pins, /locations index, contact page, individual
+   location show). One rule globally so we don't have to add it per-view. */
+.leaflet-attribution-flag,
+.leaflet-control-attribution svg { display: none !important; }
+
 /* Leaflet popup styling */
 .leaflet-popup-content-wrapper {
     background: #1A1A1A !important;
