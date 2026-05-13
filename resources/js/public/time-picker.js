@@ -106,15 +106,21 @@ export default function timePicker() {
         },
 
         selectHour(h) {
+            const previous = this.selHour;
             this.selHour = h;
-            // When jumping to the current hour on today's date, the minute
-            // list collapses to "now+1 onwards" — snap the selection to the
-            // first valid minute so the highlight stays visible and the
-            // confirm button stays meaningful.
-            if (this._isTodayOrUnset && h === this._now.h) {
-                const firstValid = this._now.m + 1;
-                if (this.selMinute === null || this.selMinute < firstValid) {
+
+            // When the customer changes the hour, reset the minute so the
+            // picker always lands at the top of the new hour's window —
+            // otherwise "10:54 → click 11" leaves a stale 11:54 selection
+            // that doesn't match where the scroller is pinned.
+            if (h !== previous) {
+                if (this._isTodayOrUnset && h === this._now.h) {
+                    // Current hour today: first valid minute is now+1.
+                    const firstValid = this._now.m + 1;
                     this.selMinute = firstValid <= 59 ? firstValid : 0;
+                } else {
+                    // Any future hour (or any hour on a future date): 00.
+                    this.selMinute = 0;
                 }
             }
             // Re-pin the minute scroller to the new top after the list shape changes.
