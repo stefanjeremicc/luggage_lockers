@@ -36,22 +36,13 @@
 @endsection
 
 @section('content')
-{{-- Breadcrumb --}}
-<div class="border-b border-[#1A1A1A]">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 text-sm text-[#A0A0A0]">
-        <a href="{{ route($lp . 'home') }}" class="hover:text-white transition">{{ __('Home') }}</a>
-        <span class="mx-2 text-[#3A3A3A]">/</span>
-        <a href="{{ route($lp . 'locations.index') }}" class="hover:text-white transition">{{ __('Locations') }}</a>
-        <span class="mx-2 text-[#3A3A3A]">/</span>
-        <span class="text-white">{{ $name }}</span>
-    </div>
-</div>
-
 {{-- Hero — solid gradient instead of full-bleed location photo. Location
      photos are uneven quality and were dominating the page; a clean
-     gradient + branded badges keeps the focus on the title + CTA. --}}
+     gradient + branded badges keeps the focus on the title + CTA.
+     Top + bottom padding match so the badge + buttons sit visually
+     centered inside the hero block. --}}
 <section class="relative bg-gradient-to-br from-[#1A1A1A] via-[#141414] to-[#0A0A0A] border-b border-[#1A1A1A]">
-    <div class="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-24 pb-12">
+    <div class="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
         <div class="max-w-3xl">
             <div class="flex flex-wrap items-center gap-2 mb-4">
                 @if($location->is_24h)
@@ -111,7 +102,7 @@
             </div>
             <div>
                 <p class="text-[10px] uppercase tracking-wide text-[#6B7280]">{{ __('Security') }}</p>
-                <p class="text-sm font-medium">{{ __('Smart locks + CCTV') }}</p>
+                <p class="text-sm font-medium">{{ __('Smart locks') }}</p>
             </div>
         </div>
         <div class="flex items-start gap-3">
@@ -181,11 +172,12 @@
                         @foreach(['standard', 'large'] as $sizeKey)
                             @if($sizeSummary->has($sizeKey) && $sizeSummary[$sizeKey])
                                 @php $info = $sizeSummary[$sizeKey]; @endphp
-                                <div class="bg-[#111] border border-[#2A2A2A] rounded-xl overflow-hidden hover:border-[#F59E0B]/40 transition">
-                                    {{-- object-contain so the whole dimension drawing fits inside —
-                                         the booking-flow images include caption text that gets cropped
-                                         if we use object-cover here. --}}
-                                    <div class="aspect-[4/3] bg-[#0A0A0A] overflow-hidden flex items-center justify-center">
+                                <div class="bg-[#0A0A0A] border border-[#2A2A2A] rounded-xl overflow-hidden hover:border-[#F59E0B]/40 transition">
+                                    {{-- Image area matches the natural ~2.5:1 ratio of the dimension
+                                         drawings (booking-flow assets) so there's no dead grey band
+                                         around them. Background matches the card body so even if the
+                                         image doesn't perfectly fit, the seam is invisible. --}}
+                                    <div class="aspect-[5/2] overflow-hidden flex items-center justify-center px-4 pt-4">
                                         <img src="{{ $info->image }}" alt="{{ __(ucfirst($sizeKey)) }}" class="w-full h-full object-contain"
                                              onerror="this.style.display='none'">
                                     </div>
@@ -208,23 +200,15 @@
                 @endif
             </div>
 
-            {{-- Sidebar --}}
+            {{-- Sidebar — the Book CTA card was removed (it duplicated the
+                 hero's "Book a Locker Here" button right above). Contact is
+                 now the only sidebar card and stays sticky so it remains
+                 visible while the visitor reads the locker / nearby sections. --}}
             <aside class="space-y-6">
-                {{-- Booking CTA --}}
-                <div class="card sticky top-24 bg-gradient-to-br from-[#1A1A1A] to-[#111] border-[#F59E0B]/20">
-                    <p class="text-xs uppercase tracking-wide text-[#F59E0B] font-semibold">{{ __('Reserve in seconds') }}</p>
-                    <h3 class="text-xl font-bold mt-2">{{ __('Drop your bags now') }}</h3>
-                    <p class="text-sm text-[#A0A0A0] mt-2">{{ __('Book online, get a PIN, walk in. No paperwork.') }}</p>
-                    <a href="{{ route($lp . 'booking.index', ['slug' => $location->slug]) }}" class="btn-primary w-full text-center block mt-5">
-                        {{ __('Book a Locker Here') }}
-                    </a>
-                    <p class="text-xs text-[#A0A0A0] text-center mt-3">{{ __('Pay cash on arrival') }}</p>
-                </div>
-
                 {{-- Contact --}}
                 @if($location->phone || $location->email)
                 @php $phoneDigits = $location->phone ? preg_replace('/[^0-9]/', '', $location->phone) : null; @endphp
-                <div class="card">
+                <div class="card sticky top-24">
                     <h3 class="text-sm font-semibold uppercase tracking-wide text-[#F59E0B] mb-4">{{ __('Contact this location') }}</h3>
                     <div class="space-y-2.5">
                         @if($location->phone)
