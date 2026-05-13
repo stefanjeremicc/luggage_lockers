@@ -426,30 +426,20 @@ class BookingNotifier
         $customerEmail = $booking->customer->email;
         $adminEmails = self::adminEmails(); // array — supports multiple admin recipients
         $isDevMode = self::devMode();
-        $notifyAdmin = self::notifyAdmin();
-
-        // Keys that already have a dedicated `_admin` template + matching
-        // BookingNotifier::send*Admin call. Don't BCC admin on the customer
-        // copy for these — admin gets their own concise version separately,
-        // and duplicate inboxes were noisy.
-        $hasAdminCompanion = [
-            'booking_confirmed',
-            'booking_cancelled_by_customer',
-            'booking_cancelled_by_admin',
-            'pin_reissued',
-        ];
 
         // Recipient policy:
-        //  - Dev mode ON  → first admin only (suppresses real customer).
-        //  - Dev mode OFF → customer; if notify_admin is also ON, BCC every admin
-        //    address (drop any that match the customer to avoid double-send).
-        //    Skip the BCC entirely for keys that have their own admin template.
+        //  - Dev mode ON  → first admin only (suppresses real customer entirely).
+        //  - Dev mode OFF → customer only.
+        //
+        // Admins NEVER receive a BCC of customer mail. Every customer-facing
+        // event has a dedicated `_admin` template + `BookingNotifier::send*Admin`
+        // call that produces a concise data-dump email. Duplicate-content
+        // BCCs caused real confusion ("did you get the same thing twice?"),
+        // so they're gone entirely.
         $primary = $isDevMode
             ? ($adminEmails[0] ?? $customerEmail)
             : $customerEmail;
-        $bccs = (!$isDevMode && $notifyAdmin && !in_array($key, $hasAdminCompanion, true))
-            ? array_values(array_filter($adminEmails, fn ($e) => $e && $e !== $customerEmail))
-            : [];
+        $bccs = [];
 
         $subject = $rendered['subject'] ?? '(no subject)';
         $body = $rendered['body'];
