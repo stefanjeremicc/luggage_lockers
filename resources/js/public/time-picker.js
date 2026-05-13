@@ -8,6 +8,15 @@ export default function timePicker() {
         open: false,
         selHour: null,
         selMinute: null,
+        /** Reactive handle on the bookingFlow data so we can read/write
+         *  `time`, `resolvedDate`, etc. across the x-data boundary.
+         *  $root only points at OUR x-data root, not the parent. */
+        parent: null,
+
+        init() {
+            const el = this.$el.closest('[x-data*="bookingFlow"]');
+            this.parent = el ? window.Alpine.$data(el) : null;
+        },
 
         onOpen() {
             // Seed the wheels:
@@ -15,8 +24,8 @@ export default function timePicker() {
             //   2. Otherwise pre-select "now + 1 minute" — always, regardless
             //      of whether a date is picked yet. That way the picker is
             //      never empty and the customer's default is guaranteed-future.
-            if (this.$root.time) {
-                const [h, m] = this.$root.time.split(':').map(Number);
+            if (this.parent.time) {
+                const [h, m] = this.parent.time.split(':').map(Number);
                 this.selHour = h;
                 this.selMinute = m;
             } else {
@@ -65,9 +74,9 @@ export default function timePicker() {
          * Future dates (tomorrow onwards) accept the full 24-hour range.
          */
         get _isTodayOrUnset() {
-            if (!this.$root.resolvedDate) return true;
+            if (!this.parent.resolvedDate) return true;
             const today = new Date().toISOString().split('T')[0];
-            return this.$root.resolvedDate === today;
+            return this.parent.resolvedDate === today;
         },
 
         get _now() {
@@ -132,18 +141,18 @@ export default function timePicker() {
         },
 
         get checkoutPreview() {
-            return this.$root.checkoutPreview;
+            return this.parent.checkoutPreview;
         },
 
         get time() {
-            return this.$root.time;
+            return this.parent.time;
         },
 
         confirm() {
             if (this.selHour === null || this.selMinute === null) return;
             const hh = String(this.selHour).padStart(2, '0');
             const mm = String(this.selMinute).padStart(2, '0');
-            this.$root.time = `${hh}:${mm}`;
+            this.parent.time = `${hh}:${mm}`;
             this.open = false;
         },
     };
