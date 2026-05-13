@@ -12,25 +12,22 @@ export default function timePicker() {
         onOpen() {
             // Seed the wheels:
             //   1. If parent already has a time, restore it.
-            //   2. Otherwise, for today's date, pre-select "now + 1 minute" so
-            //      the customer literally cannot pick something in the past —
-            //      and they always see a highlighted starting point.
-            //   3. For future dates, default to 12:00 so the picker isn't empty.
+            //   2. Otherwise pre-select "now + 1 minute" — always, regardless
+            //      of whether a date is picked yet. That way the picker is
+            //      never empty and the customer's default is guaranteed-future.
             if (this.$root.time) {
                 const [h, m] = this.$root.time.split(':').map(Number);
                 this.selHour = h;
                 this.selMinute = m;
-            } else if (this._isToday) {
+            } else {
                 const next = this._nowPlusOne;
                 this.selHour = next.h;
                 this.selMinute = next.m;
-            } else {
-                this.selHour = 12;
-                this.selMinute = 0;
             }
             this.open = !this.open;
             if (this.open) {
-                // Scroll the selected value into view once Alpine has rendered.
+                // Pin the selection to the TOP of the scroller so the customer
+                // sees what's selected immediately, without scrolling.
                 this.$nextTick(() => this.scrollSelectedIntoView());
             }
         },
@@ -47,24 +44,28 @@ export default function timePicker() {
         },
 
         scrollSelectedIntoView() {
-            const center = (container, idx) => {
+            // Position the selection at the TOP of each scroller. We scroll
+            // the container directly (not scrollIntoView) so the page itself
+            // doesn't jump when the picker opens near the viewport edge.
+            const pinTop = (container, idx) => {
                 if (!container || idx < 0) return;
                 const target = container.children[idx];
-                if (target) target.scrollIntoView({ block: 'nearest' });
+                if (!target) return;
+                container.scrollTop = target.offsetTop - container.offsetTop;
             };
-            // Find the position in the (possibly filtered) lists.
             const hi = this.hours.findIndex(h => h.value === this.selHour);
             const mi = this.minutes.findIndex(m => m.value === this.selMinute);
-            center(this.$refs.hoursList, hi);
-            center(this.$refs.minutesList, mi);
+            pinTop(this.$refs.hoursList, hi);
+            pinTop(this.$refs.minutesList, mi);
         },
 
         /**
-         * Is the booking date "today"? Drives the in-the-past disable logic.
-         * resolvedDate is exposed by bookingFlow as the YYYY-MM-DD form of the
-         * selected day (today / tomorrow / explicit custom date).
+         * Past hours/minutes are forbidden when the booking date is today
+         * (or when the customer hasn't selected a date yet — same intent).
+         * Future dates (tomorrow onwards) accept the full 24-hour range.
          */
-        get _isToday() {
+        get _isTodayOrUnset() {
+            if (!this.$root.resolvedDate) return true;
             const today = new Date().toISOString().split('T')[0];
             return this.$root.resolvedDate === today;
         },
@@ -74,45 +75,50 @@ export default function timePicker() {
             return { h: d.getHours(), m: d.getMinutes() };
         },
 
+        /**
+         * Hour list — for "today", we drop past hours entirely so the
+         * customer can't even scroll up to them. For future dates, full 24h.
+         */
         get hours() {
             const list = [];
-            const isToday = this._isToday;
-            const now = this._now;
-            for (let h = 0; h < 24; h++) {
-                list.push({
-                    value: h,
-                    label: String(h).padStart(2, '0'),
-                    // Hours strictly before the current hour are unreachable today.
-                    disabled: isToday && h < now.h,
-                });
+            const isToday = this._isTodayOrUnset;
+            const startHour = isToday ? this._now.h : 0;
+            for (let h = startHour; h < 24; h++) {
+                list.push({ value: h, label: String(h).padStart(2, '0') });
             }
             return list;
         },
 
+        /**
+         * Minute list — same idea: when today AND the selected hour is the
+         * current hour, the list starts at now+1 so past minutes can't be
+         * scrolled to. Otherwise full 0-59.
+         */
         get minutes() {
             const list = [];
-            const isToday = this._isToday;
-            const now = this._now;
-            const sameHour = isToday && this.selHour === now.h;
-            for (let m = 0; m < 60; m++) {
-                list.push({
-                    value: m,
-                    label: String(m).padStart(2, '0'),
-                    // Within the current hour today, minutes up to & including
-                    // "now" are in the past — block them.
-                    disabled: sameHour && m <= now.m,
-                });
+            const isToday = this._isTodayOrUnset;
+            const sameHour = isToday && this.selHour === this._now.h;
+            const startMin = sameHour ? this._now.m + 1 : 0;
+            for (let m = startMin; m < 60; m++) {
+                list.push({ value: m, label: String(m).padStart(2, '0') });
             }
             return list;
         },
 
         selectHour(h) {
             this.selHour = h;
-            // If the current minute is now in the past (e.g. they jumped to the
-            // current hour), clear it so they re-pick.
-            if (this._isToday && h === this._now.h && this.selMinute !== null && this.selMinute <= this._now.m) {
-                this.selMinute = null;
+            // When jumping to the current hour on today's date, the minute
+            // list collapses to "now+1 onwards" — snap the selection to the
+            // first valid minute so the highlight stays visible and the
+            // confirm button stays meaningful.
+            if (this._isTodayOrUnset && h === this._now.h) {
+                const firstValid = this._now.m + 1;
+                if (this.selMinute === null || this.selMinute < firstValid) {
+                    this.selMinute = firstValid <= 59 ? firstValid : 0;
+                }
             }
+            // Re-pin the minute scroller to the new top after the list shape changes.
+            this.$nextTick(() => this.scrollSelectedIntoView());
         },
 
         selectMinute(m) {

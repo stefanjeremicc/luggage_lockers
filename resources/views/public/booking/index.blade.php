@@ -207,13 +207,10 @@
                                         <div class="h-44 overflow-y-auto custom-scrollbar bg-[#0F0F0F] rounded-lg p-1" x-ref="hoursList">
                                             <template x-for="h in hours" :key="'h-'+h.value">
                                                 <button type="button" @click="selectHour(h.value)"
-                                                        :disabled="h.disabled"
                                                         class="w-full text-center py-2 rounded-md text-sm font-medium transition"
                                                         :class="h.value === selHour
                                                             ? 'bg-[#F59E0B] text-black'
-                                                            : (h.disabled
-                                                                ? 'text-[#3A3A3A] cursor-not-allowed'
-                                                                : 'text-[#A0A0A0] hover:bg-[#2A2A2A] hover:text-white')"
+                                                            : 'text-[#A0A0A0] hover:bg-[#2A2A2A] hover:text-white'"
                                                         x-text="h.label">
                                                 </button>
                                             </template>
@@ -225,13 +222,10 @@
                                         <div class="h-44 overflow-y-auto custom-scrollbar bg-[#0F0F0F] rounded-lg p-1" x-ref="minutesList">
                                             <template x-for="m in minutes" :key="'m-'+m.value">
                                                 <button type="button" @click="selectMinute(m.value)"
-                                                        :disabled="m.disabled"
                                                         class="w-full text-center py-2 rounded-md text-sm font-medium transition"
                                                         :class="m.value === selMinute
                                                             ? 'bg-[#F59E0B] text-black'
-                                                            : (m.disabled
-                                                                ? 'text-[#3A3A3A] cursor-not-allowed'
-                                                                : 'text-[#A0A0A0] hover:bg-[#2A2A2A] hover:text-white')"
+                                                            : 'text-[#A0A0A0] hover:bg-[#2A2A2A] hover:text-white'"
                                                         x-text="m.label">
                                                 </button>
                                             </template>
