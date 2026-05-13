@@ -365,13 +365,14 @@ class NotificationTemplateSeeder extends Seeder
             // Override the blue auto-detected links on Apple Mail / iOS:
             .'a[x-apple-data-detectors]{color:inherit !important;text-decoration:none !important;font-size:inherit !important;font-family:inherit !important;font-weight:inherit !important;line-height:inherit !important}'
             // Gmail / Outlook auto-link dates, times, addresses and "24/7"
-            // and recolour them. We apply this rule only to DESCENDANTS of
-            // .no-link, not the element itself — otherwise `color:inherit
-            // !important` strips the inline `color:#fff` on the wrapper and
-            // the text falls back to the client's default (often near-black
-            // on dark-mode mail clients). With `* a span` only, the wrapper
-            // keeps its own white and any auto-injected <a> inherits from it.
-            .'.no-link *, .no-link a, .no-link a span{color:inherit !important;text-decoration:none !important;pointer-events:none}'
+            // and recolour them blue. Two-layer defence:
+            //   1. The .no-link wrapper is forced to white explicitly. Without
+            //      this Gmail's dark theme would inherit black for the wrapper.
+            //   2. Every descendant the client may inject (auto-detector <a>,
+            //      <span>, <u>) inherits, so the wrapper's white wins instead
+            //      of the injected inline blue.
+            .'.no-link{color:#ffffff !important}'
+            .'.no-link *, .no-link a, .no-link a *, .no-link span, .no-link u{color:#ffffff !important;text-decoration:none !important;pointer-events:none}'
             // Generic anchor — every link in our emails is intentionally amber
             // or gray, never the browser/client default blue.
             .'a{color:#F59E0B;text-decoration:none}'
