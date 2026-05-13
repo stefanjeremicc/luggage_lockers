@@ -23,7 +23,7 @@ class BookingNotifier
 
         $booking->loadMissing(['customer', 'location', 'lockers']);
         $locale = $booking->customer->locale ?? 'en';
-        $vars = self::buildVars($booking) + $extraVars;
+        $vars = self::buildVars($booking, $locale) + $extraVars;
 
         self::sendEmail($booking, $templateKey, $locale, $vars);
 
@@ -50,7 +50,7 @@ class BookingNotifier
 
         $booking->loadMissing(['customer', 'location', 'bookingLockers.locker']);
         $locale = $booking->customer->locale ?? 'en';
-        $vars = self::buildVars($booking) + self::pinVars($booking, $locale);
+        $vars = self::buildVars($booking, $locale) + self::pinVars($booking, $locale);
 
         self::sendEmail($booking, 'booking_confirmed', $locale, $vars);
 
@@ -75,7 +75,7 @@ class BookingNotifier
 
         $booking->loadMissing(['customer', 'location', 'bookingLockers.locker']);
         $locale = 'en'; // Admin emails always English regardless of customer locale.
-        $vars = self::buildVars($booking) + self::pinVars($booking, $locale) + [
+        $vars = self::buildVars($booking, $locale) + self::pinVars($booking, $locale) + [
             'customer_email' => $booking->customer->email ?? '—',
             'customer_phone' => $booking->customer->phone ?? '—',
         ];
@@ -143,11 +143,68 @@ class BookingNotifier
         ];
     }
 
-    private static function buildVars(Booking $booking): array
+    /**
+     * Translate the booking's duration_label into the requested locale.
+     * `duration_label` was rendered at booking-creation time using whatever
+     * locale the customer's browser was in. To send a SR confirmation for an
+     * EN-locale booking (or vice-versa), we map the stored text back to the
+     * canonical key and re-translate from lang/{$locale}.json.
+     */
+    private static function localiseDurationLabel(?string $stored, string $locale): string
+    {
+        if (!$stored) return '';
+
+        // Raw duration keys persisted on booking_items / older bookings, mapped
+        // back to the English canonical key from lang files.
+        $rawKeyMap = [
+            '6h' => 'Up to 6 hours',
+            '24h' => '24 hours',
+            '2_days' => '2 days',
+            '3_days' => '3 days',
+            '4_days' => '4 days',
+            '5_days' => '5 days',
+            '1_week' => '1 week',
+            '2_weeks' => '2 weeks',
+            '1_month' => '1 month',
+        ];
+        $known = array_values($rawKeyMap);
+
+        // Resolve to English canonical key, regardless of what was stored.
+        $key = $rawKeyMap[$stored]
+            ?? (in_array($stored, $known, true) ? $stored : null);
+
+        if (!$key) {
+            // Reverse-lookup: stored value might be a Serbian translation.
+            $srTranslations = json_decode(@file_get_contents(base_path('lang/sr.json')) ?: '{}', true) ?: [];
+            foreach ($srTranslations as $en => $sr) {
+                if ($sr === $stored && in_array($en, $known, true)) { $key = $en; break; }
+            }
+        }
+        $key = $key ?: $stored;
+
+        if ($locale === 'sr') {
+            $srTranslations ??= json_decode(@file_get_contents(base_path('lang/sr.json')) ?: '{}', true) ?: [];
+            return $srTranslations[$key] ?? $key;
+        }
+        return $key;
+    }
+
+    private static function buildVars(Booking $booking, string $locale = 'en'): array
     {
         $tz = config('app.display_timezone');
         $checkIn = $booking->check_in->copy()->setTimezone($tz);
         $checkOut = $booking->check_out->copy()->setTimezone($tz);
+
+        // Date/time formatting differs per locale: Serbian customers read
+        // "13.05.2026. u 15:30" naturally, English customers "May 13, 2026 at 15:30".
+        $fmtDate = $locale === 'sr' ? 'd.m.Y.' : 'M j, Y';
+        $fmtFull = $locale === 'sr' ? 'd.m.Y. \u H:i' : 'M j, Y \a\t H:i';
+
+        // Translate the duration_label per locale by looking up the original key.
+        // `duration_label` on the booking row was rendered when the booking was
+        // created (in whatever locale the customer was using), so we need to map
+        // back to the canonical key first and re-translate from lang/{$locale}.json.
+        $durationLabel = self::localiseDurationLabel($booking->duration_label, $locale);
 
         // Map internal size identifier to the customer-facing label. We kept the
         // DB enum as `standard`/`large` so existing rows + pricing rules keep
@@ -174,13 +231,13 @@ class BookingNotifier
             'customer_name' => $booking->customer->full_name,
             'location_name' => $booking->location->name,
             'location_address' => $booking->location->address.', '.($booking->location->city ?: 'Belgrade'),
-            'check_in' => $checkIn->format('M j, Y'),
+            'check_in' => $checkIn->format($fmtDate),
             'check_in_time' => $checkIn->format('H:i'),
-            'check_in_full' => $checkIn->format('M j, Y \a\t H:i'),
-            'check_out' => $checkOut->format('M j, Y'),
+            'check_in_full' => $checkIn->format($fmtFull),
+            'check_out' => $checkOut->format($fmtDate),
             'check_out_time' => $checkOut->format('H:i'),
-            'check_out_full' => $checkOut->format('M j, Y \a\t H:i'),
-            'duration_label' => $booking->duration_label,
+            'check_out_full' => $checkOut->format($fmtFull),
+            'duration_label' => $durationLabel,
             'locker_qty' => $totalQty,
             'locker_number' => $booking->lockers->first()?->number ?? '',
             'locker_size' => $sizeLabel,
