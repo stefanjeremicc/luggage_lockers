@@ -120,7 +120,7 @@
             </div>
             <div>
                 <p class="text-[10px] uppercase tracking-wide text-[#6B7280]">{{ __('Booking') }}</p>
-                <p class="text-sm font-medium">{{ __('Instant — 60 seconds') }}</p>
+                <p class="text-sm font-medium">{{ __('60 seconds') }}</p>
             </div>
         </div>
     </div>
@@ -141,8 +141,11 @@
                         </h2>
                         <a href="https://www.google.com/maps/dir/?api=1&destination={{ $location->lat }},{{ $location->lng }}"
                            target="_blank" rel="noopener"
-                           class="text-xs text-[#F59E0B] hover:underline flex items-center gap-1">
-                            {{ __('Open in Google Maps') }}
+                           class="text-xs text-[#F59E0B] hover:underline flex items-center gap-1 shrink-0 whitespace-nowrap">
+                            {{-- Compact label on small screens so it doesn't wrap into the
+                                 "Find us on the map" heading next to it. --}}
+                            <span class="sm:hidden">{{ __('Map') }}</span>
+                            <span class="hidden sm:inline">{{ __('Open in Google Maps') }}</span>
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                         </a>
                     </div>
