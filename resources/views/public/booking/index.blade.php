@@ -544,8 +544,8 @@
                                 <p class="text-white font-medium" x-text="formatSummaryDate()"></p>
                                 <p class="text-[#A0A0A0] text-xs" x-show="time" x-cloak>
                                     <span x-text="time ? formatTime(time) : ''"></span>
-                                    <template x-if="checkoutPreview">
-                                        <span> &rarr; <span x-text="checkoutPreview"></span></span>
+                                    <template x-if="checkoutPreviewShort">
+                                        <span> &rarr; <span x-text="checkoutPreviewShort"></span></span>
                                     </template>
                                 </p>
                             </div>

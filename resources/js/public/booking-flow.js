@@ -216,6 +216,31 @@ export default () => ({
      * still computes the authoritative check_out on submit.
      */
     get checkoutPreview() {
+        const e = this._checkoutEnd;
+        if (!e) return null;
+        const pad = n => String(n).padStart(2, '0');
+        return `${pad(e.getDate())}.${pad(e.getMonth()+1)}.${e.getFullYear()} ${pad(e.getHours())}:${pad(e.getMinutes())}`;
+    },
+
+    /**
+     * Like checkoutPreview, but omits the date when check-out falls on the
+     * same calendar day as check-in. Used in the right-rail order summary
+     * where the check-in date is already shown right above — "11:12 → 17:12"
+     * reads cleaner than "11:12 → 13.05.2026 17:12".
+     */
+    get checkoutPreviewShort() {
+        const e = this._checkoutEnd;
+        if (!e) return null;
+        const pad = n => String(n).padStart(2, '0');
+        const sameDay = e.toISOString().split('T')[0] === this.resolvedDate;
+        const hhmm = `${pad(e.getHours())}:${pad(e.getMinutes())}`;
+        if (sameDay) return hhmm;
+        return `${pad(e.getDate())}.${pad(e.getMonth()+1)}.${e.getFullYear()} ${hhmm}`;
+    },
+
+    /** Shared internal helper: returns a JS Date for the projected check-out
+     *  moment, or null when we don't have enough info to compute it. */
+    get _checkoutEnd() {
         if (!this.time || !this.resolvedDate) return null;
         const duration = this.firstChosenDuration();
         if (!duration) return null;
@@ -223,9 +248,7 @@ export default () => ({
         if (!hours) return null;
         const [h, m] = this.time.split(':').map(Number);
         const start = new Date(`${this.resolvedDate}T${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:00`);
-        const end = new Date(start.getTime() + hours * 3600 * 1000);
-        const pad = n => String(n).padStart(2, '0');
-        return `${pad(end.getDate())}.${pad(end.getMonth()+1)}.${end.getFullYear()} ${pad(end.getHours())}:${pad(end.getMinutes())}`;
+        return new Date(start.getTime() + hours * 3600 * 1000);
     },
 
     firstChosenDuration() {
