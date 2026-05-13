@@ -192,7 +192,12 @@ class BookingNotifier
         $bls = $booking->bookingLockers ?? collect();
         $labelEntry = $locale === 'sr' ? 'Šifra ULAZNIH VRATA' : 'ENTRY DOOR access code';
         $labelLocker = $locale === 'sr' ? 'Šifra ORMARIĆA' : 'YOUR LOCKER';
-        $entryCode = (string) Setting::getValue('entry_door_code', '0717#');
+        // The stored setting often carries the keypad "enter" character at the
+        // end (e.g. "0717#") because that's how the door physically works.
+        // The email displays the code with a leading `#` for visual emphasis,
+        // so a trailing `#` from the setting would produce "#0717#" — confusing.
+        // Strip everything except digits and letters before rendering.
+        $entryCode = preg_replace('/[^0-9A-Za-z]/', '', (string) Setting::getValue('entry_door_code', '0717'));
 
         $blocks = [];
         $firstPin = null;
