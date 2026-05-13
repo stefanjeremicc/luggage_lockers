@@ -177,8 +177,82 @@ export default () => ({
     },
 
     get canContinueStep1() {
-        return this.date && this.time
+        return this.date && this.time && this.isTimeValid
             && (this.date !== 'custom' || this.customDate);
+    },
+
+    /**
+     * For the native <input type="time">: `min` is only honoured when the
+     * date is "today" (otherwise any HH:MM is fine for a future day).
+     */
+    get timeInputMin() {
+        const today = new Date().toISOString().split('T')[0];
+        if (this.resolvedDate === today) {
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            return `${hh}:${mm}`;
+        }
+        return null;
+    },
+
+    /**
+     * Same logic as timeInputMin, but as a boolean — used to disable the
+     * Continue button and show an inline error when the customer picked a
+     * past time on today's date.
+     */
+    get isTimeValid() {
+        if (!this.time) return false;
+        const today = new Date().toISOString().split('T')[0];
+        if (this.resolvedDate !== today) return true;
+        const [h, m] = this.time.split(':').map(Number);
+        const now = new Date();
+        return (h > now.getHours()) || (h === now.getHours() && m > now.getMinutes());
+    },
+
+    /**
+     * Show "Check-out: 13.05.2026 15:04" under the time input as soon as the
+     * customer picks an arrival time + a duration. Pure preview — the server
+     * still computes the authoritative check_out on submit.
+     */
+    get checkoutPreview() {
+        if (!this.time || !this.resolvedDate) return null;
+        const duration = this.firstChosenDuration();
+        if (!duration) return null;
+        const hours = this.durationHours(duration);
+        if (!hours) return null;
+        const [h, m] = this.time.split(':').map(Number);
+        const start = new Date(`${this.resolvedDate}T${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:00`);
+        const end = new Date(start.getTime() + hours * 3600 * 1000);
+        const pad = n => String(n).padStart(2, '0');
+        return `${pad(end.getDate())}.${pad(end.getMonth()+1)}.${end.getFullYear()} ${pad(end.getHours())}:${pad(end.getMinutes())}`;
+    },
+
+    firstChosenDuration() {
+        // Whichever size has a duration set first wins for the preview.
+        for (const size of ['standard', 'large']) {
+            if (this.itemDurations[size]) return this.itemDurations[size];
+        }
+        return null;
+    },
+
+    /**
+     * Map a duration key (e.g. '6h', '24h', '2d', '1w') to a rough hour
+     * count for the local preview. The server-side PricingService remains
+     * the source of truth on submit.
+     */
+    durationHours(key) {
+        if (!key) return null;
+        const m = String(key).match(/^(\d+)([hdwm])$/);
+        if (!m) return null;
+        const n = parseInt(m[1], 10);
+        switch (m[2]) {
+            case 'h': return n;
+            case 'd': return n * 24;
+            case 'w': return n * 24 * 7;
+            case 'm': return n * 24 * 30;
+            default: return null;
+        }
     },
 
     get canContinueStep2() {

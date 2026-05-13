@@ -181,26 +181,18 @@
                             {{ __('What time will you arrive?') }}
                         </h3>
 
-                        {{-- Custom styled select --}}
-                        <div class="custom-select-wrapper" x-data="{ open: false, search: '' }" @click.outside="open = false">
-                            <button @click="open = !open" type="button" class="custom-select">
-                                <span x-text="time ? formatTime(time) : '{{ __('Select arrival time...') }}'" :class="time ? 'text-white' : 'text-[#A0A0A0]'"></span>
-                                <svg class="w-5 h-5 text-[#A0A0A0] transition-transform duration-200" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                            </button>
-                            <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-cloak
-                                 class="custom-select-dropdown">
-                                <div class="max-h-60 overflow-y-auto custom-scrollbar">
-                                    <template x-for="slot in generateTimeSlots()" :key="slot">
-                                        <button @click="time = slot; open = false" type="button"
-                                                class="w-full text-left px-4 py-2.5 text-sm transition-colors"
-                                                :class="time === slot ? 'bg-[#F59E0B] text-black font-medium' : 'text-[#A0A0A0] hover:bg-[#2A2A2A] hover:text-white'"
-                                                x-text="formatTime(slot)">
-                                        </button>
-                                    </template>
-                                </div>
-                            </div>
-                        </div>
-                        <p class="text-xs text-[#A0A0A0] mt-2">{{ __('You can arrive up to 20 min before your selected time.') }}</p>
+                        {{-- Free-form HH:MM input with validation. Must be in the future when the
+                             selected date is today; any time is allowed for future dates. --}}
+                        <input type="time" x-model="time"
+                               :min="timeInputMin"
+                               class="w-full bg-[#1a1a1a] border border-[#2A2A2A] rounded-lg px-4 py-3 text-white text-lg focus:border-[#F59E0B] focus:outline-none"
+                               step="60" required>
+                        <p x-show="time && !isTimeValid" x-cloak class="text-xs text-[#EF4444] mt-2">
+                            {{ __('Please choose a future time.') }}
+                        </p>
+                        <p x-show="time && isTimeValid && checkoutPreview" x-cloak class="text-xs text-[#A0A0A0] mt-2">
+                            {{ __('Check-out') }}: <span class="text-white font-medium" x-text="checkoutPreview"></span>
+                        </p>
                     </div>
 
                     <button @click="goToStep(2)" :disabled="!canContinueStep1" class="btn-primary w-full">
@@ -395,6 +387,7 @@
                                 </div>
                                 <div>
                                     <p class="font-medium text-white" x-text="formatConfirmDate()"></p>
+                                    <p class="text-xs text-[#A0A0A0] mt-0.5" x-show="checkoutPreview" x-cloak>{{ __('Check-out') }}: <span class="text-white" x-text="checkoutPreview"></span></p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-4 text-sm">
@@ -496,7 +489,12 @@
                             </div>
                             <div class="text-sm">
                                 <p class="text-white font-medium" x-text="formatSummaryDate()"></p>
-                                <p class="text-[#A0A0A0] text-xs" x-show="time" x-cloak x-text="time ? formatTime(time) : ''"></p>
+                                <p class="text-[#A0A0A0] text-xs" x-show="time" x-cloak>
+                                    <span x-text="time ? formatTime(time) : ''"></span>
+                                    <template x-if="checkoutPreview">
+                                        <span> &rarr; <span x-text="checkoutPreview"></span></span>
+                                    </template>
+                                </p>
                             </div>
                         </div>
 
