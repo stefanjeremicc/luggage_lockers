@@ -250,18 +250,24 @@ const locationSearchAddress = computed(() => {
 const allLockers = ref([]);
 const locationId = computed(() => Number(route.params.id));
 
+// Number() on both sides — some payloads serialise `location_id` as a string
+// ("2" vs 2), which broke strict `===` comparison and made the page think
+// every locker was unassigned right after a sync. Model casts now force int,
+// this is a defensive belt + braces in case another endpoint diverges.
+const sameLocation = (l) => Number(l.location_id) === locationId.value;
+
 const assignedLockers = computed({
     get: () => allLockers.value
-        .filter(l => l.location_id === locationId.value)
+        .filter(sameLocation)
         .sort((a, b) => (a.site_sort_order ?? 999999) - (b.site_sort_order ?? 999999)),
     set: (next) => {
-        const otherLockers = allLockers.value.filter(l => l.location_id !== locationId.value);
+        const otherLockers = allLockers.value.filter(l => !sameLocation(l));
         next.forEach((l, idx) => { l.site_sort_order = idx; });
         allLockers.value = [...otherLockers, ...next];
     },
 });
 const unassignedLockers = computed(() =>
-    allLockers.value.filter(l => l.location_id !== locationId.value)
+    allLockers.value.filter(l => !sameLocation(l))
 );
 
 const onLockerSortEnd = async () => {

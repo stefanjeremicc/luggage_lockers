@@ -21,6 +21,15 @@ class Locker extends Model
         return [
             'size' => LockerSize::class,
             'status' => LockerStatus::class,
+            // Force ID/int columns to integer in JSON output. Some PHP/MySQL
+            // builds (notably PDO with emulate_prepares on) return INT columns
+            // as strings, which broke `===` comparison in the admin Vue
+            // (LocationEdit thought every locker was unassigned).
+            'location_id' => 'integer',
+            'ttlock_lock_id' => 'integer',
+            'sort_order' => 'integer',
+            'site_sort_order' => 'integer',
+            'battery_level' => 'integer',
             'is_online' => 'boolean',
             'is_active' => 'boolean',
             'dimensions_cm' => 'array',
