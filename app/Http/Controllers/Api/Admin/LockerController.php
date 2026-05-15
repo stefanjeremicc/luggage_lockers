@@ -224,18 +224,38 @@ class LockerController extends Controller
             'end' => 'required_unless:type,2|nullable|date|after:start',
         ]);
 
-        try {
-            $resp = $lockService->createPasscode(
-                $locker->ttlock_lock_id,
-                $validated['code'],
-                $validated['type'],
-                !empty($validated['start']) ? Carbon::parse($validated['start'], config('app.display_timezone')) : null,
-                !empty($validated['end']) ? Carbon::parse($validated['end'], config('app.display_timezone')) : null,
-                $validated['name'] ?? null,
-            );
-            return response()->json($resp);
-        } catch (\Throwable $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
+        $start = !empty($validated['start']) ? Carbon::parse($validated['start'], config('app.display_timezone')) : null;
+        $end   = !empty($validated['end']) ? Carbon::parse($validated['end'], config('app.display_timezone')) : null;
+
+        // TTLock cloud's passcode namespace is per-account, so the admin's
+        // chosen 4-9 digit string may collide with a code that already exists
+        // on another lock under the same account (`-3007`). When the original
+        // code was random (clicked "Generate random") the admin doesn't care
+        // which digits land on the lock — auto-regenerate and retry up to 5
+        // times. If the admin typed the code themselves, the first failure
+        // bubbles back so they can pick another.
+        $code = $validated['code'];
+        $admin_typed = (string) $request->input('user_typed', '1') === '1';
+        $maxRetries = $admin_typed ? 1 : 5;
+
+        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            try {
+                $resp = $lockService->createPasscode(
+                    $locker->ttlock_lock_id, $code, $validated['type'], $start, $end, $validated['name'] ?? null,
+                );
+                // Echo back the actual code used — important when we auto-regenerated.
+                return response()->json($resp + ['code' => $code]);
+            } catch (\Throwable $e) {
+                $isCollision = str_contains($e->getMessage(), '-3007');
+                if (!$isCollision || $attempt === $maxRetries) {
+                    return response()->json(['message' => $e->getMessage()], 500);
+                }
+                // Roll a fresh random digit sequence the same length as the original.
+                $code = str_pad((string) random_int(0, (10 ** strlen($code)) - 1), strlen($code), '0', STR_PAD_LEFT);
+                \Log::info('passcodeStore -3007 collision, retrying with fresh code', [
+                    'locker_id' => $locker->id, 'attempt' => $attempt,
+                ]);
+            }
         }
     }
 
