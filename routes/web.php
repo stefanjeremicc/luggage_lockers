@@ -10,6 +10,14 @@ use App\Http\Controllers\Public\ReviewController as PublicReviewController;
 use App\Http\Middleware\SetLocale;
 use Illuminate\Support\Facades\Route;
 
+// Temp diagnostic — remove after DNS cutover (Phase 4)
+Route::get('/health-check', fn () => [
+    'host' => request()->getHost(),
+    'app_url' => config('app.url'),
+    'scheme' => request()->getScheme(),
+    'time' => now()->toIso8601String(),
+]);
+
 // robots.txt — dynamic so the Sitemap directive uses the request's host (works
 // transparently for staging subdomains, no per-environment file edits needed).
 Route::get('/robots.txt', function () {
