@@ -23,3 +23,13 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# Content-hashed Vite build assets (/build/...) are immutable — their filenames
+# change on every rebuild, so cache them for a year. Scoped to /build/ only so it
+# never touches /sw.js (must stay fresh) or non-hashed images in /images/.
+<IfModule mod_setenvif.c>
+    SetEnvIf Request_URI "^/build/" LL_IMMUTABLE_ASSET
+</IfModule>
+<IfModule mod_headers.c>
+    Header set Cache-Control "public, max-age=31536000, immutable" env=LL_IMMUTABLE_ASSET
+</IfModule>

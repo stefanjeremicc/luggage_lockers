@@ -8,7 +8,7 @@
     "@@context": "https://schema.org",
     "@@type": "LocalBusiness",
     "name": "{{ \App\Helpers\SiteSettings::siteName() }}",
-    "description": "24/7 secure luggage storage in Belgrade with smart lockers",
+    "description": "{{ __('24/7 secure luggage storage in Belgrade with smart lockers') }}",
     "url": "{{ url('/') }}",
     "telephone": "{{ \App\Helpers\SiteSettings::phoneTel() }}",
     "email": "{{ \App\Helpers\SiteSettings::email() }}",
