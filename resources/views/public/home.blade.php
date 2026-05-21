@@ -314,7 +314,7 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" x-data="reviewsCarousel">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             @foreach($reviews as $review)
             <div class="card hover:border-[#F59E0B]/30 transition">
                 <div class="flex text-[#F59E0B] mb-3">
