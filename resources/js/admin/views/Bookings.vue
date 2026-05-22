@@ -5,16 +5,16 @@
             <div class="flex items-center gap-2 w-full sm:w-auto">
                 <div class="relative w-full sm:w-64">
                     <input v-model="search" @input="onSearchInput" placeholder="Search…"
-                        class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 py-2 text-sm text-white focus:border-[#F59E0B] focus:outline-none">
+                        class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 h-[42px] text-sm text-white focus:border-[#F59E0B] focus:outline-none">
                     <span v-if="loading" class="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 border-2 border-[#F59E0B] border-t-transparent rounded-full animate-spin"></span>
                 </div>
             </div>
         </div>
 
-        <div class="flex gap-2 mb-4 flex-wrap">
+        <div class="flex gap-2 mb-4 overflow-x-auto pb-1 -mx-1 px-1 sm:flex-wrap sm:overflow-visible sm:mx-0 sm:px-0 sm:pb-0">
             <button v-for="t in tabs" :key="t.key"
                 @click="setTab(t.key)"
-                class="px-3 py-1.5 rounded-full text-xs border transition"
+                class="px-3 py-1.5 rounded-full text-xs border transition shrink-0 whitespace-nowrap"
                 :class="tab === t.key ? 'bg-[#F59E0B] text-black border-[#F59E0B]' : 'border-[#2A2A2A] text-[#A0A0A0] hover:border-[#F59E0B]'">
                 {{ t.label }}
             </button>
@@ -24,7 +24,7 @@
         <div class="md:hidden mb-3 flex items-center gap-2">
             <span class="text-xs text-[#A0A0A0] shrink-0">Sort</span>
             <div class="flex-1">
-                <Select size="sm" :model-value="mobileSort" :options="mobileSortOptions" @update:model-value="setMobileSort" />
+                <Select :model-value="mobileSort" :options="mobileSortOptions" @update:model-value="setMobileSort" />
             </div>
         </div>
 
@@ -365,8 +365,8 @@ const perPageOptions = [
 ];
 
 const tabs = [
-    { key: 'upcoming', label: 'Upcoming' },
     { key: 'active', label: 'Active' },
+    { key: 'upcoming', label: 'Upcoming' },
     { key: 'completed', label: 'Completed' },
     { key: 'cancelled', label: 'Cancelled' },
     { key: 'all', label: 'All' },
@@ -398,7 +398,7 @@ const toast = useToast();
 const bookings = ref([]);
 const pagination = ref(null);
 const search = ref('');
-const tab = ref('upcoming');
+const tab = ref('active');
 const sortCol = ref(null);
 const sortDir = ref('asc');
 const page = ref(1);
