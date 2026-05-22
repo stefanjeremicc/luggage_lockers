@@ -63,23 +63,10 @@
                         <dd class="booking-value">{{ b.customer.email }}</dd></div>
                     <div v-if="b.customer?.phone"><dt class="booking-label">Phone</dt>
                         <dd class="booking-value">{{ b.customer.phone }}</dd></div>
-                    <div><dt class="booking-label">Location</dt>
-                        <dd class="booking-value">{{ b.location?.name || '—' }}</dd></div>
                     <div><dt class="booking-label">Check-in</dt>
                         <dd class="booking-value">{{ formatDate(b.check_in) || '—' }}</dd></div>
                     <div><dt class="booking-label">Check-out</dt>
                         <dd class="booking-value">{{ formatDate(b.check_out) || '—' }}</dd></div>
-                    <div v-if="b.created_at"><dt class="booking-label">Created</dt>
-                        <dd class="booking-value text-[#A0A0A0]">{{ formatDate(b.created_at) }}</dd></div>
-                    <div class="items-start"><dt class="booking-label">Duration</dt>
-                        <dd>
-                            <div v-if="sizeBreakdown(b).length" class="booking-value flex flex-col gap-0.5">
-                                <span v-for="(line, i) in sizeBreakdown(b)" :key="i">
-                                    {{ line.qty }}× {{ sizeLabel(line.size) }}<template v-if="line.duration"> · {{ durationLabel(line.duration) }}</template>
-                                </span>
-                            </div>
-                            <span v-else class="booking-value text-[#6B7280]">—</span>
-                        </dd></div>
                     <div><dt class="booking-label">Payment</dt>
                         <dd><span class="booking-pill" :class="b.payment_status === 'paid' ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-[#EF4444]/20 text-[#EF4444]'">{{ b.payment_status === 'paid' ? 'paid' : 'unpaid' }}</span></dd></div>
                     <div><dt class="booking-label">Total</dt>
