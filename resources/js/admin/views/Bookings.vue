@@ -366,8 +366,7 @@ const perPageOptions = [
 ];
 
 const tabs = [
-    { key: 'active', label: 'Active' },
-    { key: 'upcoming', label: 'Upcoming' },
+    { key: 'active', label: 'Active & Upcoming' },
     { key: 'completed', label: 'Completed' },
     { key: 'cancelled', label: 'Cancelled' },
     { key: 'all', label: 'All' },

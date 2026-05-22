@@ -24,12 +24,8 @@ class BookingManagementController extends Controller
 
         // Time-based tab filter — computed from check_in/check_out so "active" is
         // always accurate without relying on a stale booking_status column.
-        $tab = $request->input('tab', 'upcoming');
+        $tab = $request->input('tab', 'active');
         switch ($tab) {
-            case 'active': // U toku — currently running
-                $query->where('booking_status', '!=', BookingStatus::Cancelled)
-                      ->where('check_in', '<=', $now)->where('check_out', '>=', $now);
-                break;
             case 'completed': // Završeno — finished (completed + expired merged)
                 $query->where('booking_status', '!=', BookingStatus::Cancelled)
                       ->where('check_out', '<', $now);
@@ -39,8 +35,12 @@ class BookingManagementController extends Controller
                 break;
             case 'all':
                 break;
-            case 'upcoming': // Predstojeće (default) — active + upcoming (not yet finished)
+            case 'active': // Active & Upcoming — running now + not started yet (default)
+            case 'upcoming': // legacy alias, treated the same
             default:
+                // Active (check_in <= now) and upcoming (check_in > now) merged.
+                // Ordered by check_in asc below → active rows (earlier check_in)
+                // naturally sort ahead of upcoming ones.
                 $query->where('booking_status', '!=', BookingStatus::Cancelled)
                       ->where('check_out', '>=', $now);
                 break;
