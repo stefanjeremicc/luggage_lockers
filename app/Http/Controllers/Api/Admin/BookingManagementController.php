@@ -45,7 +45,9 @@ class BookingManagementController extends Controller
             });
         }
 
-        $paginator = $query->paginate(20);
+        $perPageRaw = $request->input('per_page', 20);
+        $perPage = ($perPageRaw === 'all') ? 100000 : max(1, min(1000, (int) $perPageRaw));
+        $paginator = $query->paginate($perPage);
 
         // Decorate each booking with decrypted PINs (admin-only endpoint).
         $paginator->getCollection()->transform(function ($booking) {

@@ -65,26 +65,33 @@
                             <span v-else class="booking-value text-[#6B7280]">—</span>
                         </dd></div>
                     <div><dt class="booking-label">Payment</dt>
-                        <dd><span class="booking-pill" :class="b.payment_status === 'paid' ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-[#EF4444]/20 text-[#EF4444]'">{{ b.payment_status === 'paid' ? 'Paid' : 'Unpaid' }}</span></dd></div>
+                        <dd><span class="booking-pill" :class="b.payment_status === 'paid' ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-[#EF4444]/20 text-[#EF4444]'">{{ b.payment_status === 'paid' ? 'paid' : 'unpaid' }}</span></dd></div>
                     <div><dt class="booking-label">Total</dt>
                         <dd class="booking-value text-[#F59E0B]">€{{ Number(b.total_eur).toFixed(2) }}</dd></div>
                 </dl>
 
-                <div class="mt-4 pt-3 border-t border-[#2A2A2A] grid grid-cols-2 gap-2" @click.stop>
-                    <button v-if="b.booking_status !== 'cancelled'" @click="togglePaid(b)"
-                        class="rounded-lg px-3 py-2.5 text-xs font-semibold col-span-2"
-                        :class="b.payment_status === 'paid' ? 'bg-[#EF4444]/15 text-[#EF4444] active:bg-[#EF4444]/25' : 'bg-[#10B981]/15 text-[#10B981] active:bg-[#10B981]/25'">
-                        {{ b.payment_status === 'paid' ? '✓ Paid — tap to unmark' : 'Mark as paid' }}</button>
-                    <button v-if="['confirmed','active'].includes(b.booking_status)" @click="reissuePin(b.id)"
-                        class="bg-[#F59E0B]/15 text-[#F59E0B] rounded-lg px-3 py-2.5 text-xs font-semibold active:bg-[#F59E0B]/25">New PIN</button>
-                    <button v-if="['confirmed','active'].includes(b.booking_status)" @click="extendOpen = b"
-                        class="bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-3 py-2.5 text-xs font-semibold active:bg-[#333]">Extend</button>
-                    <button v-if="!isFinal(b)" @click="resendConfirmation(b.id)"
-                        class="bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-3 py-2.5 text-xs font-semibold active:bg-[#333]">Resend</button>
-                    <button v-if="['confirmed','active'].includes(b.booking_status)" @click="cancelBooking(b.id)"
-                        class="bg-[#EF4444]/15 text-[#EF4444] rounded-lg px-3 py-2.5 text-xs font-semibold active:bg-[#EF4444]/25 col-span-2">Cancel booking</button>
-                    <button v-if="isFinal(b)" @click="deleteBooking(b.id)"
-                        class="bg-[#EF4444]/15 text-[#EF4444] rounded-lg px-3 py-2.5 text-xs font-semibold active:bg-[#EF4444]/25 col-span-2">Delete</button>
+                <div class="mt-4 pt-3 border-t border-[#2A2A2A] space-y-2" @click.stop>
+                    <!-- Row 1: New PIN / Extend / Resend -->
+                    <div v-if="!isFinal(b)" class="grid grid-cols-3 gap-2">
+                        <button v-if="['confirmed','active'].includes(b.booking_status)" @click="reissuePin(b.id)"
+                            class="bg-[#F59E0B]/15 text-[#F59E0B] rounded-lg px-2 py-2.5 text-xs font-semibold active:bg-[#F59E0B]/25">New PIN</button>
+                        <button v-if="['confirmed','active'].includes(b.booking_status)" @click="extendOpen = b"
+                            class="bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-2 py-2.5 text-xs font-semibold active:bg-[#333]">Extend</button>
+                        <button @click="resendConfirmation(b.id)"
+                            class="bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-2 py-2.5 text-xs font-semibold active:bg-[#333]">Resend</button>
+                    </div>
+                    <!-- Row 2: Cancel/Delete (left) + Mark paid (right) -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <button v-if="['confirmed','active'].includes(b.booking_status)" @click="cancelBooking(b.id)"
+                            class="bg-[#EF4444]/15 text-[#EF4444] rounded-lg px-3 py-2.5 text-xs font-semibold active:bg-[#EF4444]/25">Cancel booking</button>
+                        <button v-else-if="isFinal(b)" @click="deleteBooking(b.id)"
+                            class="bg-[#EF4444]/15 text-[#EF4444] rounded-lg px-3 py-2.5 text-xs font-semibold active:bg-[#EF4444]/25">Delete</button>
+                        <span v-else></span>
+                        <button v-if="b.booking_status !== 'cancelled'" @click="togglePaid(b)"
+                            class="rounded-lg px-3 py-2.5 text-xs font-semibold"
+                            :class="b.payment_status === 'paid' ? 'bg-[#EF4444]/15 text-[#EF4444] active:bg-[#EF4444]/25' : 'bg-[#10B981]/15 text-[#10B981] active:bg-[#10B981]/25'">
+                            {{ b.payment_status === 'paid' ? 'Mark as unpaid' : 'Mark as paid' }}</button>
+                    </div>
                 </div>
             </article>
         </div>
@@ -147,11 +154,11 @@
                         </td>
                         <td class="px-4 py-3 text-[#F59E0B] font-medium whitespace-nowrap">€{{ Number(b.total_eur).toFixed(2) }}</td>
                         <td class="px-4 py-3 whitespace-nowrap">
-                            <div class="flex flex-col gap-1">
-                                <span class="px-2 py-0.5 rounded-full text-xs w-fit" :class="statusClass(b.booking_status)">{{ b.booking_status }}</span>
-                                <span class="px-2 py-0.5 rounded-full text-xs w-fit"
+                            <div class="flex flex-col gap-1 items-start">
+                                <span class="px-2 py-0.5 rounded-full text-xs text-center min-w-[5.5rem] inline-block" :class="statusClass(b.booking_status)">{{ b.booking_status }}</span>
+                                <span class="px-2 py-0.5 rounded-full text-xs text-center min-w-[5.5rem] inline-block"
                                     :class="b.payment_status === 'paid' ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-[#EF4444]/20 text-[#EF4444]'">
-                                    {{ b.payment_status === 'paid' ? 'Paid' : 'Unpaid' }}
+                                    {{ b.payment_status === 'paid' ? 'paid' : 'unpaid' }}
                                 </span>
                             </div>
                         </td>
@@ -192,12 +199,22 @@
             </table>
         </div>
 
-        <!-- Pagination -->
-        <div v-if="pagination?.last_page > 1" class="flex items-center justify-between gap-2 mt-4 text-sm flex-wrap">
-            <div class="text-[#A0A0A0]">
-                {{ pagination.from }}–{{ pagination.to }} of {{ pagination.total }}
+        <!-- Pagination + page size -->
+        <div v-if="pagination" class="flex items-center justify-between gap-3 mt-4 text-sm flex-wrap">
+            <div class="flex items-center gap-3">
+                <span class="text-[#A0A0A0]">{{ pagination.from || 0 }}–{{ pagination.to || 0 }} of {{ pagination.total || 0 }}</span>
+                <label class="flex items-center gap-1.5 text-[#A0A0A0]">
+                    <span class="text-xs">Per page</span>
+                    <select :value="perPage" @change="setPerPage($event.target.value === 'all' ? 'all' : Number($event.target.value))"
+                        class="bg-[#111] border border-[#2A2A2A] rounded-lg px-2 py-1 text-xs text-white focus:border-[#F59E0B] focus:outline-none">
+                        <option :value="20">20</option>
+                        <option :value="50">50</option>
+                        <option :value="100">100</option>
+                        <option value="all">All</option>
+                    </select>
+                </label>
             </div>
-            <div class="flex items-center gap-1 flex-wrap">
+            <div v-if="pagination.last_page > 1" class="flex items-center gap-1 flex-wrap">
                 <button @click="goPage(page - 1)" :disabled="page <= 1" aria-label="Previous"
                     class="w-8 h-8 rounded-lg bg-[#1A1A1A] border border-[#2A2A2A] text-[#A0A0A0] hover:border-[#F59E0B] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-[#2A2A2A] flex items-center justify-center">←</button>
                 <template v-for="(item, idx) in pageList" :key="idx">
@@ -253,7 +270,7 @@
                             <span v-else class="booking-value text-[#6B7280]">—</span>
                         </dd></div>
                     <div v-if="false"><dt class="booking-label">Payment</dt>
-                        <dd><span class="booking-pill" :class="detailsBooking.payment_status === 'paid' ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-[#EF4444]/20 text-[#EF4444]'">{{ detailsBooking.payment_status === 'paid' ? 'Paid' : 'Unpaid' }}</span></dd></div>
+                        <dd><span class="booking-pill" :class="detailsBooking.payment_status === 'paid' ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-[#EF4444]/20 text-[#EF4444]'">{{ detailsBooking.payment_status === 'paid' ? 'paid' : 'unpaid' }}</span></dd></div>
                     <div><dt class="booking-label">Total</dt>
                         <dd class="booking-value text-[#F59E0B]">€{{ Number(detailsBooking.total_eur).toFixed(2) }}</dd></div>
                     <div v-if="detailsBooking.cancel_reason" class="items-start"><dt class="booking-label">Cancel reason</dt>
@@ -340,6 +357,7 @@ const pagination = ref(null);
 const search = ref('');
 const statusFilter = ref('all');
 const page = ref(1);
+const perPage = ref(20);
 const loading = ref(false);
 const openMenuId = ref(null);
 const detailsBooking = ref(null);
@@ -355,6 +373,7 @@ const fetchBookings = async () => {
     loading.value = true;
     try {
         const params = new URLSearchParams({ page: page.value });
+        params.set('per_page', perPage.value);
         if (statusFilter.value !== 'all') params.set('status', statusFilter.value);
         if (search.value) params.set('search', search.value);
         const res = await apiFetch(`/api/admin/bookings?${params}`);
@@ -376,6 +395,7 @@ const onSearchInput = () => {
 
 const setStatus = (s) => { statusFilter.value = s; page.value = 1; fetchBookings(); };
 const goPage = (p) => { if (p < 1 || p > pagination.value?.last_page) return; page.value = p; fetchBookings(); };
+const setPerPage = (v) => { perPage.value = v; page.value = 1; fetchBookings(); };
 
 const toggleMenu = (id) => { openMenuId.value = openMenuId.value === id ? null : id; };
 const closeMenu = () => { openMenuId.value = null; };
