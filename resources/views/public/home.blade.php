@@ -42,12 +42,12 @@
         </p>
 
         <div class="mt-10 sm:mt-10 flex flex-row items-center justify-center gap-3 sm:gap-4">
-            <a href="{{ route($lp . 'locations.index') }}" class="btn-primary flex-1 sm:flex-none inline-flex items-center justify-center gap-2">
+            <a href="{{ $locationsCount === 1 ? route($lp . 'booking.index', ['slug' => $locations->first()->slug]) : route($lp . 'locations.index') }}" class="btn-primary flex-1 sm:flex-none inline-flex items-center justify-center gap-2">
                 <span class="sm:hidden">{{ $heroCtaPrimary ?: __('Book Now') }}</span>
                 <span class="hidden sm:inline">{{ $heroCtaPrimary ?: __('Book Now') }}{{ $minPriceEur ? ' — '.__('From').' €'.rtrim(rtrim(number_format($minPriceEur, 2), '0'), '.') : '' }}</span>
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
             </a>
-            <a href="#how-it-works" data-scroll-to="how-it-works" class="btn-outline flex-1 sm:flex-none text-center">{{ $heroCtaSecondary ?: __('How It Works') }}</a>
+            <a href="#how-it-works" data-scroll-to="how-it-works" class="btn-outline flex-1 sm:flex-none text-center">{{ __('How It Works') }}</a>
         </div>
     </div>
 
