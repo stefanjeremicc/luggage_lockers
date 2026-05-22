@@ -44,7 +44,10 @@
             <div v-if="g.label" class="sticky top-0 z-10 -mx-px px-3 py-1.5 bg-[#0A0A0A]/95 backdrop-blur text-xs font-semibold uppercase tracking-wide text-[#A0A0A0] border-b border-[#2A2A2A]">{{ g.label }}</div>
             <article v-for="b in g.items" :key="b.id" class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 active:bg-[#222] transition" @click="openDetails(b)">
                 <div class="flex items-start justify-between gap-3 mb-3">
-                    <span class="booking-pill" :class="statusClass((b.display_status ?? b.booking_status))">{{ (b.display_status ?? b.booking_status) }}</span>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="booking-pill" :class="statusClass((b.display_status ?? b.booking_status))">{{ (b.display_status ?? b.booking_status) }}</span>
+                        <span v-if="(b.display_status ?? b.booking_status) !== 'cancelled'" class="booking-pill" :class="b.payment_status === 'paid' ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-[#EF4444]/20 text-[#EF4444]'">{{ b.payment_status === 'paid' ? 'paid' : 'unpaid' }}</span>
+                    </div>
                     <div v-if="b.pins?.length" class="flex flex-col items-end gap-1 text-xs">
                         <div v-for="p in b.pins" :key="p.locker_number" class="flex items-center gap-1.5">
                             <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center" :class="sizeClass(p.size || 'standard')">{{ (p.size || 'standard') === 'large' ? 'B' : 'R' }}</span>
@@ -69,10 +72,8 @@
                         <dd class="booking-value">{{ formatDate(b.check_in) || '—' }}</dd></div>
                     <div><dt class="booking-label">Check-out</dt>
                         <dd class="booking-value">{{ formatDate(b.check_out) || '—' }}</dd></div>
-                    <div><dt class="booking-label">Payment</dt>
-                        <dd><span class="booking-pill" :class="b.payment_status === 'paid' ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-[#EF4444]/20 text-[#EF4444]'">{{ b.payment_status === 'paid' ? 'paid' : 'unpaid' }}</span></dd></div>
                     <div><dt class="booking-label">Total</dt>
-                        <dd class="booking-value text-[#F59E0B]">€{{ Number(b.total_eur).toFixed(2) }}</dd></div>
+                        <dd class="booking-value !text-[#F59E0B] font-semibold">€{{ Number(b.total_eur).toFixed(2) }}</dd></div>
                 </dl>
 
                 <div class="mt-4 pt-3 border-t border-[#2A2A2A] space-y-2" @click.stop>
