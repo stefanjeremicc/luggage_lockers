@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Booking extends Model
 {
     protected $fillable = [
-        'uuid', 'customer_id', 'location_id', 'locker_size', 'locker_qty',
+        'uuid', 'booking_number', 'customer_id', 'location_id', 'locker_size', 'locker_qty',
         'check_in', 'check_out', 'duration_label', 'price_eur', 'price_rsd',
         'service_fee_eur', 'total_eur', 'booking_status', 'payment_status',
         'payment_method', 'paid_at', 'cancelled_at', 'cancel_reason',
@@ -39,6 +39,21 @@ class Booking extends Model
             'paid_at' => 'datetime',
             'cancelled_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Assign a human-friendly sequential booking_number (1, 2, 3 …) on create.
+     * This is a DISPLAY-ONLY counter — the real primary key `id` is untouched
+     * and still used by every route, relation and TTLock reference. Not unique
+     * at the DB level on purpose: a rare race never blocks an actual booking.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (Booking $booking) {
+            if (empty($booking->booking_number)) {
+                $booking->booking_number = (static::max('booking_number') ?? 0) + 1;
+            }
+        });
     }
 
     public function customer(): BelongsTo

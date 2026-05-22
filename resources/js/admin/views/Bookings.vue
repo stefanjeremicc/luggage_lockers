@@ -33,7 +33,7 @@
                     <div><dt class="booking-label">Status</dt>
                         <dd><span class="booking-pill" :class="statusClass(b.booking_status)">{{ b.booking_status }}</span></dd></div>
                     <div><dt class="booking-label">Booking ID</dt>
-                        <dd class="booking-value font-mono">#{{ b.id }}</dd></div>
+                        <dd class="booking-value font-mono">#{{ b.booking_number ?? b.id }}</dd></div>
                     <div><dt class="booking-label">Name</dt>
                         <dd class="booking-value">{{ b.customer?.full_name || '—' }}</dd></div>
                     <div v-if="b.customer?.email"><dt class="booking-label">Email</dt>
@@ -113,10 +113,11 @@
                         <td colspan="8" class="px-4 py-8 text-center text-[#A0A0A0]">Loading…</td>
                     </tr>
                     <tr v-for="b in bookings" :key="b.id" class="border-b border-[#2A2A2A]/50 hover:bg-[#111]">
-                        <td class="px-3 py-3 text-[#6B7280] font-mono text-xs whitespace-nowrap">#{{ b.id }}</td>
+                        <td class="px-3 py-3 text-[#6B7280] font-mono text-xs whitespace-nowrap">#{{ b.booking_number ?? b.id }}</td>
                         <td class="px-4 py-3 max-w-[220px]">
                             <div class="truncate">{{ b.customer?.full_name }}</div>
                             <div class="text-xs text-[#A0A0A0] truncate">{{ b.customer?.email }}</div>
+                            <div v-if="b.customer?.phone" class="text-xs text-[#A0A0A0] truncate">{{ b.customer.phone }}</div>
                         </td>
                         <td class="px-4 py-3 whitespace-nowrap">{{ b.location?.name }}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-xs leading-tight">
@@ -218,7 +219,7 @@
                     <div><dt class="booking-label">Status</dt>
                         <dd><span class="booking-pill" :class="statusClass(detailsBooking.booking_status)">{{ detailsBooking.booking_status }}</span></dd></div>
                     <div><dt class="booking-label">Booking ID</dt>
-                        <dd class="booking-value font-mono">#{{ detailsBooking.id }}</dd></div>
+                        <dd class="booking-value font-mono">#{{ detailsBooking.booking_number ?? detailsBooking.id }}</dd></div>
                     <div><dt class="booking-label">Name</dt>
                         <dd class="booking-value">{{ detailsBooking.customer?.full_name || '—' }}</dd></div>
                     <div v-if="detailsBooking.customer?.email"><dt class="booking-label">Email</dt>
