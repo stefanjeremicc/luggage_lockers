@@ -1,8 +1,20 @@
 import allCountries from './countries.js';
 
-// Local calendar date as YYYY-MM-DD. We must NOT use toISOString() (that returns
-// the UTC date) — near midnight in Belgrade (UTC+1/+2) the UTC date is still the
-// previous day, which made "today" resolve to yesterday and booked the wrong day.
+// All "today / now" logic is anchored to the BUSINESS timezone (Belgrade),
+// independent of the visitor's device timezone. We must NOT use toISOString()
+// (UTC) nor the device-local date — near midnight either could resolve "today"
+// to the wrong calendar day and book/lock the wrong date.
+const BUSINESS_TZ = 'Europe/Belgrade';
+// en-CA formats as YYYY-MM-DD.
+const bgDate = (d = new Date()) =>
+    new Intl.DateTimeFormat('en-CA', { timeZone: BUSINESS_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+const bgNowParts = () => {
+    const parts = new Intl.DateTimeFormat('en-GB', { timeZone: BUSINESS_TZ, hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date());
+    const get = t => Number(parts.find(x => x.type === t)?.value || 0);
+    return { h: get('hour'), m: get('minute') };
+};
+// Device-local YYYY-MM-DD — only used for the checkout-time preview where we
+// compare against a Date built in the device's own timezone.
 const localYmd = (d = new Date()) => {
     const pad = n => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -194,12 +206,9 @@ export default () => ({
      * date is "today" (otherwise any HH:MM is fine for a future day).
      */
     get timeInputMin() {
-        const today = localYmd();
-        if (this.resolvedDate === today) {
-            const now = new Date();
-            const hh = String(now.getHours()).padStart(2, '0');
-            const mm = String(now.getMinutes()).padStart(2, '0');
-            return `${hh}:${mm}`;
+        if (this.resolvedDate === bgDate()) {
+            const { h, m } = bgNowParts();
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
         }
         return null;
     },
@@ -211,11 +220,10 @@ export default () => ({
      */
     get isTimeValid() {
         if (!this.time) return false;
-        const today = localYmd();
-        if (this.resolvedDate !== today) return true;
+        if (this.resolvedDate !== bgDate()) return true;
         const [h, m] = this.time.split(':').map(Number);
-        const now = new Date();
-        return (h > now.getHours()) || (h === now.getHours() && m > now.getMinutes());
+        const now = bgNowParts();
+        return (h > now.h) || (h === now.h && m > now.m);
     },
 
     /**
@@ -297,11 +305,14 @@ export default () => ({
     },
 
     get resolvedDate() {
-        if (this.date === 'today') return localYmd();
+        if (this.date === 'today') return bgDate();
         if (this.date === 'tomorrow') {
-            const d = new Date();
-            d.setDate(d.getDate() + 1);
-            return localYmd(d);
+            // Add one day to *Belgrade's* today, using UTC arithmetic to avoid
+            // any device-timezone drift in the +1 step.
+            const [y, m, d] = bgDate().split('-').map(Number);
+            const t = new Date(Date.UTC(y, m - 1, d + 1));
+            const pad = n => String(n).padStart(2, '0');
+            return `${t.getUTCFullYear()}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}`;
         }
         return this.customDate;
     },
