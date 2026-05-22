@@ -69,9 +69,9 @@
                         <dd class="booking-value text-[#A0A0A0]">{{ formatDate(b.created_at) }}</dd></div>
                     <div class="items-start"><dt class="booking-label">Duration</dt>
                         <dd>
-                            <div v-if="sizeBreakdown(b).length" class="flex flex-wrap gap-1">
-                                <span v-for="(line, i) in sizeBreakdown(b)" :key="i" class="booking-pill" :class="sizeClass(line.size)">
-                                    {{ line.qty }}× {{ line.size === 'large' ? 'B' : 'R' }}<template v-if="line.duration"> · {{ durationLabel(line.duration) }}</template>
+                            <div v-if="sizeBreakdown(b).length" class="booking-value flex flex-col gap-0.5">
+                                <span v-for="(line, i) in sizeBreakdown(b)" :key="i">
+                                    {{ line.qty }}× {{ sizeLabel(line.size) }}<template v-if="line.duration"> · {{ durationLabel(line.duration) }}</template>
                                 </span>
                             </div>
                             <span v-else class="booking-value text-[#6B7280]">—</span>
@@ -497,9 +497,10 @@ const pinRows = (b) => {
 
 // Friendly label for a duration key. Falls back to the raw key.
 const durationLabels = {
-    '6h': '6h', '24h': '24h', '2_days': '2d', '3_days': '3d', '4_days': '4d',
-    '5_days': '5d', '1_week': '1w', '2_weeks': '2w', '1_month': '1mo',
+    '6h': '6 hours', '24h': '24 hours', '2_days': '2 days', '3_days': '3 days', '4_days': '4 days',
+    '5_days': '5 days', '1_week': '1 week', '2_weeks': '2 weeks', '1_month': '1 month',
 };
+const sizeLabel = (s) => s === 'large' ? 'Big' : 'Regular';
 const durationLabel = (key) => durationLabels[key] || key || '';
 
 // Numeric pagination with smart ellipsis: 1 … 4 5 [6] 7 8 … 20
