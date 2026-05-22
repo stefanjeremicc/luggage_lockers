@@ -29,9 +29,20 @@
                 No bookings.
             </div>
             <article v-for="b in bookings" :key="b.id" class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 active:bg-[#222] transition" @click="openDetails(b)">
+                <div class="flex items-start justify-between gap-3 mb-3">
+                    <span class="booking-pill" :class="statusClass(b.booking_status)">{{ b.booking_status }}</span>
+                    <div v-if="b.pins?.length" class="flex flex-col items-end gap-1 text-xs">
+                        <div v-for="p in b.pins" :key="p.locker_number" class="flex items-center gap-1.5">
+                            <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center" :class="sizeClass(p.size || 'standard')">{{ (p.size || 'standard') === 'large' ? 'B' : 'R' }}</span>
+                            <span class="font-mono font-semibold text-white">{{ p.locker_number || '—' }}</span>
+                            <span class="font-mono font-bold text-[#F59E0B]">({{ p.pin || '——' }})</span>
+                            <span v-if="['confirmed','active'].includes(b.booking_status)"
+                                :title="p.ttlock_registered ? 'PIN active on smart lock' : 'PIN waiting for gateway sync'"
+                                class="w-1.5 h-1.5 rounded-full shrink-0" :class="p.ttlock_registered ? 'bg-[#10B981]' : 'bg-[#F59E0B]'"></span>
+                        </div>
+                    </div>
+                </div>
                 <dl class="booking-dl">
-                    <div><dt class="booking-label">Status</dt>
-                        <dd><span class="booking-pill" :class="statusClass(b.booking_status)">{{ b.booking_status }}</span></dd></div>
                     <div><dt class="booking-label">Booking ID</dt>
                         <dd class="booking-value font-mono">#{{ b.booking_number ?? b.id }}</dd></div>
                     <div><dt class="booking-label">Name</dt>
@@ -48,16 +59,9 @@
                         <dd class="booking-value">{{ formatDate(b.check_out) || '—' }}</dd></div>
                     <div v-if="b.created_at"><dt class="booking-label">Created</dt>
                         <dd class="booking-value text-[#A0A0A0]">{{ formatDate(b.created_at) }}</dd></div>
-                    <div class="items-start"><dt class="booking-label">Items</dt>
+                    <div class="items-start"><dt class="booking-label">Duration</dt>
                         <dd>
-                            <div v-if="pinRows(b).length" class="flex flex-col gap-1.5">
-                                <div v-for="p in pinRows(b)" :key="p.number" class="flex items-center gap-2">
-                                    <span class="booking-pill" :class="sizeClass(p.size)">{{ p.size === 'large' ? 'B' : 'R' }}<template v-if="p.duration"> · {{ durationLabel(p.duration) }}</template></span>
-                                    <span class="booking-value font-mono">{{ p.number || '—' }}</span>
-                                    <span class="booking-value font-mono text-[#F59E0B]">({{ p.pin || '——' }})</span>
-                                </div>
-                            </div>
-                            <div v-else-if="sizeBreakdown(b).length" class="flex flex-wrap gap-1">
+                            <div v-if="sizeBreakdown(b).length" class="flex flex-wrap gap-1">
                                 <span v-for="(line, i) in sizeBreakdown(b)" :key="i" class="booking-pill" :class="sizeClass(line.size)">
                                     {{ line.qty }}× {{ line.size === 'large' ? 'B' : 'R' }}<template v-if="line.duration"> · {{ durationLabel(line.duration) }}</template>
                                 </span>
