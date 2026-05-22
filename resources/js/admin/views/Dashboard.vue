@@ -22,6 +22,30 @@
                 </div>
             </div>
 
+            <!-- Marketing attribution (first-touch, last 30 days) -->
+            <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0]">Where bookings come from</h2>
+                    <span class="text-xs text-[#6B7280]">last 30 days · {{ attribution.total }} booking{{ attribution.total === 1 ? '' : 's' }}</span>
+                </div>
+                <div v-if="!attribution.channels.length" class="text-sm text-[#6B7280] italic">No bookings in the last 30 days yet.</div>
+                <template v-else>
+                    <!-- stacked bar -->
+                    <div class="flex h-2.5 rounded-full overflow-hidden mb-4 bg-[#0A0A0A]">
+                        <div v-for="c in attribution.channels" :key="'bar-'+c.key"
+                            :style="{ width: c.pct + '%', backgroundColor: channelMeta(c.key).color }"
+                            :title="`${channelMeta(c.key).label}: ${c.count} (${c.pct}%)`"></div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+                        <div v-for="c in attribution.channels" :key="'row-'+c.key" class="flex items-center gap-2 text-sm">
+                            <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="{ backgroundColor: channelMeta(c.key).color }"></span>
+                            <span class="text-white">{{ channelMeta(c.key).label }}</span>
+                            <span class="ml-auto text-[#A0A0A0] tabular-nums">{{ c.count }} · {{ c.pct }}%</span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
             <!-- Alerts -->
             <div v-if="hasAlerts" class="mb-8">
                 <h2 class="text-sm font-semibold text-[#F59E0B] uppercase tracking-wide mb-3">Alerts</h2>
@@ -106,6 +130,19 @@ const revenueCards = computed(() => {
         { label: 'This month', value: s.revenue_month ?? 0 },
     ];
 });
+
+const attribution = computed(() => data.value?.attribution ?? { total: 0, channels: [] });
+
+const CHANNEL_META = {
+    google_ads: { label: 'Google Ads', color: '#4285F4' },
+    facebook:   { label: 'Facebook / Meta', color: '#1877F2' },
+    organic:    { label: 'Organic search', color: '#10B981' },
+    referral:   { label: 'Referral', color: '#A78BFA' },
+    direct:     { label: 'Direct', color: '#F59E0B' },
+    other:      { label: 'Other', color: '#6B7280' },
+    unknown:    { label: 'Unknown', color: '#3A3A3A' },
+};
+const channelMeta = (key) => CHANNEL_META[key] || { label: key, color: '#6B7280' };
 
 const hasAlerts = computed(() =>
     (data.value?.alerts?.low_battery?.length || 0) > 0 ||

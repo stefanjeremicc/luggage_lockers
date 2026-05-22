@@ -1,5 +1,9 @@
 import Alpine from 'alpinejs';
 
+// Capture first-touch marketing attribution ASAP (writes a 90-day cookie on the
+// landing page; exposes window.getAttribution() for the booking submit).
+import './attribution';
+
 // Import Alpine components
 import bookingFlow from './booking-flow';
 import calendarPicker from './calendar-picker';

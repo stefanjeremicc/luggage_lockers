@@ -21,6 +21,8 @@ class Booking extends Model
         'service_fee_eur', 'total_eur', 'booking_status', 'payment_status',
         'payment_method', 'paid_at', 'cancelled_at', 'cancel_reason',
         'notes', 'ip_address', 'user_agent',
+        'marketing_source', 'utm_source', 'utm_medium', 'utm_campaign',
+        'referrer', 'landing_page',
     ];
 
     protected function casts(): array

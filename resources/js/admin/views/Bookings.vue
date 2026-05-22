@@ -276,6 +276,12 @@
                         <dd><span class="booking-pill" :class="detailsBooking.payment_status === 'paid' ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-[#EF4444]/20 text-[#EF4444]'">{{ detailsBooking.payment_status === 'paid' ? 'paid' : 'unpaid' }}</span></dd></div>
                     <div><dt class="booking-label">Total</dt>
                         <dd class="booking-value text-[#F59E0B]">€{{ Number(detailsBooking.total_eur).toFixed(2) }}</dd></div>
+                    <div><dt class="booking-label">Source</dt>
+                        <dd class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="{ backgroundColor: sourceMeta(detailsBooking.marketing_source).color }"></span>
+                            <span class="booking-value">{{ sourceMeta(detailsBooking.marketing_source).label }}</span>
+                            <span v-if="detailsBooking.utm_campaign" class="text-xs text-[#6B7280]">· {{ detailsBooking.utm_campaign }}</span>
+                        </dd></div>
                     <div v-if="detailsBooking.cancel_reason" class="items-start"><dt class="booking-label">Cancel reason</dt>
                         <dd class="booking-value text-[#EF4444]">{{ detailsBooking.cancel_reason }}</dd></div>
                 </dl>
@@ -497,6 +503,17 @@ const durationLabels = {
 };
 const sizeLabel = (s) => s === 'large' ? 'Big' : 'Regular';
 const durationLabel = (key) => durationLabels[key] || key || '';
+
+// Marketing-attribution channel → label + colour (matches Dashboard widget).
+const SOURCE_META = {
+    google_ads: { label: 'Google Ads', color: '#4285F4' },
+    facebook:   { label: 'Facebook / Meta', color: '#1877F2' },
+    organic:    { label: 'Organic search', color: '#10B981' },
+    referral:   { label: 'Referral', color: '#A78BFA' },
+    direct:     { label: 'Direct', color: '#F59E0B' },
+    other:      { label: 'Other', color: '#6B7280' },
+};
+const sourceMeta = (key) => SOURCE_META[key] || { label: 'Unknown', color: '#3A3A3A' };
 
 // Numeric pagination with smart ellipsis: 1 … 4 5 [6] 7 8 … 20
 const pageList = computed(() => {

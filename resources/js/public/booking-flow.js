@@ -480,6 +480,9 @@ export default () => ({
                     date: this.resolvedDate,
                     time: this.time,
                     payment_method: 'cash',
+                    // First-touch marketing attribution (where the visitor
+                    // originally came from). Server derives the channel.
+                    attribution: (window.getAttribution ? window.getAttribution() : {}),
                 }),
             });
             const data = await res.json();

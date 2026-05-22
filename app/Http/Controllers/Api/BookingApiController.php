@@ -56,6 +56,21 @@ class BookingApiController extends Controller
             ]];
         }
 
+        // First-touch marketing attribution (optional, best-effort). All fields
+        // are untrusted client input, so they're length-capped; the channel is
+        // derived server-side in BookingService.
+        $request->validate([
+            'attribution' => 'nullable|array',
+            'attribution.utm_source' => 'nullable|string|max:100',
+            'attribution.utm_medium' => 'nullable|string|max:100',
+            'attribution.utm_campaign' => 'nullable|string|max:150',
+            'attribution.gclid' => 'nullable|string|max:255',
+            'attribution.fbclid' => 'nullable|string|max:255',
+            'attribution.referrer' => 'nullable|string|max:500',
+            'attribution.landing_page' => 'nullable|string|max:500',
+        ]);
+        $base['attribution'] = $request->input('attribution', []);
+
         $base['customer_id'] = $request->user()->id;
         $validated = $base;
 

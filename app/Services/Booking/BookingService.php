@@ -149,7 +149,7 @@ class BookingService
                 'payment_method' => $data['payment_method'] ?? 'cash',
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent(),
-            ]);
+            ] + $this->attributionAttributes($data['attribution'] ?? []));
 
             // Persist per-item rows (booking_items) with their own windows; link each
             // booking_locker to its parent item so reschedules and per-item operations
@@ -329,5 +329,72 @@ class BookingService
         }
 
         return $booking;
+    }
+
+    /**
+     * Build the attribution columns for a new booking from the client-supplied
+     * first-touch payload. Derives a normalised marketing_source channel and
+     * keeps the raw UTM/referrer values for auditing.
+     *
+     * @param  array<string,mixed>  $attr
+     * @return array<string,?string>
+     */
+    private function attributionAttributes(array $attr): array
+    {
+        $clean = fn($v, $max) => ($v = trim((string) ($v ?? ''))) === '' ? null : mb_substr($v, 0, $max);
+
+        return [
+            'marketing_source' => $this->deriveMarketingSource($attr),
+            'utm_source'       => $clean($attr['utm_source'] ?? null, 100),
+            'utm_medium'       => $clean($attr['utm_medium'] ?? null, 100),
+            'utm_campaign'     => $clean($attr['utm_campaign'] ?? null, 150),
+            'referrer'         => $clean($attr['referrer'] ?? null, 500),
+            'landing_page'     => $clean($attr['landing_page'] ?? null, 500),
+        ];
+    }
+
+    /**
+     * Classify the first-touch source into a single channel:
+     * google_ads | facebook | organic | referral | direct | other.
+     */
+    private function deriveMarketingSource(array $attr): string
+    {
+        $source   = strtolower(trim((string) ($attr['utm_source'] ?? '')));
+        $medium   = strtolower(trim((string) ($attr['utm_medium'] ?? '')));
+        $gclid    = trim((string) ($attr['gclid'] ?? ''));
+        $fbclid   = trim((string) ($attr['fbclid'] ?? ''));
+        $referrer = strtolower(trim((string) ($attr['referrer'] ?? '')));
+        $paid     = in_array($medium, ['cpc', 'ppc', 'paid', 'paidsearch', 'paid_search', 'cpm'], true);
+
+        // Paid click IDs are the strongest signal.
+        if ($gclid !== '' || ($paid && str_contains($source, 'google')) || str_contains($source, 'adwords') || str_contains($source, 'googleads')) {
+            return 'google_ads';
+        }
+        if ($fbclid !== '' || in_array($source, ['facebook', 'fb', 'instagram', 'ig', 'meta'], true) || str_contains($referrer, 'facebook.') || str_contains($referrer, 'instagram.')) {
+            return 'facebook';
+        }
+
+        // UTM source set but not paid → treat as referral/campaign traffic.
+        if ($source !== '') {
+            if (in_array($source, ['google', 'bing', 'yahoo', 'duckduckgo', 'ecosia'], true) && !$paid) {
+                return 'organic';
+            }
+            return 'referral';
+        }
+
+        // No UTM: fall back to the referrer host.
+        if ($referrer !== '') {
+            $host = parse_url($referrer, PHP_URL_HOST) ?: '';
+            $engines = ['google.', 'bing.', 'yahoo.', 'duckduckgo.', 'ecosia.', 'yandex.', 'baidu.'];
+            foreach ($engines as $e) {
+                if (str_contains($host, $e)) {
+                    return 'organic';
+                }
+            }
+            return 'referral';
+        }
+
+        // No UTM, no referrer → typed/bookmarked/app.
+        return 'direct';
     }
 }
