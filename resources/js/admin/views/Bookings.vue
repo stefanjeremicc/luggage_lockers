@@ -40,7 +40,9 @@
             <div v-else-if="!bookings.length" class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-8 text-center text-[#A0A0A0] text-sm">
                 No bookings.
             </div>
-            <article v-for="b in bookings" :key="b.id" class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 active:bg-[#222] transition" @click="openDetails(b)">
+            <template v-for="g in mobileGroups" :key="g.key">
+            <div v-if="g.label" class="sticky top-0 z-10 -mx-px px-3 py-1.5 bg-[#0A0A0A]/95 backdrop-blur text-xs font-semibold uppercase tracking-wide text-[#A0A0A0] border-b border-[#2A2A2A]">{{ g.label }}</div>
+            <article v-for="b in g.items" :key="b.id" class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 active:bg-[#222] transition" @click="openDetails(b)">
                 <div class="flex items-start justify-between gap-3 mb-3">
                     <span class="booking-pill" :class="statusClass((b.display_status ?? b.booking_status))">{{ (b.display_status ?? b.booking_status) }}</span>
                     <div v-if="b.pins?.length" class="flex flex-col items-end gap-1 text-xs">
@@ -97,6 +99,7 @@
                     </div>
                 </div>
             </article>
+            </template>
         </div>
 
         <!-- Desktop table view -->
@@ -513,6 +516,51 @@ const SOURCE_META = {
     other:      { label: 'Other', color: '#6B7280' },
 };
 const sourceMeta = (key) => SOURCE_META[key] || { label: 'Unknown', color: '#3A3A3A' };
+
+// Mobile: group the (already-sorted) cards under date sub-headers so long lists
+// stay scannable. The grouping date is picked per tab: check-in for active/
+// upcoming, check-out for completed, created date for All, cancel date for
+// cancelled. If the user sorts by a non-date column we skip headers (one group).
+const groupDateKey = (b) => {
+    let v;
+    if (tab.value === 'completed') v = b.check_out;
+    else if (tab.value === 'cancelled') v = b.cancelled_at || b.check_in;
+    else if (tab.value === 'all') v = b.created_at;
+    else v = b.check_in; // active & upcoming (default)
+    if (!v) return '';
+    const dt = new Date(v);
+    if (isNaN(dt.getTime())) return '';
+    return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+};
+const groupDateLabel = (key) => {
+    if (!key) return '—';
+    const [y, m, d] = key.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const diff = Math.round((dt - today) / 86400000);
+    if (diff === 0) return 'Today';
+    if (diff === 1) return 'Tomorrow';
+    if (diff === -1) return 'Yesterday';
+    return dt.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+};
+const mobileGroups = computed(() => {
+    const list = bookings.value || [];
+    // Only group by date when the order is date-based (default per-tab order or
+    // an explicit "period" sort). Otherwise show a single, header-less group.
+    const dateOrdered = !sortCol.value || sortCol.value === 'period';
+    if (!dateOrdered) return [{ key: 'all', label: null, items: list }];
+    const groups = [];
+    let cur = null;
+    for (const b of list) {
+        const key = groupDateKey(b) || 'na';
+        if (!cur || cur.key !== key) {
+            cur = { key, label: groupDateLabel(groupDateKey(b)), items: [] };
+            groups.push(cur);
+        }
+        cur.items.push(b);
+    }
+    return groups;
+});
 
 // Numeric pagination with smart ellipsis: 1 … 4 5 [6] 7 8 … 20
 const pageList = computed(() => {
