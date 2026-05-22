@@ -5,6 +5,12 @@
 
     RewriteEngine On
 
+    # Force HTTPS. The X-Forwarded-Proto guard prevents a redirect loop behind
+    # LiteSpeed/proxy where %{HTTPS} may not reflect the edge TLS termination.
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
     # Force non-www (e.g. www.belgradeluggagelocker.com -> belgradeluggagelocker.com).
     # Host-scoped: only fires when the host starts with "www.", so the staging
     # subdomain locker.webby.rs (no www variant) is never affected.
