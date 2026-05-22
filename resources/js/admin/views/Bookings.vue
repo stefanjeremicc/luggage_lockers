@@ -205,8 +205,8 @@
                 <span class="text-[#A0A0A0]">{{ pagination.from || 0 }}–{{ pagination.to || 0 }} of {{ pagination.total || 0 }}</span>
                 <div class="flex items-center gap-1.5 text-[#A0A0A0]">
                     <span class="text-xs">Per page</span>
-                    <div class="w-24">
-                        <Select :model-value="perPage" :options="perPageOptions" @update:model-value="setPerPage" />
+                    <div class="w-20">
+                        <Select size="sm" :model-value="perPage" :options="perPageOptions" @update:model-value="setPerPage" />
                     </div>
                 </div>
             </div>

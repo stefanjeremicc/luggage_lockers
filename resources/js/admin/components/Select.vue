@@ -3,13 +3,13 @@
         <button type="button"
             @click="toggle"
             :disabled="disabled"
-            class="w-full bg-[#111] border rounded-lg px-4 pr-10 py-2.5 text-left text-white text-sm flex items-center justify-between gap-2 focus:outline-none transition h-[42px]"
-            :class="[open ? 'border-[#F59E0B]' : (error ? 'border-[#EF4444]' : 'border-[#2A2A2A] hover:border-[#3A3A3A]'), disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer']">
+            class="w-full bg-[#111] border rounded-lg text-left text-white flex items-center justify-between gap-2 focus:outline-none transition"
+            :class="[size === 'sm' ? 'px-3 py-1.5 text-xs' : 'px-4 pr-10 py-2.5 text-sm h-[42px]', open ? 'border-[#F59E0B]' : (error ? 'border-[#EF4444]' : 'border-[#2A2A2A] hover:border-[#3A3A3A]'), disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer']">
             <span class="flex items-center gap-2 min-w-0 flex-1">
                 <span v-if="selected?.icon" class="shrink-0" v-html="selected.icon"></span>
                 <span class="truncate" :class="selected ? 'text-white' : 'text-[#6B7280]'">{{ selected ? selected.label : placeholder }}</span>
             </span>
-            <svg class="w-4 h-4 text-[#A0A0A0] shrink-0 transition" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            <svg class="text-[#A0A0A0] shrink-0 transition" :class="[open ? 'rotate-180' : '', size === 'sm' ? 'w-3 h-3' : 'w-4 h-4']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
         </button>
 
         <Transition name="dropdown">
@@ -22,8 +22,8 @@
                 <div class="max-h-64 overflow-y-auto">
                     <button v-for="opt in filteredOptions" :key="opt.value" type="button"
                         @click="pick(opt)"
-                        class="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2 transition"
-                        :class="opt.value === modelValue ? 'bg-[#F59E0B]/15 text-[#F59E0B]' : 'text-white hover:bg-[#1A1A1A]'">
+                        class="w-full text-left flex items-center gap-2 transition"
+                        :class="[size === 'sm' ? 'px-3 py-1.5 text-xs' : 'px-4 py-2.5 text-sm', opt.value === modelValue ? 'bg-[#F59E0B]/15 text-[#F59E0B]' : 'text-white hover:bg-[#1A1A1A]']">
                         <span v-if="opt.icon" v-html="opt.icon" class="shrink-0"></span>
                         <span class="flex-1 truncate">{{ opt.label }}</span>
                         <svg v-if="opt.value === modelValue" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
@@ -45,6 +45,7 @@ const props = defineProps({
     searchPlaceholder: { type: String, default: 'Search…' },
     disabled: { type: Boolean, default: false },
     error: { type: Boolean, default: false },
+    size: { type: String, default: 'md' }, // 'md' (forms) | 'sm' (compact)
 });
 const emit = defineEmits(['update:modelValue']);
 

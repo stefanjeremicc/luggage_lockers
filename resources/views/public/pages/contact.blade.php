@@ -166,17 +166,30 @@
             }));
 
             markerData.forEach(function (loc) {
+                // Build the popup as a DOM node (not an HTML string) so the
+                // directions link's href is set via the DOM API. This keeps any
+                // literal `href="…"` text out of the page source, which naive
+                // sitemap crawlers would otherwise mis-read as a broken link.
+                const popupEl = document.createElement('div');
+                const nameEl = document.createElement('div');
+                nameEl.className = 'popup-name'; nameEl.textContent = loc.name;
+                const addrEl = document.createElement('div');
+                addrEl.className = 'popup-address'; addrEl.textContent = loc.address;
+                const badgeEl = document.createElement('div');
+                badgeEl.className = 'popup-badge'; badgeEl.textContent = '{{ __('Open 24/7') }}';
+                const actionsEl = document.createElement('div');
+                actionsEl.className = 'popup-actions';
+                const linkEl = document.createElement('a');
+                linkEl.href = loc.google_maps_url;
+                linkEl.target = '_blank'; linkEl.rel = 'noopener'; linkEl.className = 'popup-btn';
+                linkEl.textContent = '{{ __("Get Directions") }}';
+                actionsEl.appendChild(linkEl);
+                popupEl.append(nameEl, addrEl, badgeEl, actionsEl);
+
                 L.marker([loc.lat, loc.lng], { icon: markerIcon })
                     .addTo(map)
-                    .bindPopup(
-                        '<div class="popup-name">' + loc.name + '</div>' +
-                        '<div class="popup-address">' + loc.address + '</div>' +
-                        '<div class="popup-badge">{{ __('Open 24/7') }}</div>' +
-                        '<div class="popup-actions">' +
-                        '<a href="' + loc.google_maps_url + '" target="_blank" rel="noopener" class="popup-btn">{{ __("Get Directions") }}</a>' +
-                        '</div>',
-                        { autoClose: false, closeOnClick: false }
-                    ).openPopup();
+                    .bindPopup(popupEl, { autoClose: false, closeOnClick: false })
+                    .openPopup();
             });
         });
     </script>
