@@ -203,16 +203,12 @@
         <div v-if="pagination" class="flex items-center justify-between gap-3 mt-4 text-sm flex-wrap">
             <div class="flex items-center gap-3">
                 <span class="text-[#A0A0A0]">{{ pagination.from || 0 }}–{{ pagination.to || 0 }} of {{ pagination.total || 0 }}</span>
-                <label class="flex items-center gap-1.5 text-[#A0A0A0]">
+                <div class="flex items-center gap-1.5 text-[#A0A0A0]">
                     <span class="text-xs">Per page</span>
-                    <select :value="perPage" @change="setPerPage($event.target.value === 'all' ? 'all' : Number($event.target.value))"
-                        class="bg-[#111] border border-[#2A2A2A] rounded-lg px-2 py-1 text-xs text-white focus:border-[#F59E0B] focus:outline-none">
-                        <option :value="20">20</option>
-                        <option :value="50">50</option>
-                        <option :value="100">100</option>
-                        <option value="all">All</option>
-                    </select>
-                </label>
+                    <div class="w-24">
+                        <Select :model-value="perPage" :options="perPageOptions" @update:model-value="setPerPage" />
+                    </div>
+                </div>
             </div>
             <div v-if="pagination.last_page > 1" class="flex items-center gap-1 flex-wrap">
                 <button @click="goPage(page - 1)" :disabled="page <= 1" aria-label="Previous"
@@ -347,6 +343,14 @@ import { useConfirm } from '../composables/useConfirm';
 import { useToast } from '../composables/useToast';
 import Modal from '../components/Modal.vue';
 import Btn from '../components/Btn.vue';
+import Select from '../components/Select.vue';
+
+const perPageOptions = [
+    { value: 20, label: '20' },
+    { value: 50, label: '50' },
+    { value: 100, label: '100' },
+    { value: 'all', label: 'All' },
+];
 
 const { apiFetch } = useAuth();
 const confirmDialog = useConfirm();
