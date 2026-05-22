@@ -17,12 +17,12 @@
             @foreach($locations as $location)
             <div class="rounded-2xl border border-[#2A2A2A] overflow-hidden bg-[#1A1A1A]">
                 <div class="location-card-image">
-                    <img src="/images/locations/{{ $location->slug }}.webp" alt="{{ $location->name }}">
+                    <img src="/images/locations/{{ $location->slug }}.webp" alt="{{ $location->nameFor(app()->getLocale()) }}">
                 </div>
 
                 <div class="p-5">
                     <div class="flex items-center justify-between mb-3">
-                        <h2 class="text-xl font-bold">{{ $location->name }}</h2>
+                        <h2 class="text-xl font-bold">{{ $location->nameFor(app()->getLocale()) }}</h2>
                         @if($location->is_24h)
                         <span class="text-xs bg-[#10B981]/20 text-[#10B981] px-3 py-1 rounded-full font-medium flex-shrink-0">24/7</span>
                         @endif
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
     L.marker([{{ $location->lat }}, {{ $location->lng }}], {icon: markerIcon})
         .addTo(map)
         .bindPopup(
-            '<div class="popup-name">{{ $location->name }}</div>' +
+            '<div class="popup-name">{{ $location->nameFor(app()->getLocale()) }}</div>' +
             '<div class="popup-address">{{ $location->address }}, {{ $location->city }}</div>' +
             '<div class="popup-badge">{{ __('Open 24/7') }}</div>' +
             '<div class="popup-actions">' +

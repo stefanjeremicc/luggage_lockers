@@ -79,7 +79,7 @@ Route::prefix('sr')->middleware(SetLocale::class)->name('sr.')->group(function (
     Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
     Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
 
-    Route::get('/cesta-pitanja', [FaqController::class, 'index'])->name('faq');
+    Route::get('/najcesca-pitanja', [FaqController::class, 'index'])->name('faq');
     Route::post('/recenzije', [PublicReviewController::class, 'store'])->name('reviews.store');
     Route::get('/o-nama', [PageController::class, 'about'])->name('about');
     Route::get('/cenovnik', [PageController::class, 'pricing'])->name('pricing');

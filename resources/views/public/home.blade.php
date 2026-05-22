@@ -165,11 +165,11 @@
             @foreach($locations as $location)
             <div class="rounded-2xl border border-[#2A2A2A] overflow-hidden bg-[#1A1A1A] hover:border-[#F59E0B] transition group">
                 <div class="location-card-image">
-                    <img src="/images/locations/{{ $location->slug }}.webp" alt="{{ $location->name }}" class="w-full h-full object-cover">
+                    <img src="/images/locations/{{ $location->slug }}.webp" alt="{{ $location->nameFor($locale) }}" class="w-full h-full object-cover">
                 </div>
                 <div class="p-5">
                     <div class="flex items-center justify-between mb-3">
-                        <h3 class="text-xl font-bold group-hover:text-[#F59E0B] transition">{{ $location->name }}</h3>
+                        <h3 class="text-xl font-bold group-hover:text-[#F59E0B] transition">{{ $location->nameFor($locale) }}</h3>
                         @if($location->is_24h)
                         <span class="text-xs bg-[#10B981]/20 text-[#10B981] px-3 py-1 rounded-full font-medium flex-shrink-0">24/7</span>
                         @endif

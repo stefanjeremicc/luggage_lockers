@@ -79,7 +79,7 @@
                     <div class="card group hover:border-[#F59E0B]/30 transition-all duration-300 p-6 lg:p-8">
                         {{-- Title + Badge --}}
                         <div class="flex items-start justify-between gap-4 mb-4">
-                            <h3 class="text-lg font-bold text-white">{{ $location->name }}</h3>
+                            <h3 class="text-lg font-bold text-white">{{ $location->nameFor(app()->getLocale()) }}</h3>
                             @if($location->is_24h)
                                 <span class="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/20">
                                     <span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
@@ -160,7 +160,7 @@
             const markerData = locations.map(l => ({
                 lat: parseFloat(l.lat),
                 lng: parseFloat(l.lng),
-                name: l.name,
+                name: ('{{ app()->getLocale() }}' === 'sr' && l.name_sr) ? l.name_sr : l.name,
                 address: l.address + ', ' + l.city,
                 google_maps_url: l.google_maps_url || ('https://www.google.com/maps?q=' + l.lat + ',' + l.lng)
             }));

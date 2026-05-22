@@ -28,7 +28,7 @@
                 <a href="{{ route($lp.'locations.show', $loc->slug) }}"
                    class="card flex items-start justify-between gap-4 hover:border-[#F59E0B] transition">
                     <div class="flex-1">
-                        <h3 class="text-lg font-semibold text-white">{{ $loc->name }}</h3>
+                        <h3 class="text-lg font-semibold text-white">{{ $loc->nameFor(app()->getLocale()) }}</h3>
                         <p class="text-sm text-[#A0A0A0] mt-1">{{ $loc->address }}, {{ $loc->city }}</p>
                         <div class="text-xs text-[#A0A0A0] mt-2">
                             {{ $loc->is_24h ? '24/7' : ($loc->opening_time.' – '.$loc->closing_time) }}

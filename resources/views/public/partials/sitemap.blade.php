@@ -12,7 +12,7 @@
     @foreach([
         ['en' => '/locations', 'sr' => '/sr/lokacije', 'priority' => 0.9, 'cf' => 'weekly'],
         ['en' => '/pricing', 'sr' => '/sr/cenovnik', 'priority' => 0.8, 'cf' => 'monthly'],
-        ['en' => '/faq', 'sr' => '/sr/cesta-pitanja', 'priority' => 0.7, 'cf' => 'weekly'],
+        ['en' => '/faq', 'sr' => '/sr/najcesca-pitanja', 'priority' => 0.7, 'cf' => 'weekly'],
         ['en' => '/blog', 'sr' => '/sr/blog', 'priority' => 0.7, 'cf' => 'weekly'],
         ['en' => '/about', 'sr' => '/sr/o-nama', 'priority' => 0.5, 'cf' => 'monthly'],
         ['en' => '/contact', 'sr' => '/sr/kontakt', 'priority' => 0.5, 'cf' => 'monthly'],

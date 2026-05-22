@@ -36,7 +36,7 @@
                 <h4 class="text-sm font-semibold text-white mb-3">{{ __('Locations') }}</h4>
                 <ul class="space-y-2 text-sm text-[#A0A0A0]">
                     @foreach($footerLocations as $loc)
-                    <li><a href="{{ route($fp . 'locations.show', ['slug' => $loc->slug]) }}" class="hover:text-white transition">{{ $loc->name }}</a></li>
+                    <li><a href="{{ route($fp . 'locations.show', ['slug' => $loc->slugFor(app()->getLocale())]) }}" class="hover:text-white transition">{{ $loc->nameFor(app()->getLocale()) }}</a></li>
                     @endforeach
                 </ul>
             </div>

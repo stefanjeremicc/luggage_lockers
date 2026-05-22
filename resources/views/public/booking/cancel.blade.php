@@ -61,7 +61,7 @@
         @else
             <div x-show="!cancelled">
                 <h1 class="text-2xl sm:text-3xl font-bold mb-2">{{ __('Cancel Booking') }}</h1>
-                <p class="text-[#A0A0A0] text-sm mb-6">{{ __('Are you sure you want to cancel your booking at') }} <span class="text-white">{{ $booking->location->name }}</span>?</p>
+                <p class="text-[#A0A0A0] text-sm mb-6">{{ __('Are you sure you want to cancel your booking at') }} <span class="text-white">{{ $booking->location->nameFor(app()->getLocale()) }}</span>?</p>
                 <div x-show="error" x-cloak class="mb-4 p-3 rounded-lg border border-[#EF4444]/50 bg-[#EF4444]/10 text-[#EF4444] text-sm" x-text="error"></div>
             </div>
         @endif
@@ -90,7 +90,7 @@
                 </div>
                 <div class="flex justify-between gap-3">
                     <span class="text-[#A0A0A0] shrink-0">{{ __('Location') }}</span>
-                    <span class="text-white text-right">{{ $booking->location->name }}</span>
+                    <span class="text-white text-right">{{ $booking->location->nameFor(app()->getLocale()) }}</span>
                 </div>
                 <div class="flex justify-between gap-3">
                     <span class="text-[#A0A0A0] shrink-0">{{ __('Address') }}</span>
