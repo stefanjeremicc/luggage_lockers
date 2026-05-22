@@ -3,11 +3,13 @@
 @php
     $locale = app()->getLocale();
     $poiName = $locale === 'sr' ? ($poi['name_sr'] ?? $poi['name']) : $poi['name'];
+    $poiDesc = $locale === 'sr' ? ($poi['description_sr'] ?? $poi['description']) : $poi['description'];
     $title = __('Luggage storage near :poi', ['poi' => $poiName]).' — '.\App\Helpers\SiteSettings::siteName();
 @endphp
 
 @section('title', $title)
-@section('meta_description', $poi['description'])
+@section('meta_description', $poiDesc)
+@section('breadcrumb_name', __('Luggage storage near :poi', ['poi' => $poiName]))
 
 @section('content')
 <section class="py-16 lg:py-24">
@@ -19,7 +21,7 @@
         </nav>
 
         <h1 class="text-4xl font-bold mb-4">{{ __('Luggage storage near :poi', ['poi' => $poiName]) }}</h1>
-        <p class="text-lg text-[#A0A0A0] mb-10">{{ $poi['description'] }}</p>
+        <p class="text-lg text-[#A0A0A0] mb-10">{{ $poiDesc }}</p>
 
         <h2 class="text-2xl font-bold mb-6">{{ __('Nearest locations') }}</h2>
 

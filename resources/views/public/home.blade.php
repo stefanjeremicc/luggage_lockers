@@ -17,12 +17,17 @@
 @section('title', $settings[$metaTitleKey] ?? ($settings['home_meta_title'] ?? 'Belgrade Luggage Locker — 24/7 Secure Luggage Storage'))
 @section('meta_description', $settings[$metaDescKey] ?? ($settings['home_meta_description'] ?? ''))
 
+@section('head')
+    {{-- Preload the LCP hero image so it paints sooner (Core Web Vitals). --}}
+    <link rel="preload" as="image" href="{{ $heroImage }}" fetchpriority="high">
+@endsection
+
 @section('content')
 {{-- Hero --}}
 <section class="hero-section relative flex items-center justify-center overflow-hidden -mt-20">
     {{-- Background image --}}
     <div class="absolute inset-0">
-        <img src="{{ $heroImage }}" alt="" class="w-full h-full object-cover" loading="eager">
+        <img src="{{ $heroImage }}" alt="{{ __('Secure 24/7 luggage storage lockers in Belgrade') }}" class="w-full h-full object-cover" loading="eager" fetchpriority="high">
         <div class="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-[#0A0A0A]"></div>
     </div>
 
@@ -165,7 +170,7 @@
             @foreach($locations as $location)
             <div class="rounded-2xl border border-[#2A2A2A] overflow-hidden bg-[#1A1A1A] hover:border-[#F59E0B] transition group">
                 <div class="location-card-image">
-                    <img src="/images/locations/{{ $location->slug }}.webp" alt="{{ $location->nameFor($locale) }}" class="w-full h-full object-cover">
+                    <img src="/images/locations/{{ $location->slug }}.webp" alt="{{ __('Luggage storage at :name, Belgrade', ['name' => $location->nameFor($locale)]) }}" class="w-full h-full object-cover" loading="lazy" decoding="async">
                 </div>
                 <div class="p-5">
                     <div class="flex items-center justify-between mb-3">
@@ -473,7 +478,7 @@ function reviewSubmitForm() {
             @foreach($blogPosts as $post)
             <a href="{{ route($lp . 'blog.show', ['slug' => $post->slug]) }}" class="card hover:border-[#F59E0B] transition group">
                 @if($post->featured_image)
-                <img src="{{ $post->featured_image }}" alt="{{ $post->title }}" class="w-full aspect-square object-cover rounded-lg mb-4">
+                <img src="{{ $post->featured_image }}" alt="{{ $post->title }}" class="w-full aspect-square object-cover rounded-lg mb-4" loading="lazy" decoding="async">
                 @endif
                 <h3 class="text-lg font-semibold group-hover:text-[#F59E0B] transition">{{ $post->title }}</h3>
                 <p class="text-sm text-[#A0A0A0] mt-2 line-clamp-2">{{ Str::limit($post->excerpt, 120) }}</p>

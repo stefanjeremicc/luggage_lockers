@@ -2,6 +2,7 @@
 
 @section('title', ($post->meta_title ?? $post->title) . ' — Belgrade Luggage Locker')
 @section('meta_description', $post->meta_description ?? $post->excerpt)
+@section('breadcrumb_name', $post->title)
 
 @section('content')
 <article class="py-16 lg:py-24">

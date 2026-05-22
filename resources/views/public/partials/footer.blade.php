@@ -71,6 +71,18 @@
             </div>
         </div>
 
+        @php $nearPois = config('seo.near_pois', []); $isSrFooter = app()->getLocale() === 'sr'; @endphp
+        @if(count($nearPois))
+        <div class="mt-10 pt-6 border-t border-[#2A2A2A]">
+            <h4 class="text-sm font-semibold text-white mb-3">{{ $isSrFooter ? 'Čuvanje prtljaga blizu' : 'Luggage storage near' }}</h4>
+            <ul class="flex flex-wrap gap-x-4 gap-y-2 text-sm text-[#A0A0A0]">
+                @foreach($nearPois as $slug => $poi)
+                <li><a href="{{ route($fp . 'near', ['slug' => $slug]) }}" class="hover:text-white transition">{{ $isSrFooter ? ($poi['name_sr'] ?? $poi['name']) : $poi['name'] }}</a></li>
+                @endforeach
+            </ul>
+        </div>
+        @endif
+
         <div class="mt-12 pt-6 border-t border-[#2A2A2A] text-center text-xs text-[#A0A0A0] space-y-1">
             <p>&copy; {{ date('Y') }} {{ \App\Helpers\SiteSettings::legalCompany() }}. {{ __('All rights reserved.') }}</p>
             @php

@@ -33,6 +33,7 @@
 
     @stack('schema')
     @include('public.partials.schema-markup')
+    @include('public.partials.breadcrumb-schema')
 
     @yield('scripts')
     @stack('scripts')

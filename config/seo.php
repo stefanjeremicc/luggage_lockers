@@ -1,41 +1,97 @@
 <?php
 
 return [
+    // Points-of-interest landing pages: /near/{slug} (EN) and /sr/blizu/{slug}.
+    // Each entry needs a UNIQUE, genuinely useful description in BOTH languages
+    // so the pages add value (and don't read as thin/doorway duplicates).
     'near_pois' => [
         'nikola-tesla-airport' => [
             'name' => 'Nikola Tesla Airport (BEG)',
             'name_sr' => 'Aerodrom Nikola Tesla',
             'lat' => 44.8184,
             'lng' => 20.3091,
-            'description' => 'Looking for luggage storage near Belgrade airport? Our city-center lockers are a short taxi or bus ride away.',
+            'description' => 'Flying in or out of Belgrade Nikola Tesla Airport? Drop your bags in our secure city-centre smart lockers — a quick A1 airport bus or taxi ride away — and explore Belgrade hands-free between flights.',
+            'description_sr' => 'Sletanje ili polazak sa aerodroma Nikola Tesla? Ostavite torbe u našim sigurnim pametnim ormarićima u centru grada — na kratkoj vožnji A1 autobusom ili taksijem — i razgledajte Beograd bez prtljaga između letova.',
         ],
         'belgrade-bus-station' => [
             'name' => 'Belgrade Main Bus Station',
             'name_sr' => 'Autobuska stanica Beograd',
             'lat' => 44.8103,
             'lng' => 20.4572,
-            'description' => 'Store your luggage near the main bus terminal and explore the city hands-free.',
+            'description' => 'Luggage storage right by the main bus terminal in Belgrade. Leave your suitcases in a 24/7 smart locker, catch your connection or sightsee the city without dragging bags around.',
+            'description_sr' => 'Čuvanje prtljaga odmah pored glavne autobuske stanice u Beogradu. Ostavite kofere u pametnom ormariću koji radi 24/7, stignite na vezu ili razgledajte grad bez vučenja torbi.',
         ],
         'belgrade-train-station' => [
             'name' => 'Belgrade Centar Railway Station (Prokop)',
-            'name_sr' => 'Železnička stanica Beograd Centar',
+            'name_sr' => 'Železnička stanica Beograd Centar (Prokop)',
             'lat' => 44.7897,
             'lng' => 20.4640,
-            'description' => 'Drop your bags near the main railway station — free up your hands between trains.',
+            'description' => 'Storing luggage near Belgrade Centar (Prokop) railway station has never been easier. Secure your bags in a smart locker and free up your hands between trains.',
+            'description_sr' => 'Čuvanje prtljaga blizu železničke stanice Beograd Centar (Prokop) nikada nije bilo lakše. Obezbedite torbe u pametnom ormariću i oslobodite ruke između vozova.',
         ],
         'republic-square' => [
             'name' => 'Republic Square',
             'name_sr' => 'Trg Republike',
             'lat' => 44.8164,
             'lng' => 20.4606,
-            'description' => 'Smart luggage lockers steps from Republic Square — perfect for Knez Mihailova shopping and sightseeing.',
+            'description' => 'Smart luggage lockers just steps from Republic Square — ideal for Knez Mihailova shopping, museums and sightseeing in the heart of Belgrade.',
+            'description_sr' => 'Pametni ormarići za prtljag na par koraka od Trga Republike — idealno za šoping u Knez Mihailovoj, muzeje i razgledanje u srcu Beograda.',
         ],
         'kalemegdan' => [
             'name' => 'Kalemegdan Fortress',
             'name_sr' => 'Kalemegdan',
             'lat' => 44.8226,
             'lng' => 20.4500,
-            'description' => 'Enjoy Belgrade Fortress luggage-free — 24/7 storage just minutes away.',
+            'description' => 'Explore Belgrade Fortress and Kalemegdan park luggage-free. Our 24/7 smart lockers are just minutes away — store your bags and enjoy the views.',
+            'description_sr' => 'Razgledajte Beogradsku tvrđavu i Kalemegdan bez prtljaga. Naši pametni ormarići rade 24/7 i udaljeni su samo nekoliko minuta — ostavite torbe i uživajte u pogledu.',
+        ],
+        'knez-mihailova' => [
+            'name' => 'Knez Mihailova Street',
+            'name_sr' => 'Knez Mihailova',
+            'lat' => 44.8167,
+            'lng' => 20.4569,
+            'description' => 'Shop and stroll along Knez Mihailova, Belgrade\'s main pedestrian street, without your bags. Drop them in a nearby smart locker and travel light.',
+            'description_sr' => 'Šetajte i kupujte u Knez Mihailovoj, glavnoj pešačkoj ulici Beograda, bez torbi. Ostavite ih u obližnjem pametnom ormariću i krećite se lagano.',
+        ],
+        'skadarlija' => [
+            'name' => 'Skadarlija (Bohemian Quarter)',
+            'name_sr' => 'Skadarlija',
+            'lat' => 44.8186,
+            'lng' => 20.4647,
+            'description' => 'Enjoy the kafanas and live music of Skadarlija, Belgrade\'s bohemian quarter, hands-free. Secure luggage storage is just around the corner.',
+            'description_sr' => 'Uživajte u kafanama i živoj muzici Skadarlije, boemske četvrti Beograda, bez prtljaga. Sigurno čuvanje torbi je odmah iza ugla.',
+        ],
+        'temple-of-saint-sava' => [
+            'name' => 'Temple of Saint Sava',
+            'name_sr' => 'Hram Svetog Save',
+            'lat' => 44.7980,
+            'lng' => 20.4690,
+            'description' => 'Visit the Temple of Saint Sava, one of the largest Orthodox churches in the world, without carrying your luggage. Store it safely in a nearby 24/7 smart locker.',
+            'description_sr' => 'Posetite Hram Svetog Save, jednu od najvećih pravoslavnih crkava na svetu, bez nošenja prtljaga. Ostavite ga bezbedno u obližnjem pametnom ormariću 24/7.',
+        ],
+        'belgrade-waterfront' => [
+            'name' => 'Belgrade Waterfront (Galerija)',
+            'name_sr' => 'Beograd na vodi (Galerija)',
+            'lat' => 44.8060,
+            'lng' => 20.4470,
+            'description' => 'Heading to Belgrade Waterfront and Galerija shopping mall? Leave your luggage in a secure smart locker and enjoy the riverside promenade and shops bag-free.',
+            'description_sr' => 'Idete u Beograd na vodi i tržni centar Galerija? Ostavite prtljag u sigurnom pametnom ormariću i uživajte u šetalištu pored reke i prodavnicama bez torbi.',
+        ],
+        'slavija-square' => [
+            'name' => 'Slavija Square',
+            'name_sr' => 'Trg Slavija',
+            'lat' => 44.8024,
+            'lng' => 20.4665,
+            'description' => 'Slavija Square is a major Belgrade transport hub. Store your bags in a 24/7 smart locker nearby and connect to buses, trams and the city centre with ease.',
+            'description_sr' => 'Trg Slavija je važno saobraćajno čvorište Beograda. Ostavite torbe u obližnjem pametnom ormariću 24/7 i lako se povežite sa autobusima, tramvajima i centrom grada.',
+        ],
+        'ada-ciganlija' => [
+            'name' => 'Ada Ciganlija',
+            'name_sr' => 'Ada Ciganlija',
+            'lat' => 44.7900,
+            'lng' => 20.4030,
+            'description' => 'Spend the day at Ada Ciganlija, Belgrade\'s river island and beach, without lugging your bags. Use our secure smart lockers before heading to the water.',
+            'description_sr' => 'Provedite dan na Adi Ciganliji, beogradskom rečnom ostrvu i plaži, bez vučenja torbi. Iskoristite naše sigurne pametne ormariće pre odlaska na vodu.',
         ],
     ],
 ];

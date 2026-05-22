@@ -14,6 +14,9 @@
 <meta property="og:description" content="@yield('og_description', $finalDesc)">
 <meta property="og:type" content="website">
 <meta property="og:url" content="{{ url()->current() }}">
+<meta property="og:site_name" content="{{ \App\Helpers\SiteSettings::siteName() }}">
+<meta property="og:locale" content="{{ app()->getLocale() === 'sr' ? 'sr_RS' : 'en_US' }}">
+<meta property="og:locale:alternate" content="{{ app()->getLocale() === 'sr' ? 'en_US' : 'sr_RS' }}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="@yield('og_title', $finalTitle)">
 <meta name="twitter:description" content="@yield('og_description', $finalDesc)">

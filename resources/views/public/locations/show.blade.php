@@ -18,6 +18,7 @@
 
 @section('title', $metaTitle)
 @section('meta_description', $metaDescription)
+@section('breadcrumb_name', $name)
 
 @section('head')
 @if($location->og_image)
