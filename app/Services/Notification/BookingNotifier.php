@@ -191,7 +191,8 @@ class BookingNotifier
     {
         $bls = $booking->bookingLockers ?? collect();
         $labelEntry = $locale === 'sr' ? 'Šifra ULAZNIH VRATA' : 'ENTRY DOOR access code';
-        $labelLocker = $locale === 'sr' ? 'Šifra ORMARIĆA' : 'YOUR LOCKER';
+        $labelLocker = $locale === 'sr' ? 'VAŠ ORMARIĆ' : 'YOUR LOCKER';
+        $accessLabel = $locale === 'sr' ? 'pristupna šifra' : 'access code';
         // The stored setting often carries the keypad "enter" character at the
         // end (e.g. "0717#") because that's how the door physically works.
         // The email displays the code with a leading `#` for visual emphasis,
@@ -212,22 +213,24 @@ class BookingNotifier
             $firstNumber ??= $bl->locker->number ?? '';
             $number = $bl->locker->number ?? '';
             $blocks[] = '<div class="highlight">'
-                .'<p style="margin:0 0 6px;color:#A0A0A0;font-size:13px">'.e($labelLocker).' ('.e($number).') access code</p>'
-                .'<p style="margin:0;font-size:28px;color:#F59E0B;font-weight:bold;letter-spacing:6px">#'.e($pin).'</p>'
+                .'<p style="margin:0 0 4px;color:#A0A0A0;font-size:12px;text-transform:uppercase;letter-spacing:1px">'.e($labelLocker).'</p>'
+                .'<p style="margin:0 0 12px;font-size:34px;color:#fff;font-weight:bold;letter-spacing:2px">'.e($number).'</p>'
+                .'<p style="margin:0 0 4px;color:#A0A0A0;font-size:12px">'.e($accessLabel).'</p>'
+                .'<p style="margin:0;font-size:28px;color:#F59E0B;font-weight:bold;letter-spacing:6px">'.e($pin).'#</p>'
                 .'</div>';
         }
 
         // Entry door block goes first, then one block per locker.
         $entryBlock = '<div class="highlight">'
             .'<p style="margin:0 0 6px;color:#A0A0A0;font-size:13px">'.e($labelEntry).'</p>'
-            .'<p style="margin:0;font-size:28px;color:#F59E0B;font-weight:bold;letter-spacing:6px">#'.e($entryCode).'</p>'
+            .'<p style="margin:0;font-size:28px;color:#F59E0B;font-weight:bold;letter-spacing:6px">'.e($entryCode).'#</p>'
             .'</div>';
 
         return [
-            'pin_code' => $firstPin ? '#'.$firstPin : '',
+            'pin_code' => $firstPin ? $firstPin.'#' : '',
             'locker_number' => $firstNumber ?? '',
             'codes_block' => $entryBlock . implode('', $blocks),
-            'entry_door_code' => '#'.$entryCode,
+            'entry_door_code' => $entryCode.'#',
         ];
     }
 
@@ -243,8 +246,14 @@ class BookingNotifier
         $L = static fn (string $en, string $sr) => $locale === 'sr' ? $sr : $en;
         $name = e($vars['location_name'] ?? '');
         $addr = e($vars['location_address'] ?? '');
-        $checkIn = e($vars['check_in_full'] ?? '');
-        $checkOut = e($vars['check_out_full'] ?? '');
+        // iOS Mail (esp. dark mode) and Gmail auto-detect dates/times and wrap
+        // them in a blue tappable link, overriding our .no-link white even with
+        // !important. Inserting an invisible zero-width space after each digit
+        // breaks the date/time pattern so the client never detects it — the text
+        // stays plain white. Visually identical (ZWSP renders as nothing).
+        $noDetect = static fn (string $s) => (string) preg_replace('/(\d)/u', '$1'."\u{200B}", $s);
+        $checkIn = $noDetect(e($vars['check_in_full'] ?? ''));
+        $checkOut = $noDetect(e($vars['check_out_full'] ?? ''));
         $items = e($vars['items_summary'] ?? '');
         $duration = e($vars['duration_label'] ?? '');
         $total = e($vars['total_eur'] ?? '0.00');
