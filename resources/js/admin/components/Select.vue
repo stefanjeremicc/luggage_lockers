@@ -14,7 +14,8 @@
 
         <Transition name="dropdown">
             <div v-if="open"
-                class="absolute left-0 right-0 mt-1 bg-[#111] border border-[#2A2A2A] rounded-lg shadow-2xl z-40 overflow-hidden">
+                class="absolute left-0 right-0 bg-[#111] border border-[#2A2A2A] rounded-lg shadow-2xl z-50 overflow-hidden"
+                :class="dropUp ? 'bottom-full mb-1' : 'top-full mt-1'">
                 <div v-if="searchable" class="p-2 border-b border-[#2A2A2A]">
                     <input v-model="query" ref="searchInput" :placeholder="searchPlaceholder"
                         class="w-full bg-[#0A0A0A] border border-[#2A2A2A] rounded px-3 py-1.5 text-sm text-white focus:border-[#F59E0B] focus:outline-none">
@@ -65,8 +66,20 @@ const filteredOptions = computed(() => {
     );
 });
 
+const dropUp = ref(false);
+
 const toggle = () => {
     if (props.disabled) return;
+    if (!open.value) {
+        // Decide flip direction based on available viewport space.
+        const rect = rootRef.value?.getBoundingClientRect();
+        if (rect) {
+            const menuH = Math.min(264, props.options.length * 40 + (props.searchable ? 48 : 8));
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const spaceAbove = rect.top;
+            dropUp.value = spaceBelow < menuH && spaceAbove > spaceBelow;
+        }
+    }
     open.value = !open.value;
 };
 

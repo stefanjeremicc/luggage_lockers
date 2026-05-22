@@ -1,7 +1,7 @@
 @extends('layouts.public')
 
 @section('title', 'Luggage Storage Locations in Belgrade — Belgrade Luggage Locker')
-@section('meta_description', 'Find our luggage storage locations in Belgrade. 2 convenient spots open 24/7 with smart lockers.')
+@section('meta_description', 'Find our luggage storage locations in Belgrade — open 24/7 with smart lockers.')
 
 @section('head')
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />

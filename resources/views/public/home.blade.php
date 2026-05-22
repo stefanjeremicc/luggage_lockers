@@ -160,7 +160,7 @@
 <section class="bg-[#111111] py-16 lg:py-24">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 class="text-3xl font-bold text-center mb-4">{{ __('Our Locations') }}</h2>
-        <p class="text-center text-[#A0A0A0] mb-12">{{ __('2 convenient locations in Belgrade, open 24/7') }}</p>
+        <p class="text-center text-[#A0A0A0] mb-12">{{ $locationsCount }} {{ $locationsCount === 1 ? __('convenient location') : __('convenient locations') }} {{ __('in Belgrade, open 24/7') }}</p>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             @foreach($locations as $location)
             <div class="rounded-2xl border border-[#2A2A2A] overflow-hidden bg-[#1A1A1A] hover:border-[#F59E0B] transition group">
