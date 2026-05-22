@@ -64,15 +64,17 @@
                             </div>
                             <span v-else class="booking-value text-[#6B7280]">—</span>
                         </dd></div>
-                    <div v-if="false"><dt class="booking-label">Payment</dt>
+                    <div><dt class="booking-label">Payment</dt>
                         <dd><span class="booking-pill" :class="b.payment_status === 'paid' ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-[#EF4444]/20 text-[#EF4444]'">{{ b.payment_status === 'paid' ? 'Paid' : 'Unpaid' }}</span></dd></div>
                     <div><dt class="booking-label">Total</dt>
                         <dd class="booking-value text-[#F59E0B]">€{{ Number(b.total_eur).toFixed(2) }}</dd></div>
                 </dl>
 
                 <div class="mt-4 pt-3 border-t border-[#2A2A2A] grid grid-cols-2 gap-2" @click.stop>
-                    <button v-if="false && b.payment_status !== 'paid' && !isFinal(b)" @click="markPaid(b.id)"
-                        class="bg-[#10B981]/15 text-[#10B981] rounded-lg px-3 py-2.5 text-xs font-semibold active:bg-[#10B981]/25">Mark paid</button>
+                    <button v-if="b.booking_status !== 'cancelled'" @click="togglePaid(b)"
+                        class="rounded-lg px-3 py-2.5 text-xs font-semibold col-span-2"
+                        :class="b.payment_status === 'paid' ? 'bg-[#EF4444]/15 text-[#EF4444] active:bg-[#EF4444]/25' : 'bg-[#10B981]/15 text-[#10B981] active:bg-[#10B981]/25'">
+                        {{ b.payment_status === 'paid' ? '✓ Paid — tap to unmark' : 'Mark as paid' }}</button>
                     <button v-if="['confirmed','active'].includes(b.booking_status)" @click="reissuePin(b.id)"
                         class="bg-[#F59E0B]/15 text-[#F59E0B] rounded-lg px-3 py-2.5 text-xs font-semibold active:bg-[#F59E0B]/25">New PIN</button>
                     <button v-if="['confirmed','active'].includes(b.booking_status)" @click="extendOpen = b"
@@ -147,7 +149,7 @@
                         <td class="px-4 py-3 whitespace-nowrap">
                             <div class="flex flex-col gap-1">
                                 <span class="px-2 py-0.5 rounded-full text-xs w-fit" :class="statusClass(b.booking_status)">{{ b.booking_status }}</span>
-                                <span v-if="false" class="px-2 py-0.5 rounded-full text-xs w-fit"
+                                <span class="px-2 py-0.5 rounded-full text-xs w-fit"
                                     :class="b.payment_status === 'paid' ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-[#EF4444]/20 text-[#EF4444]'">
                                     {{ b.payment_status === 'paid' ? 'Paid' : 'Unpaid' }}
                                 </span>
@@ -159,8 +161,8 @@
                                     class="action-icon" aria-label="Details">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                 </button>
-                                <button v-if="false && b.payment_status !== 'paid' && !isFinal(b)" @click="markPaid(b.id)" title="Mark cash paid"
-                                    class="action-icon text-[#10B981] hover:bg-[#10B981]/15" aria-label="Mark paid">
+                                <button v-if="b.booking_status !== 'cancelled'" @click="togglePaid(b)" :title="b.payment_status === 'paid' ? 'Paid — click to mark unpaid' : 'Mark as paid'"
+                                    class="action-icon" :class="b.payment_status === 'paid' ? 'text-[#10B981] bg-[#10B981]/10 hover:bg-[#10B981]/20' : 'text-[#A0A0A0] hover:bg-[#10B981]/15 hover:text-[#10B981]'" aria-label="Toggle paid">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
                                 </button>
                                 <button v-if="!isFinal(b)" @click="resendConfirmation(b.id)" title="Resend confirmation"
@@ -257,6 +259,13 @@
                     <div v-if="detailsBooking.cancel_reason" class="items-start"><dt class="booking-label">Cancel reason</dt>
                         <dd class="booking-value text-[#EF4444]">{{ detailsBooking.cancel_reason }}</dd></div>
                 </dl>
+
+                    <div v-if="detailsBooking.booking_status !== 'cancelled'" class="pt-4">
+                        <button @click="togglePaid(detailsBooking)"
+                            class="w-full rounded-lg px-4 py-3 text-sm font-semibold transition"
+                            :class="detailsBooking.payment_status === 'paid' ? 'bg-[#EF4444]/15 text-[#EF4444] hover:bg-[#EF4444]/25' : 'bg-[#10B981]/15 text-[#10B981] hover:bg-[#10B981]/25'">
+                            {{ detailsBooking.payment_status === 'paid' ? '✓ Paid — tap to mark unpaid' : 'Mark as paid' }}</button>
+                    </div>
 
                     <div v-if="detailsBooking.notification_logs?.length" class="pt-4 border-t border-[#2A2A2A]">
                         <button @click="notifBooking = detailsBooking"
@@ -446,12 +455,15 @@ const statusBadge = (s) => ({
     pending: 'bg-[#F59E0B]/15 text-[#F59E0B]',
 }[s] || 'bg-[#2A2A2A] text-[#A0A0A0]');
 
-const markPaid = async (id) => {
+const togglePaid = async (b) => {
     try {
-        await apiFetch(`/api/admin/bookings/${id}/mark-paid`, { method: 'POST' });
-        toast.success('Marked as paid');
+        const res = await apiFetch(`/api/admin/bookings/${b.id}/mark-paid`, { method: 'POST' });
+        const data = await res.json();
+        b.payment_status = data.payment_status;
+        if (detailsBooking.value && detailsBooking.value.id === b.id) detailsBooking.value.payment_status = data.payment_status;
+        toast.success(data.message || 'Updated');
         fetchBookings();
-    } catch { toast.error('Failed to mark paid'); }
+    } catch { toast.error('Failed to update payment'); }
 };
 
 const resendConfirmation = async (id) => {

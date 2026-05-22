@@ -165,12 +165,18 @@ class BookingManagementController extends Controller
 
     public function markPaid(int $id): JsonResponse
     {
+        // Toggle: paid <-> pending. Dashboard revenue counts payment_status='paid',
+        // so flipping here updates the stats automatically.
         $booking = Booking::findOrFail($id);
+        $isPaid = $booking->payment_status === PaymentStatus::Paid;
         $booking->update([
-            'payment_status' => PaymentStatus::Paid,
-            'paid_at' => now(),
+            'payment_status' => $isPaid ? PaymentStatus::Pending : PaymentStatus::Paid,
+            'paid_at' => $isPaid ? null : now(),
         ]);
-        return response()->json(['message' => 'Marked as paid', 'booking' => $booking]);
+        return response()->json([
+            'message' => $isPaid ? 'Marked as unpaid' : 'Marked as paid',
+            'payment_status' => $booking->payment_status->value,
+        ]);
     }
 
     public function extend(Request $request, int $id): JsonResponse
