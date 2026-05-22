@@ -27,6 +27,10 @@
                 <Select :model-value="mobileSort" :options="mobileSortOptions" @update:model-value="setMobileSort" />
             </div>
         </div>
+        <div class="md:hidden mb-3 flex items-center gap-3 text-xs text-[#6B7280]">
+            <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>PIN on lock</span>
+            <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#F59E0B]"></span>no PIN / syncing</span>
+        </div>
 
         <!-- Mobile card view -->
         <div class="md:hidden space-y-3">
@@ -220,6 +224,10 @@
                     <div class="w-20">
                         <Select size="sm" :model-value="perPage" :options="perPageOptions" @update:model-value="setPerPage" />
                     </div>
+                </div>
+                <div class="hidden sm:flex items-center gap-3 text-xs text-[#6B7280] border-l border-[#2A2A2A] pl-3">
+                    <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>PIN on lock</span>
+                    <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#F59E0B]"></span>no PIN / syncing</span>
                 </div>
             </div>
             <div v-if="pagination.last_page > 1" class="flex items-center gap-1 flex-wrap">
