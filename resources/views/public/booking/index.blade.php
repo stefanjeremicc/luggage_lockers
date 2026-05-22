@@ -626,36 +626,5 @@
         </div>
     </div>
 
-    {{-- Mobile Sticky Summary --}}
-    <div class="fixed bottom-0 left-0 right-0 lg:hidden z-50 bg-[#1A1A1A] border-t border-[#2A2A2A] px-4 py-3 mobile-cta-bar"
-         x-transition>
-        <div class="flex items-center justify-between max-w-7xl mx-auto">
-            <div>
-                <p class="text-xs text-[#A0A0A0]" x-show="!pricing">{{ __('Select options for price') }}</p>
-                <div x-show="pricing && orderSummary" x-cloak>
-                    <p class="text-lg font-bold text-[#F59E0B]" x-text="orderSummary ? formatPrice(orderSummary.total) : ''"></p>
-                    <p class="text-xs text-[#A0A0A0]" x-text="totalQty > 0 ? cartItems.map(l => l.qty + '× ' + sizeLabelFor(l.size)).join(' + ') : ''"></p>
-                </div>
-            </div>
-            {{-- Step 1 --}}
-            <button x-show="step === 1" @click="goToStep(2)" :disabled="!canContinueStep1" class="btn-primary">
-                {{ __('Continue') }} &rarr;
-            </button>
-            {{-- Step 2 --}}
-            <button x-show="step === 2" @click="goToStep(3)" :disabled="!canContinueStep2 || loading" class="btn-primary">
-                {{ __('Continue') }} &rarr;
-            </button>
-            {{-- Step 3 --}}
-            <button x-show="step === 3" @click="submitGuestForm()" :disabled="!canContinueStep3 || loading" class="btn-primary">
-                {{ __('Continue') }} &rarr;
-            </button>
-            {{-- Step 4 --}}
-            <button x-show="step === 4" @click="submitBooking()" :disabled="loading" class="btn-primary">
-                <span x-show="!loading">{{ __('Book Now') }}</span>
-                <span x-show="loading">{{ __('Booking...') }}</span>
-            </button>
-        </div>
-    </div>
-    <div class="h-20 lg:hidden" x-show="step <= 2"></div>
 </section>
 @endsection
