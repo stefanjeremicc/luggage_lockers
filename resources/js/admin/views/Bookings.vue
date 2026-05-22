@@ -12,12 +12,20 @@
         </div>
 
         <div class="flex gap-2 mb-4 flex-wrap">
-            <button v-for="s in ['all','pending','confirmed','active','completed','cancelled','expired']" :key="s"
-                @click="setStatus(s)"
+            <button v-for="t in tabs" :key="t.key"
+                @click="setTab(t.key)"
                 class="px-3 py-1.5 rounded-full text-xs border transition"
-                :class="statusFilter === s ? 'bg-[#F59E0B] text-black border-[#F59E0B]' : 'border-[#2A2A2A] text-[#A0A0A0] hover:border-[#F59E0B]'">
-                {{ s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1) }}
+                :class="tab === t.key ? 'bg-[#F59E0B] text-black border-[#F59E0B]' : 'border-[#2A2A2A] text-[#A0A0A0] hover:border-[#F59E0B]'">
+                {{ t.label }}
             </button>
+        </div>
+
+        <!-- Mobile sort -->
+        <div class="md:hidden mb-3 flex items-center gap-2">
+            <span class="text-xs text-[#A0A0A0] shrink-0">Sort</span>
+            <div class="flex-1">
+                <Select size="sm" :model-value="mobileSort" :options="mobileSortOptions" @update:model-value="setMobileSort" />
+            </div>
         </div>
 
         <!-- Mobile card view -->
@@ -30,13 +38,13 @@
             </div>
             <article v-for="b in bookings" :key="b.id" class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 active:bg-[#222] transition" @click="openDetails(b)">
                 <div class="flex items-start justify-between gap-3 mb-3">
-                    <span class="booking-pill" :class="statusClass(b.booking_status)">{{ b.booking_status }}</span>
+                    <span class="booking-pill" :class="statusClass((b.display_status ?? b.booking_status))">{{ (b.display_status ?? b.booking_status) }}</span>
                     <div v-if="b.pins?.length" class="flex flex-col items-end gap-1 text-xs">
                         <div v-for="p in b.pins" :key="p.locker_number" class="flex items-center gap-1.5">
                             <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center" :class="sizeClass(p.size || 'standard')">{{ (p.size || 'standard') === 'large' ? 'B' : 'R' }}</span>
                             <span class="font-mono font-semibold text-white">{{ p.locker_number || '—' }}</span>
                             <span class="font-mono font-bold text-[#F59E0B]">({{ p.pin || '——' }})</span>
-                            <span v-if="['confirmed','active'].includes(b.booking_status)"
+                            <span v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))"
                                 :title="p.ttlock_registered ? 'PIN active on smart lock' : 'PIN waiting for gateway sync'"
                                 class="w-1.5 h-1.5 rounded-full shrink-0" :class="p.ttlock_registered ? 'bg-[#10B981]' : 'bg-[#F59E0B]'"></span>
                         </div>
@@ -77,21 +85,21 @@
                 <div class="mt-4 pt-3 border-t border-[#2A2A2A] space-y-2" @click.stop>
                     <!-- Row 1: New PIN / Extend / Resend -->
                     <div v-if="!isFinal(b)" class="grid grid-cols-3 gap-2">
-                        <button v-if="['confirmed','active'].includes(b.booking_status)" @click="reissuePin(b.id)"
+                        <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="reissuePin(b.id)"
                             class="bg-[#F59E0B]/15 text-[#F59E0B] rounded-lg px-2 py-2.5 text-xs font-semibold active:bg-[#F59E0B]/25">New PIN</button>
-                        <button v-if="['confirmed','active'].includes(b.booking_status)" @click="extendOpen = b"
+                        <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="extendOpen = b"
                             class="bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-2 py-2.5 text-xs font-semibold active:bg-[#333]">Extend</button>
                         <button @click="resendConfirmation(b.id)"
                             class="bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-2 py-2.5 text-xs font-semibold active:bg-[#333]">Resend</button>
                     </div>
                     <!-- Row 2: Cancel/Delete (left) + Mark paid (right) -->
                     <div class="grid grid-cols-2 gap-2">
-                        <button v-if="['confirmed','active'].includes(b.booking_status)" @click="cancelBooking(b.id)"
+                        <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="cancelBooking(b.id)"
                             class="bg-[#EF4444]/15 text-[#EF4444] rounded-lg px-3 py-2.5 text-xs font-semibold active:bg-[#EF4444]/25">Cancel booking</button>
                         <button v-else-if="isFinal(b)" @click="deleteBooking(b.id)"
                             class="bg-[#EF4444]/15 text-[#EF4444] rounded-lg px-3 py-2.5 text-xs font-semibold active:bg-[#EF4444]/25">Delete</button>
                         <span v-else></span>
-                        <button v-if="b.booking_status !== 'cancelled'" @click="togglePaid(b)"
+                        <button v-if="(b.display_status ?? b.booking_status) !== 'cancelled'" @click="togglePaid(b)"
                             class="rounded-lg px-3 py-2.5 text-xs font-semibold"
                             :class="b.payment_status === 'paid' ? 'bg-[#EF4444]/15 text-[#EF4444] active:bg-[#EF4444]/25' : 'bg-[#10B981]/15 text-[#10B981] active:bg-[#10B981]/25'">
                             {{ b.payment_status === 'paid' ? 'Mark as unpaid' : 'Mark as paid' }}</button>
@@ -107,14 +115,14 @@
             </div>
             <table class="w-full text-sm">
                 <thead class="border-b border-[#2A2A2A]">
-                    <tr class="text-[#A0A0A0] text-left">
-                        <th class="px-3 py-3 font-medium">ID</th>
-                        <th class="px-4 py-3 font-medium">Customer</th>
-                        <th class="px-4 py-3 font-medium">Location</th>
-                        <th class="px-4 py-3 font-medium">Period</th>
-                        <th class="px-4 py-3 font-medium">Type + Locker + PIN</th>
-                        <th class="px-4 py-3 font-medium">Total</th>
-                        <th class="px-4 py-3 font-medium">Status</th>
+                    <tr class="text-[#A0A0A0] text-left select-none">
+                        <th class="px-3 py-3 font-medium cursor-pointer hover:text-white" @click="toggleSort('number')">ID<span v-if="sortCol==='number'" class="text-[#F59E0B] ml-0.5">{{ sortDir==='asc'?'↑':'↓' }}</span></th>
+                        <th class="px-4 py-3 font-medium cursor-pointer hover:text-white" @click="toggleSort('customer')">Customer<span v-if="sortCol==='customer'" class="text-[#F59E0B] ml-0.5">{{ sortDir==='asc'?'↑':'↓' }}</span></th>
+                        <th class="px-4 py-3 font-medium cursor-pointer hover:text-white" @click="toggleSort('location')">Location<span v-if="sortCol==='location'" class="text-[#F59E0B] ml-0.5">{{ sortDir==='asc'?'↑':'↓' }}</span></th>
+                        <th class="px-4 py-3 font-medium cursor-pointer hover:text-white" @click="toggleSort('period')">Period<span v-if="sortCol==='period'" class="text-[#F59E0B] ml-0.5">{{ sortDir==='asc'?'↑':'↓' }}</span></th>
+                        <th class="px-4 py-3 font-medium cursor-pointer hover:text-white" @click="toggleSort('type')">Type + Locker + PIN<span v-if="sortCol==='type'" class="text-[#F59E0B] ml-0.5">{{ sortDir==='asc'?'↑':'↓' }}</span></th>
+                        <th class="px-4 py-3 font-medium cursor-pointer hover:text-white" @click="toggleSort('total')">Total<span v-if="sortCol==='total'" class="text-[#F59E0B] ml-0.5">{{ sortDir==='asc'?'↑':'↓' }}</span></th>
+                        <th class="px-4 py-3 font-medium cursor-pointer hover:text-white" @click="toggleSort('status')">Status<span v-if="sortCol==='status'" class="text-[#F59E0B] ml-0.5">{{ sortDir==='asc'?'↑':'↓' }}</span></th>
                         <th class="px-4 py-3 font-medium text-right">Actions</th>
                     </tr>
                 </thead>
@@ -143,7 +151,7 @@
                                     <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center" :class="sizeClass(p.size || 'standard')">{{ (p.size || 'standard') === 'large' ? 'B' : 'R' }}</span>
                                     <span class="font-mono font-semibold text-white">{{ p.locker_number || '—' }}</span>
                                     <span class="font-mono font-bold text-[#F59E0B]">({{ p.pin || '——' }})</span>
-                                    <span v-if="['confirmed','active'].includes(b.booking_status)"
+                                    <span v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))"
                                         :title="p.ttlock_registered ? 'PIN active on smart lock' : 'PIN waiting for gateway sync'"
                                         class="w-1.5 h-1.5 rounded-full" :class="p.ttlock_registered ? 'bg-[#10B981]' : 'bg-[#F59E0B]'"></span>
                                 </div>
@@ -159,7 +167,7 @@
                         <td class="px-4 py-3 text-[#F59E0B] font-medium whitespace-nowrap">€{{ Number(b.total_eur).toFixed(2) }}</td>
                         <td class="px-4 py-3 whitespace-nowrap">
                             <div class="flex flex-col gap-1 items-start">
-                                <span class="px-2 py-0.5 rounded-full text-xs text-center min-w-[5.5rem] inline-block" :class="statusClass(b.booking_status)">{{ b.booking_status }}</span>
+                                <span class="px-2 py-0.5 rounded-full text-xs text-center min-w-[5.5rem] inline-block" :class="statusClass((b.display_status ?? b.booking_status))">{{ (b.display_status ?? b.booking_status) }}</span>
                                 <span class="px-2 py-0.5 rounded-full text-xs text-center min-w-[5.5rem] inline-block"
                                     :class="b.payment_status === 'paid' ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-[#EF4444]/20 text-[#EF4444]'">
                                     {{ b.payment_status === 'paid' ? 'paid' : 'unpaid' }}
@@ -172,7 +180,7 @@
                                     class="action-icon" aria-label="Details">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                 </button>
-                                <button v-if="b.booking_status !== 'cancelled'" @click="togglePaid(b)" :title="b.payment_status === 'paid' ? 'Paid — click to mark unpaid' : 'Mark as paid'"
+                                <button v-if="(b.display_status ?? b.booking_status) !== 'cancelled'" @click="togglePaid(b)" :title="b.payment_status === 'paid' ? 'Paid — click to mark unpaid' : 'Mark as paid'"
                                     class="action-icon" :class="b.payment_status === 'paid' ? 'text-[#10B981] bg-[#10B981]/10 hover:bg-[#10B981]/20' : 'text-[#A0A0A0] hover:bg-[#10B981]/15 hover:text-[#10B981]'" aria-label="Toggle paid">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
                                 </button>
@@ -180,15 +188,15 @@
                                     class="action-icon" aria-label="Resend">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12a8 8 0 018-8v4l5-5-5-5v4a10 10 0 100 20"/></svg>
                                 </button>
-                                <button v-if="['confirmed','active'].includes(b.booking_status)" @click="reissuePin(b.id)" title="Generate new PIN"
+                                <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="reissuePin(b.id)" title="Generate new PIN"
                                     class="action-icon text-[#F59E0B] hover:bg-[#F59E0B]/15" aria-label="New PIN">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="16" r="1"/><path d="M7 11V7a5 5 0 0110 0v4"/><rect x="3" y="11" width="18" height="11" rx="2"/></svg>
                                 </button>
-                                <button v-if="['confirmed','active'].includes(b.booking_status)" @click="extendOpen = b" title="Extend duration"
+                                <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="extendOpen = b" title="Extend duration"
                                     class="action-icon" aria-label="Extend">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
                                 </button>
-                                <button v-if="['confirmed','active'].includes(b.booking_status)" @click="cancelBooking(b.id)" title="Cancel booking"
+                                <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="cancelBooking(b.id)" title="Cancel booking"
                                     class="action-icon text-[#EF4444] hover:bg-[#EF4444]/15" aria-label="Cancel">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                                 </button>
@@ -236,7 +244,7 @@
             <div v-if="detailsBooking" class="p-4 space-y-5">
                 <dl class="booking-dl">
                     <div><dt class="booking-label">Status</dt>
-                        <dd><span class="booking-pill" :class="statusClass(detailsBooking.booking_status)">{{ detailsBooking.booking_status }}</span></dd></div>
+                        <dd><span class="booking-pill" :class="statusClass((detailsBooking.display_status ?? detailsBooking.booking_status))">{{ (detailsBooking.display_status ?? detailsBooking.booking_status) }}</span></dd></div>
                     <div><dt class="booking-label">Booking ID</dt>
                         <dd class="booking-value font-mono">#{{ detailsBooking.booking_number ?? detailsBooking.id }}</dd></div>
                     <div><dt class="booking-label">Name</dt>
@@ -277,7 +285,7 @@
                         <dd class="booking-value text-[#EF4444]">{{ detailsBooking.cancel_reason }}</dd></div>
                 </dl>
 
-                    <div v-if="detailsBooking.booking_status !== 'cancelled'" class="pt-4">
+                    <div v-if="(detailsBooking.display_status ?? detailsBooking.booking_status) !== 'cancelled'" class="pt-4">
                         <button @click="togglePaid(detailsBooking)"
                             class="w-full rounded-lg px-4 py-3 text-sm font-semibold transition"
                             :class="detailsBooking.payment_status === 'paid' ? 'bg-[#EF4444]/15 text-[#EF4444] hover:bg-[#EF4444]/25' : 'bg-[#10B981]/15 text-[#10B981] hover:bg-[#10B981]/25'">
@@ -356,6 +364,33 @@ const perPageOptions = [
     { value: 'all', label: 'All' },
 ];
 
+const tabs = [
+    { key: 'upcoming', label: 'Upcoming' },
+    { key: 'active', label: 'Active' },
+    { key: 'completed', label: 'Completed' },
+    { key: 'cancelled', label: 'Cancelled' },
+    { key: 'all', label: 'All' },
+];
+
+// Sortable columns -> label for the mobile sort dropdown.
+const sortColumns = [
+    { key: 'period', label: 'Check-in' },
+    { key: 'number', label: 'Booking #' },
+    { key: 'customer', label: 'Customer' },
+    { key: 'location', label: 'Location' },
+    { key: 'type', label: 'Type' },
+    { key: 'total', label: 'Total' },
+    { key: 'status', label: 'Status' },
+    { key: 'payment', label: 'Payment' },
+];
+const mobileSortOptions = [
+    { value: '', label: 'Default order' },
+    ...sortColumns.flatMap(c => [
+        { value: `${c.key}:asc`, label: `${c.label} ↑` },
+        { value: `${c.key}:desc`, label: `${c.label} ↓` },
+    ]),
+];
+
 const { apiFetch } = useAuth();
 const confirmDialog = useConfirm();
 const toast = useToast();
@@ -363,7 +398,9 @@ const toast = useToast();
 const bookings = ref([]);
 const pagination = ref(null);
 const search = ref('');
-const statusFilter = ref('all');
+const tab = ref('upcoming');
+const sortCol = ref(null);
+const sortDir = ref('asc');
 const page = ref(1);
 const perPage = ref(20);
 const loading = ref(false);
@@ -382,7 +419,8 @@ const fetchBookings = async () => {
     try {
         const params = new URLSearchParams({ page: page.value });
         params.set('per_page', perPage.value);
-        if (statusFilter.value !== 'all') params.set('status', statusFilter.value);
+        params.set('tab', tab.value);
+        if (sortCol.value) { params.set('sort', sortCol.value); params.set('dir', sortDir.value); }
         if (search.value) params.set('search', search.value);
         const res = await apiFetch(`/api/admin/bookings?${params}`);
         const data = await res.json();
@@ -401,14 +439,25 @@ const onSearchInput = () => {
     searchTimer = setTimeout(() => { page.value = 1; fetchBookings(); }, 300);
 };
 
-const setStatus = (s) => { statusFilter.value = s; page.value = 1; fetchBookings(); };
+const setTab = (t) => { tab.value = t; sortCol.value = null; page.value = 1; fetchBookings(); };
+const toggleSort = (col) => {
+    if (sortCol.value === col) sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc';
+    else { sortCol.value = col; sortDir.value = 'asc'; }
+    page.value = 1; fetchBookings();
+};
+// Mobile sort dropdown emits "col:dir"; null = back to the per-tab default.
+const mobileSort = computed(() => sortCol.value ? `${sortCol.value}:${sortDir.value}` : '');
+const setMobileSort = (val) => {
+    if (!val) { sortCol.value = null; } else { const [c, d] = val.split(':'); sortCol.value = c; sortDir.value = d; }
+    page.value = 1; fetchBookings();
+};
 const goPage = (p) => { if (p < 1 || p > pagination.value?.last_page) return; page.value = p; fetchBookings(); };
 const setPerPage = (v) => { perPage.value = v; page.value = 1; fetchBookings(); };
 
 const toggleMenu = (id) => { openMenuId.value = openMenuId.value === id ? null : id; };
 const closeMenu = () => { openMenuId.value = null; };
 
-const isFinal = (b) => ['cancelled', 'completed', 'expired'].includes(b.booking_status);
+const isFinal = (b) => ['cancelled', 'completed', 'expired'].includes((b.display_status ?? b.booking_status));
 
 // Group by booking_items first (authoritative — carries qty + duration + size).
 // Falls back to booking_lockers (b.pins) for old data shapes.

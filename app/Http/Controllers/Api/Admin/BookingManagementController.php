@@ -19,25 +19,40 @@ class BookingManagementController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Booking::with(['customer', 'location', 'lockers', 'items'])
-            ->orderByDesc('created_at');
+        $now = now();
+        $query = Booking::with(['customer', 'location', 'lockers', 'items']);
 
-        if ($request->has('status')) {
-            $query->where('booking_status', $request->input('status'));
+        // Time-based tab filter — computed from check_in/check_out so "active" is
+        // always accurate without relying on a stale booking_status column.
+        $tab = $request->input('tab', 'upcoming');
+        switch ($tab) {
+            case 'active': // U toku — currently running
+                $query->where('booking_status', '!=', BookingStatus::Cancelled)
+                      ->where('check_in', '<=', $now)->where('check_out', '>=', $now);
+                break;
+            case 'completed': // Završeno — finished (completed + expired merged)
+                $query->where('booking_status', '!=', BookingStatus::Cancelled)
+                      ->where('check_out', '<', $now);
+                break;
+            case 'cancelled':
+                $query->where('booking_status', BookingStatus::Cancelled);
+                break;
+            case 'all':
+                break;
+            case 'upcoming': // Predstojeće (default) — active + upcoming (not yet finished)
+            default:
+                $query->where('booking_status', '!=', BookingStatus::Cancelled)
+                      ->where('check_out', '>=', $now);
+                break;
         }
-        if ($request->has('location_id')) {
+
+        if ($request->filled('location_id')) {
             $query->where('location_id', $request->input('location_id'));
         }
-        if ($request->has('payment_status')) {
+        if ($request->filled('payment_status')) {
             $query->where('payment_status', $request->input('payment_status'));
         }
-        if ($request->has('date_from')) {
-            $query->whereDate('check_in', '>=', $request->input('date_from'));
-        }
-        if ($request->has('date_to')) {
-            $query->whereDate('check_in', '<=', $request->input('date_to'));
-        }
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('uuid', 'like', "%{$search}%")
@@ -45,17 +60,51 @@ class BookingManagementController extends Controller
             });
         }
 
+        // Sorting — an explicit column click overrides the per-tab default order.
+        $dir = strtolower((string) $request->input('dir')) === 'desc' ? 'desc' : 'asc';
+        $sort = $request->input('sort');
+        $directCols = [
+            'number' => 'booking_number', 'period' => 'check_in',
+            'total' => 'total_eur', 'status' => 'booking_status',
+            'payment' => 'payment_status', 'type' => 'locker_size',
+        ];
+        if (isset($directCols[$sort])) {
+            $query->orderBy($directCols[$sort], $dir);
+        } elseif ($sort === 'customer') {
+            $query->leftJoin('customers', 'bookings.customer_id', '=', 'customers.id')
+                  ->orderBy('customers.full_name', $dir)->select('bookings.*');
+        } elseif ($sort === 'location') {
+            $query->leftJoin('locations', 'bookings.location_id', '=', 'locations.id')
+                  ->orderBy('locations.name', $dir)->select('bookings.*');
+        } else {
+            // Per-tab default order.
+            if ($tab === 'all') $query->orderByDesc('created_at');
+            elseif ($tab === 'completed') $query->orderByDesc('check_out');
+            elseif ($tab === 'cancelled') $query->orderByDesc('cancelled_at');
+            else $query->orderBy('check_in', 'asc'); // upcoming / active
+        }
+
         $perPageRaw = $request->input('per_page', 20);
         $perPage = ($perPageRaw === 'all') ? 100000 : max(1, min(1000, (int) $perPageRaw));
         $paginator = $query->paginate($perPage);
 
-        // Decorate each booking with decrypted PINs (admin-only endpoint).
-        $paginator->getCollection()->transform(function ($booking) {
+        // Decorate: decrypted PINs + a time-computed display status.
+        $paginator->getCollection()->transform(function ($booking) use ($now) {
             $booking->setAttribute('pins', $this->decryptedPins($booking->id));
+            $booking->setAttribute('display_status', $this->displayStatus($booking, $now));
             return $booking;
         });
 
         return response()->json($paginator);
+    }
+
+    /** Effective status from time (cancelled is explicit; the rest is computed). */
+    private function displayStatus(Booking $b, $now): string
+    {
+        if ($b->booking_status === BookingStatus::Cancelled) return 'cancelled';
+        if ($b->check_out && $b->check_out < $now) return 'completed';
+        if ($b->check_in && $b->check_in <= $now) return 'active';
+        return 'confirmed';
     }
 
     private function decryptedPins(int $bookingId): array
