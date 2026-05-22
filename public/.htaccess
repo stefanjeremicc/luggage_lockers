@@ -44,4 +44,19 @@
 </IfModule>
 <IfModule mod_headers.c>
     Header set Cache-Control "public, max-age=31536000, immutable" env=LL_IMMUTABLE_ASSET
+
+    # --- Security headers (target securityheaders.com grade A) ---
+    # HSTS: force HTTPS for a year incl. subdomains. (No "preload" token on
+    # purpose — that's an irreversible commitment that must be opted into.)
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "geolocation=(self), camera=(), microphone=(), payment=()"
 </IfModule>
+
+# Force CloudLinux alt-php-82 for this site only (per-folder, no global change).
+# Required because ea-php84 on this account lacks the cURL extension the TTLock
+# HTTP client needs. Kept in the repo so a server-side `git pull` can't silently
+# revert the runtime. (Both staging + production live on this same cPanel host.)
+AddHandler application/x-httpd-alt-php82___lsphp .php .php5 .phtml

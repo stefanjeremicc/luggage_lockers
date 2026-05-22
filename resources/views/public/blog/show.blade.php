@@ -4,6 +4,32 @@
 @section('meta_description', $post->meta_description ?? $post->excerpt)
 @section('breadcrumb_name', $post->title)
 
+@push('schema')
+@php
+    $articleImg = $post->featured_image ? (\Illuminate\Support\Str::startsWith($post->featured_image, 'http') ? $post->featured_image : url($post->featured_image)) : url('/images/logo.png');
+    $articleDesc = $post->meta_description ?? $post->excerpt;
+@endphp
+<script type="application/ld+json">
+{
+    "@@context": "https://schema.org",
+    "@@type": "BlogPosting",
+    "headline": {!! json_encode($post->title, JSON_UNESCAPED_UNICODE) !!},
+    "description": {!! json_encode($articleDesc, JSON_UNESCAPED_UNICODE) !!},
+    "image": "{{ $articleImg }}",
+    "mainEntityOfPage": "{{ url()->current() }}",
+    "inLanguage": "{{ app()->getLocale() === 'sr' ? 'sr-RS' : 'en-US' }}",
+    @if($post->published_at)"datePublished": "{{ $post->published_at->toAtomString() }}",@endif
+    "dateModified": "{{ optional($post->updated_at)->toAtomString() ?: optional($post->published_at)->toAtomString() }}",
+    "author": { "@@type": "Organization", "name": "{{ $post->author_name ?: \App\Helpers\SiteSettings::siteName() }}" },
+    "publisher": {
+        "@@type": "Organization",
+        "name": "{{ \App\Helpers\SiteSettings::siteName() }}",
+        "logo": { "@@type": "ImageObject", "url": "{{ url('/images/logo.png') }}" }
+    }
+}
+</script>
+@endpush
+
 @section('content')
 <article class="py-16 lg:py-24">
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">

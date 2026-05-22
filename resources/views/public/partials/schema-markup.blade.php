@@ -109,3 +109,14 @@
     ]
 }
 </script>
+<script type="application/ld+json">
+{
+    "@@context": "https://schema.org",
+    "@@type": "WebSite",
+    "@@id": "{{ url('/') }}/#website",
+    "name": "{{ $siteName }}",
+    "url": "{{ url('/') }}",
+    "inLanguage": ["en-US", "sr-RS"],
+    "publisher": { "@@id": "{{ url('/') }}/#business" }
+}
+</script>
