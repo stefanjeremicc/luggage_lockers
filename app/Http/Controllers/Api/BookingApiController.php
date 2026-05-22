@@ -74,6 +74,19 @@ class BookingApiController extends Controller
         $base['customer_id'] = $request->user()->id;
         $validated = $base;
 
+        // Safety net: never accept a booking whose arrival time is in the past.
+        // The arrival date+time is entered in Belgrade local time; compare in the
+        // same timezone. A 30-minute grace absorbs clock skew / submit lag while
+        // still catching off-by-a-day errors.
+        $tz = config('app.display_timezone');
+        $checkInAt = \Carbon\Carbon::parse("{$base['date']} {$base['time']}", $tz);
+        if ($checkInAt->lt(\Carbon\Carbon::now($tz)->subMinutes(30))) {
+            return response()->json([
+                'error' => 'invalid_date',
+                'message' => 'The selected arrival time is in the past. Please choose a current or future date and time.',
+            ], 422);
+        }
+
         try {
             $booking = $service->create($validated);
 
