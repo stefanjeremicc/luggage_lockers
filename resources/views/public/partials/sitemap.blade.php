@@ -57,6 +57,17 @@
         <changefreq>monthly</changefreq><priority>0.6</priority></url>
     @endforeach
 
+    @foreach(['me', 'you'] as $genericSlug)
+    <url><loc>{{ url("/near/{$genericSlug}") }}</loc>
+        <xhtml:link rel="alternate" hreflang="en" href="{{ url("/near/{$genericSlug}") }}"/>
+        <xhtml:link rel="alternate" hreflang="sr" href="{{ url("/sr/blizu/{$genericSlug}") }}"/>
+        <changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>{{ url("/sr/blizu/{$genericSlug}") }}</loc>
+        <xhtml:link rel="alternate" hreflang="en" href="{{ url("/near/{$genericSlug}") }}"/>
+        <xhtml:link rel="alternate" hreflang="sr" href="{{ url("/sr/blizu/{$genericSlug}") }}"/>
+        <changefreq>monthly</changefreq><priority>0.7</priority></url>
+    @endforeach
+
     @foreach(array_keys(config('seo.near_pois', [])) as $nearSlug)
     <url><loc>{{ url("/near/{$nearSlug}") }}</loc>
         <xhtml:link rel="alternate" hreflang="en" href="{{ url("/near/{$nearSlug}") }}"/>

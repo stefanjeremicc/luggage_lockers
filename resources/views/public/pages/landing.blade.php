@@ -38,22 +38,39 @@
     $mapLat = $loc->lat ?? ($geo['lat'] ?? null);
     $mapLng = $loc->lng ?? ($geo['lng'] ?? null);
 
-    // Auto-built FAQ (POI-aware) — also emitted as FAQPage schema.
+    // Auto-built FAQ — POI-specific when the page targets a place, otherwise a
+    // generic "near me / in Belgrade" set. Also emitted as FAQPage schema.
+    $hasPoi = !empty($geo['lat']) && !empty($geo['lng']);
     $distanceText = $distanceKm !== null
         ? ($isSr ? "oko {$distanceKm} km" : "about {$distanceKm} km")
         : ($isSr ? 'na kratkoj šetnji' : 'a short walk away');
     $locName = $loc ? $loc->nameFor($locale) : ($isSr ? 'naša lokacija' : 'our location');
-    $faqs = $isSr ? [
-        ["Koliko je čuvanje prtljaga udaljeno od {$poiName}?", "Naša najbliža lokacija sa pametnim ormarićima, {$locName}, udaljena je {$distanceText} od {$poiName}."],
-        ["Da li je čuvanje prtljaga blizu {$poiName} dostupno 24/7?", "Da. Pametni ormarići su samouslužni i dostupni 24 sata dnevno, svakog dana."],
-        ["Koliko košta čuvanje prtljaga blizu {$poiName}?", ($minPriceLabel ? "Cene počinju od {$minPriceLabel}. " : '')."Veličinu ormarića i trajanje biraš pri online rezervaciji, a plaćaš keš pri dolasku."],
-        ["Moram li da rezervišem unapred?", "Online rezervacija traje oko 60 sekundi i garantuje ormarić, ali možeš i na licu mesta ako ima slobodnih."],
-    ] : [
-        ["How far is the luggage storage from {$poiName}?", "Our nearest smart-locker location, {$locName}, is {$distanceText} from {$poiName}."],
-        ["Is luggage storage near {$poiName} available 24/7?", "Yes. Our smart lockers are self-service and accessible 24 hours a day, every day."],
-        ["How much does luggage storage near {$poiName} cost?", ($minPriceLabel ? "Prices start from {$minPriceLabel}. " : '')."You choose the locker size and duration when you book online and pay cash on arrival."],
-        ["Do I need to book in advance?", "Booking online takes about 60 seconds and guarantees a locker, but you can also book on the spot if lockers are free."],
-    ];
+    $addr = $loc ? $loc->addressFor($locale) : '';
+    if ($hasPoi) {
+        $faqs = $isSr ? [
+            ["Koliko je čuvanje prtljaga udaljeno od {$poiName}?", "Naša najbliža lokacija sa pametnim ormarićima, {$locName}, udaljena je {$distanceText} od {$poiName}."],
+            ["Da li je čuvanje prtljaga blizu {$poiName} dostupno 24/7?", "Da. Pametni ormarići su samouslužni i dostupni 24 sata dnevno, svakog dana."],
+            ["Koliko košta čuvanje prtljaga blizu {$poiName}?", ($minPriceLabel ? "Cene počinju od {$minPriceLabel}. " : '')."Veličinu ormarića i trajanje biraš pri online rezervaciji, a plaćaš keš pri dolasku."],
+            ["Moram li da rezervišem unapred?", "Online rezervacija traje oko 60 sekundi i garantuje ormarić, ali možeš i na licu mesta ako ima slobodnih."],
+        ] : [
+            ["How far is the luggage storage from {$poiName}?", "Our nearest smart-locker location, {$locName}, is {$distanceText} from {$poiName}."],
+            ["Is luggage storage near {$poiName} available 24/7?", "Yes. Our smart lockers are self-service and accessible 24 hours a day, every day."],
+            ["How much does luggage storage near {$poiName} cost?", ($minPriceLabel ? "Prices start from {$minPriceLabel}. " : '')."You choose the locker size and duration when you book online and pay cash on arrival."],
+            ["Do I need to book in advance?", "Booking online takes about 60 seconds and guarantees a locker, but you can also book on the spot if lockers are free."],
+        ];
+    } else {
+        $faqs = $isSr ? [
+            ["Gde je najbliže čuvanje prtljaga u Beogradu?", "Naša lokacija sa pametnim ormarićima je {$locName}".($addr ? ", {$addr}" : '').", u centru Beograda — lako dostupna sa svake strane grada."],
+            ["Da li je čuvanje prtljaga otvoreno 24/7?", "Da. Pametni ormarići su samouslužni i dostupni 24 sata dnevno, svakog dana."],
+            ["Koliko košta čuvanje prtljaga?", ($minPriceLabel ? "Cene počinju od {$minPriceLabel}. " : '')."Veličinu ormarića i trajanje biraš pri online rezervaciji, a plaćaš keš pri dolasku."],
+            ["Moram li da rezervišem unapred?", "Online rezervacija traje oko 60 sekundi i garantuje ormarić, ali možeš i na licu mesta ako ima slobodnih."],
+        ] : [
+            ["Where is the nearest luggage storage in Belgrade?", "Our smart-locker location is {$locName}".($addr ? ", {$addr}" : '').", in central Belgrade — easy to reach from anywhere in the city."],
+            ["Is luggage storage in Belgrade open 24/7?", "Yes. Our smart lockers are self-service and accessible 24 hours a day, every day."],
+            ["How much does luggage storage cost?", ($minPriceLabel ? "Prices start from {$minPriceLabel}. " : '')."You choose the locker size and duration when you book online and pay cash on arrival."],
+            ["Do I need to book in advance?", "Booking online takes about 60 seconds and guarantees a locker, but you can also book on the spot if lockers are free."],
+        ];
+    }
 
     $otherLandings = \App\Models\Page::landings()->published()
         ->where('locale', $locale)->where('slug', '!=', $landing->slug)
