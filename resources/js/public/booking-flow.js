@@ -1,5 +1,13 @@
 import allCountries from './countries.js';
 
+// Local calendar date as YYYY-MM-DD. We must NOT use toISOString() (that returns
+// the UTC date) — near midnight in Belgrade (UTC+1/+2) the UTC date is still the
+// previous day, which made "today" resolve to yesterday and booked the wrong day.
+const localYmd = (d = new Date()) => {
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
 export default () => ({
     step: 1,
     date: 'today',
@@ -186,7 +194,7 @@ export default () => ({
      * date is "today" (otherwise any HH:MM is fine for a future day).
      */
     get timeInputMin() {
-        const today = new Date().toISOString().split('T')[0];
+        const today = localYmd();
         if (this.resolvedDate === today) {
             const now = new Date();
             const hh = String(now.getHours()).padStart(2, '0');
@@ -203,7 +211,7 @@ export default () => ({
      */
     get isTimeValid() {
         if (!this.time) return false;
-        const today = new Date().toISOString().split('T')[0];
+        const today = localYmd();
         if (this.resolvedDate !== today) return true;
         const [h, m] = this.time.split(':').map(Number);
         const now = new Date();
@@ -232,7 +240,7 @@ export default () => ({
         const e = this._checkoutEnd;
         if (!e) return null;
         const pad = n => String(n).padStart(2, '0');
-        const sameDay = e.toISOString().split('T')[0] === this.resolvedDate;
+        const sameDay = localYmd(e) === this.resolvedDate;
         const hhmm = `${pad(e.getHours())}:${pad(e.getMinutes())}`;
         if (sameDay) return hhmm;
         return `${pad(e.getDate())}.${pad(e.getMonth()+1)}.${e.getFullYear()} ${hhmm}`;
@@ -289,11 +297,11 @@ export default () => ({
     },
 
     get resolvedDate() {
-        if (this.date === 'today') return new Date().toISOString().split('T')[0];
+        if (this.date === 'today') return localYmd();
         if (this.date === 'tomorrow') {
             const d = new Date();
             d.setDate(d.getDate() + 1);
-            return d.toISOString().split('T')[0];
+            return localYmd(d);
         }
         return this.customDate;
     },
