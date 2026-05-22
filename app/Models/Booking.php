@@ -51,7 +51,8 @@ class Booking extends Model
     {
         static::creating(function (Booking $booking) {
             if (empty($booking->booking_number)) {
-                $booking->booking_number = (static::max('booking_number') ?? 0) + 1;
+                // Sequence starts at 1000 (so the very first booking is #1000).
+                $booking->booking_number = (static::max('booking_number') ?? 999) + 1;
             }
         });
     }
