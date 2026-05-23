@@ -3,10 +3,28 @@
         <div class="flex items-center justify-between mb-4 sm:mb-6 gap-3 flex-wrap">
             <h1 class="text-2xl font-bold">Bookings</h1>
             <div class="flex items-center gap-2 w-full sm:w-auto">
-                <div class="relative w-full sm:w-64">
+                <div class="relative flex-1 sm:w-64 sm:flex-none">
                     <input v-model="search" @input="onSearchInput" placeholder="Search…"
                         class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-4 h-[42px] text-sm text-white focus:border-[#F59E0B] focus:outline-none">
                     <span v-if="loading" class="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 border-2 border-[#F59E0B] border-t-transparent rounded-full animate-spin"></span>
+                </div>
+                <!-- Mobile-only sort: square icon button matching the search input -->
+                <div class="md:hidden relative shrink-0">
+                    <button type="button" @click="sortMenuOpen = !sortMenuOpen" aria-label="Sort"
+                        class="h-[42px] w-[42px] flex items-center justify-center bg-[#111] border rounded-lg transition"
+                        :class="sortCol ? 'border-[#F59E0B] text-[#F59E0B]' : 'border-[#2A2A2A] text-[#A0A0A0]'">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M6 12h12M9 18h6"/></svg>
+                    </button>
+                    <div v-if="sortMenuOpen" class="fixed inset-0 z-40" @click="sortMenuOpen = false"></div>
+                    <div v-if="sortMenuOpen" class="absolute right-0 top-full mt-1 w-56 bg-[#111] border border-[#2A2A2A] rounded-lg shadow-2xl z-50 overflow-hidden">
+                        <button v-for="opt in mobileSortOptions" :key="opt.value" type="button"
+                            @click="setMobileSort(opt.value); sortMenuOpen = false"
+                            class="w-full text-left px-3 py-2.5 text-xs flex items-center justify-between gap-2 transition"
+                            :class="mobileSort === opt.value ? 'bg-[#F59E0B]/15 text-[#F59E0B]' : 'text-white hover:bg-[#1A1A1A]'">
+                            <span class="truncate">{{ opt.label }}</span>
+                            <svg v-if="mobileSort === opt.value" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -21,13 +39,6 @@
             </button>
         </div>
 
-        <!-- Mobile sort -->
-        <div class="md:hidden mb-3 flex items-center gap-2">
-            <span class="text-xs text-[#A0A0A0] shrink-0">Sort</span>
-            <div class="flex-1">
-                <Select :model-value="mobileSort" :options="mobileSortOptions" @update:model-value="setMobileSort" />
-            </div>
-        </div>
         <div class="md:hidden mb-3 flex items-center gap-3 text-xs text-[#6B7280]">
             <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>PIN on lock</span>
             <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#F59E0B]"></span>no PIN / syncing</span>
@@ -401,6 +412,7 @@ const perPage = ref(20);
 const loading = ref(false);
 const openMenuId = ref(null);
 const detailsBooking = ref(null);
+const sortMenuOpen = ref(false);
 const notifBooking = ref(null);
 const extendOpen = ref(null);
 const extendDuration = ref('24h');
