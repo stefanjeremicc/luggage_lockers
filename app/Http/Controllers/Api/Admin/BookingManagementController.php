@@ -77,11 +77,23 @@ class BookingManagementController extends Controller
             $query->leftJoin('locations', 'bookings.location_id', '=', 'locations.id')
                   ->orderBy('locations.name', $dir)->select('bookings.*');
         } else {
-            // Per-tab default order.
-            if ($tab === 'all') $query->orderByDesc('created_at');
-            elseif ($tab === 'completed') $query->orderByDesc('check_out');
-            elseif ($tab === 'cancelled') $query->orderByDesc('cancelled_at');
-            else $query->orderBy('check_in', 'asc'); // upcoming / active
+            // Per-tab default order. Within each day we order by booking
+            // CREATION time (newest first) — not by the check-in clock time.
+            $nowStr = $now->toDateTimeString();
+            if ($tab === 'all') {
+                $query->orderByDesc('created_at');
+            } elseif ($tab === 'completed') {
+                // Most recently finished day first; newest-booked first within a day.
+                $query->orderByRaw('DATE(check_out) desc')->orderByDesc('created_at');
+            } elseif ($tab === 'cancelled') {
+                $query->orderByRaw('DATE(cancelled_at) desc')->orderByDesc('created_at');
+            } else {
+                // Active & Upcoming: all ACTIVE first, then UPCOMING; by day
+                // (today, tomorrow, …); newest-booked first within each day.
+                $query->orderByRaw('(check_in <= ?) desc', [$nowStr]) // active before upcoming
+                      ->orderByRaw('DATE(check_in) asc')               // by day
+                      ->orderByDesc('created_at');                     // newest booking first
+            }
         }
 
         $perPageRaw = $request->input('per_page', 20);
