@@ -142,7 +142,7 @@ class BookingManagementController extends Controller
     public function show(int $id): JsonResponse
     {
         $booking = Booking::with(['customer', 'location', 'lockers', 'items', 'notificationLogs'])->findOrFail($id);
-        $booking->setAttribute('pins', $this->decryptedPins($booking->id));
+        $booking->setAttribute('pins', $this->decryptedPins($booking));
         return response()->json($booking);
     }
 
