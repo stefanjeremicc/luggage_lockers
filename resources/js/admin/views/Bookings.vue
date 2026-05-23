@@ -31,6 +31,7 @@
         <div class="md:hidden mb-3 flex items-center gap-3 text-xs text-[#6B7280]">
             <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>PIN on lock</span>
             <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#F59E0B]"></span>no PIN / syncing</span>
+            <span class="flex items-center gap-1.5"><svg class="w-3 h-3 text-[#3B82F6]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 018 0M5 11h14a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1v-7a1 1 0 011-1z"/></svg>opened / in use</span>
         </div>
 
         <!-- Mobile card view -->
@@ -57,6 +58,7 @@
                             <span v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))"
                                 :title="p.ttlock_registered ? 'PIN active on smart lock' : 'PIN waiting for gateway sync'"
                                 class="w-1.5 h-1.5 rounded-full shrink-0" :class="p.ttlock_registered ? 'bg-[#10B981]' : 'bg-[#F59E0B]'"></span>
+                            <svg v-if="p.opened" title="Locker opened — in use" class="w-3.5 h-3.5 text-[#3B82F6] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 018 0M5 11h14a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1v-7a1 1 0 011-1z"/></svg>
                         </div>
                     </div>
                 </div>
@@ -150,6 +152,7 @@
                                     <span v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))"
                                         :title="p.ttlock_registered ? 'PIN active on smart lock' : 'PIN waiting for gateway sync'"
                                         class="w-1.5 h-1.5 rounded-full" :class="p.ttlock_registered ? 'bg-[#10B981]' : 'bg-[#F59E0B]'"></span>
+                                    <svg v-if="p.opened" title="Locker opened — in use" class="w-3.5 h-3.5 text-[#3B82F6]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 018 0M5 11h14a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1v-7a1 1 0 011-1z"/></svg>
                                 </div>
                             </div>
                             <div v-else-if="sizeBreakdown(b).length" class="flex flex-col gap-1">
@@ -220,6 +223,7 @@
                 <div class="hidden sm:flex items-center gap-3 text-xs text-[#6B7280] border-l border-[#2A2A2A] pl-3">
                     <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>PIN on lock</span>
                     <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#F59E0B]"></span>no PIN / syncing</span>
+                    <span class="flex items-center gap-1.5"><svg class="w-3 h-3 text-[#3B82F6]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 018 0M5 11h14a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1v-7a1 1 0 011-1z"/></svg>opened / in use</span>
                 </div>
             </div>
             <div v-if="pagination.last_page > 1" class="flex items-center gap-1 flex-wrap">

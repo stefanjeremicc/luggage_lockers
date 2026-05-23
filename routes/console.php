@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Schedule;
 Schedule::job(new SyncLockerStatus)->everyTwoMinutes();
 Schedule::job(new SyncAccessCodes)->everyThreeMinutes();
 Schedule::job(new SyncGateways)->everyFiveMinutes();
-Schedule::job(new SyncUnlockRecords)->everyFifteenMinutes();
+Schedule::job(new SyncUnlockRecords)->everyFiveMinutes();
 Schedule::job(new HandleExpiredBookings)->everyMinute();
 // TTLock passcodes are scheduled with a +30 min tail buffer. We clean them up
 // from TTLock cloud once the buffered window has elapsed (i.e. check_out + 30 min).

@@ -90,7 +90,7 @@ class BookingManagementController extends Controller
 
         // Decorate: decrypted PINs + a time-computed display status.
         $paginator->getCollection()->transform(function ($booking) use ($now) {
-            $booking->setAttribute('pins', $this->decryptedPins($booking->id));
+            $booking->setAttribute('pins', $this->decryptedPins($booking));
             $booking->setAttribute('display_status', $this->displayStatus($booking, $now));
             return $booking;
         });
@@ -107,22 +107,32 @@ class BookingManagementController extends Controller
         return 'confirmed';
     }
 
-    private function decryptedPins(int $bookingId): array
+    private function decryptedPins(Booking $booking): array
     {
-        return BookingLocker::with('locker:id,number,size')
-            ->where('booking_id', $bookingId)
+        // A locker counts as "opened during this booking" if TTLock recorded an
+        // unlock at/after this booking's check-in. locker.last_used_at is kept
+        // fresh by the SyncUnlockRecords job (TTLock unlock records), so we don't
+        // hit the lock here. Previous bookings end before this one's check_in, so
+        // last_used_at >= check_in reliably belongs to THIS stay.
+        $checkIn = $booking->check_in;
+
+        return BookingLocker::with('locker:id,number,size,last_used_at')
+            ->where('booking_id', $booking->id)
             ->get()
-            ->map(function ($bl) {
+            ->map(function ($bl) use ($checkIn) {
                 try {
                     $pin = Crypt::decryptString($bl->pin_code_encrypted);
                 } catch (\Throwable) {
                     $pin = null;
                 }
+                $lastUsed = $bl->locker?->last_used_at;
                 return [
                     'locker_number' => $bl->locker?->number,
                     'size' => $bl->locker?->size?->value,
                     'pin' => $pin,
                     'ttlock_registered' => !empty($bl->ttlock_keyboard_pwd_id),
+                    'opened' => $lastUsed && $checkIn && $lastUsed->gte($checkIn),
+                    'opened_at' => ($lastUsed && $checkIn && $lastUsed->gte($checkIn)) ? $lastUsed->toIso8601String() : null,
                 ];
             })
             ->values()
