@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bll-v2';
+const CACHE_NAME = 'bll-v3';
 const STATIC_ASSETS = ['/', '/faq', '/about', '/contact'];
 
 self.addEventListener('install', event => {

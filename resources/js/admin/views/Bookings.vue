@@ -444,7 +444,13 @@ const onSearchInput = () => {
     searchTimer = setTimeout(() => { page.value = 1; fetchBookings(); }, 300);
 };
 
-const setTab = (t) => { tab.value = t; sortCol.value = null; page.value = 1; fetchBookings(); };
+const setTab = (t) => {
+    tab.value = t;
+    sortCol.value = null;
+    page.value = 1;
+    bookings.value = [];   // clear immediately so a stale list can never linger
+    fetchBookings();
+};
 const toggleSort = (col) => {
     if (sortCol.value === col) sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc';
     else { sortCol.value = col; sortDir.value = 'asc'; }
