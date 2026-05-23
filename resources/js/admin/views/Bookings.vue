@@ -80,16 +80,16 @@
                 </dl>
 
                 <div class="mt-4 pt-3 border-t border-[#2A2A2A] space-y-2">
-                    <!-- Row 1: New PIN / Extend / Resend / Details (wrap 2-per-row) -->
-                    <div class="flex flex-wrap gap-2">
+                    <!-- Row 1: New PIN / Extend / Resend / Details (4 across, Details far right) -->
+                    <div class="grid grid-cols-4 gap-2">
                         <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="reissuePin(b.id)"
-                            class="flex-1 basis-[calc(50%-0.25rem)] bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-2 py-2.5 text-xs font-semibold active:bg-[#333]">New PIN</button>
+                            class="bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-1 py-2.5 text-xs font-semibold active:bg-[#333]">New PIN</button>
                         <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="extendOpen = b"
-                            class="flex-1 basis-[calc(50%-0.25rem)] bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-2 py-2.5 text-xs font-semibold active:bg-[#333]">Extend</button>
+                            class="bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-1 py-2.5 text-xs font-semibold active:bg-[#333]">Extend</button>
                         <button v-if="!isFinal(b)" @click="resendConfirmation(b.id)"
-                            class="flex-1 basis-[calc(50%-0.25rem)] bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-2 py-2.5 text-xs font-semibold active:bg-[#333]">Resend</button>
+                            class="bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-1 py-2.5 text-xs font-semibold active:bg-[#333]">Resend</button>
                         <button @click="openDetails(b)"
-                            class="flex-1 basis-[calc(50%-0.25rem)] bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-2 py-2.5 text-xs font-semibold active:bg-[#333]">Details</button>
+                            class="col-start-4 bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-1 py-2.5 text-xs font-semibold active:bg-[#333]">Details</button>
                     </div>
                     <!-- Row 2: Cancel/Delete (left) + Mark paid (right) -->
                     <div class="grid grid-cols-2 gap-2">
