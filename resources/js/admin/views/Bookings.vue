@@ -274,6 +274,8 @@
                         <dd class="booking-value">{{ formatDate(detailsBooking.check_in) || '—' }}</dd></div>
                     <div><dt class="booking-label">Check-out</dt>
                         <dd class="booking-value">{{ formatDate(detailsBooking.check_out) || '—' }}</dd></div>
+                    <div v-if="durationSummary(detailsBooking)"><dt class="booking-label">Duration</dt>
+                        <dd class="booking-value">{{ durationSummary(detailsBooking) }}</dd></div>
                     <div class="items-start"><dt class="booking-label">Items</dt>
                         <dd>
                             <div v-if="pinRows(detailsBooking).length" class="flex flex-col gap-1.5">
@@ -281,14 +283,12 @@
                                     <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center shrink-0" :class="sizeClass(p.size)">{{ p.size === 'large' ? 'B' : 'R' }}</span>
                                     <span class="booking-value font-mono">{{ p.number || '—' }}</span>
                                     <span class="font-mono font-semibold !text-[#F59E0B]">({{ p.pin || '——' }})</span>
-                                    <span v-if="p.duration" class="text-xs text-[#A0A0A0]">· {{ durationLabel(p.duration) }}</span>
                                 </div>
                             </div>
                             <div v-else-if="sizeBreakdown(detailsBooking).length" class="flex flex-col gap-1">
                                 <div v-for="(line, i) in sizeBreakdown(detailsBooking)" :key="i" class="flex items-center gap-2">
                                     <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center shrink-0" :class="sizeClass(line.size)">{{ line.size === 'large' ? 'B' : 'R' }}</span>
                                     <span class="booking-value">{{ line.qty }}×</span>
-                                    <span v-if="line.duration" class="text-xs text-[#A0A0A0]">· {{ durationLabel(line.duration) }}</span>
                                 </div>
                             </div>
                             <span v-else class="booking-value text-[#6B7280]">—</span>
@@ -515,6 +515,13 @@ const durationLabels = {
 };
 const sizeLabel = (s) => s === 'large' ? 'Big' : 'Regular';
 const durationLabel = (key) => durationLabels[key] || key || '';
+// Distinct duration label(s) for a booking, e.g. "6 hours" (or "6 hours · 1 day"
+// when a multi-size booking mixes durations). Shown as its own modal row.
+const durationSummary = (b) => {
+    const rows = pinRows(b).length ? pinRows(b) : sizeBreakdown(b);
+    const set = [...new Set(rows.map(r => r.duration).filter(Boolean))];
+    return set.map(durationLabel).join(' · ');
+};
 
 // Marketing-attribution channel → label + colour (matches Dashboard widget).
 const SOURCE_META = {
