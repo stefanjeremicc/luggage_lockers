@@ -31,7 +31,7 @@
         <div class="md:hidden mb-3 flex items-center gap-3 text-xs text-[#6B7280]">
             <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>PIN on lock</span>
             <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#F59E0B]"></span>no PIN / syncing</span>
-            <span class="flex items-center gap-1.5"><svg class="w-3 h-3 text-[#3B82F6]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 018 0M5 11h14a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1v-7a1 1 0 011-1z"/></svg>opened / in use</span>
+            <span class="flex items-center gap-1.5"><svg class="w-3 h-3 text-[#10B981]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 018 0M5 11h14a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1v-7a1 1 0 011-1z"/></svg>opened / in use</span>
         </div>
 
         <!-- Mobile card view -->
@@ -44,7 +44,7 @@
             </div>
             <template v-for="g in mobileGroups" :key="g.key">
             <div v-if="g.label" class="sticky top-0 z-[5] -mx-px px-3 py-1.5 bg-[#0A0A0A]/95 backdrop-blur text-xs font-semibold uppercase tracking-wide text-[#A0A0A0] border-b border-[#2A2A2A]">{{ g.label }}</div>
-            <article v-for="b in g.items" :key="b.id" class="border rounded-xl p-4 transition" :class="b.payment_status === 'paid' ? 'bg-[#10B981]/[0.07] border-[#10B981]/40 active:bg-[#10B981]/[0.12]' : 'bg-[#1A1A1A] border-[#2A2A2A] active:bg-[#222]'" @click="openDetails(b)">
+            <article v-for="b in g.items" :key="b.id" class="border rounded-xl p-4 transition" :class="b.payment_status === 'paid' ? 'bg-[#10B981]/[0.16] border-[#10B981]/60 active:bg-[#10B981]/25' : 'bg-[#1A1A1A] border-[#2A2A2A] active:bg-[#222]'" @click="openDetails(b)">
                 <div class="flex items-start justify-between gap-3 mb-3">
                     <div class="flex items-center gap-2 flex-wrap">
                         <span class="booking-pill" :class="statusClass((b.display_status ?? b.booking_status))">{{ statusLabel(b.display_status ?? b.booking_status) }}</span>
@@ -58,7 +58,7 @@
                             <span v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))"
                                 :title="p.ttlock_registered ? 'PIN active on smart lock' : 'PIN waiting for gateway sync'"
                                 class="w-1.5 h-1.5 rounded-full shrink-0" :class="p.ttlock_registered ? 'bg-[#10B981]' : 'bg-[#F59E0B]'"></span>
-                            <svg v-if="p.opened" title="Locker opened — in use" class="w-3.5 h-3.5 text-[#3B82F6] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 018 0M5 11h14a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1v-7a1 1 0 011-1z"/></svg>
+                            <svg v-if="p.opened" title="Locker opened — in use" class="w-3.5 h-3.5 text-[#10B981] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 018 0M5 11h14a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1v-7a1 1 0 011-1z"/></svg>
                         </div>
                     </div>
                 </div>
@@ -83,7 +83,7 @@
                     <!-- Row 1: New PIN / Extend / Resend -->
                     <div v-if="!isFinal(b)" class="grid grid-cols-3 gap-2">
                         <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="reissuePin(b.id)"
-                            class="bg-[#F59E0B]/15 text-[#F59E0B] rounded-lg px-2 py-2.5 text-xs font-semibold active:bg-[#F59E0B]/25">New PIN</button>
+                            class="bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-2 py-2.5 text-xs font-semibold active:bg-[#333]">New PIN</button>
                         <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="extendOpen = b"
                             class="bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-2 py-2.5 text-xs font-semibold active:bg-[#333]">Extend</button>
                         <button @click="resendConfirmation(b.id)"
@@ -92,7 +92,7 @@
                     <!-- Row 2: Cancel/Delete (left) + Mark paid (right) -->
                     <div class="grid grid-cols-2 gap-2">
                         <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="cancelBooking(b.id)"
-                            class="bg-[#EF4444]/15 text-[#EF4444] rounded-lg px-3 py-2.5 text-xs font-semibold active:bg-[#EF4444]/25">Cancel booking</button>
+                            class="bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-3 py-2.5 text-xs font-semibold active:bg-[#333]">Cancel booking</button>
                         <button v-else-if="isFinal(b)" @click="deleteBooking(b.id)"
                             class="bg-[#EF4444]/15 text-[#EF4444] rounded-lg px-3 py-2.5 text-xs font-semibold active:bg-[#EF4444]/25">Delete</button>
                         <span v-else></span>
@@ -131,7 +131,7 @@
                     <tr v-if="!bookings.length && loading">
                         <td colspan="8" class="px-4 py-8 text-center text-[#A0A0A0]">Loading…</td>
                     </tr>
-                    <tr v-for="b in bookings" :key="b.id" class="border-b border-[#2A2A2A]/50" :class="b.payment_status === 'paid' ? 'bg-[#10B981]/[0.07] hover:bg-[#10B981]/[0.12]' : 'hover:bg-[#111]'">
+                    <tr v-for="b in bookings" :key="b.id" class="border-b border-[#2A2A2A]/50" :class="b.payment_status === 'paid' ? 'bg-[#10B981]/[0.16] hover:bg-[#10B981]/25' : 'hover:bg-[#111]'">
                         <td class="px-3 py-3 text-[#6B7280] font-mono text-xs whitespace-nowrap">#{{ b.booking_number ?? b.id }}</td>
                         <td class="px-4 py-3 max-w-[220px]">
                             <div class="truncate">{{ b.customer?.full_name }}</div>
@@ -152,7 +152,7 @@
                                     <span v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))"
                                         :title="p.ttlock_registered ? 'PIN active on smart lock' : 'PIN waiting for gateway sync'"
                                         class="w-1.5 h-1.5 rounded-full" :class="p.ttlock_registered ? 'bg-[#10B981]' : 'bg-[#F59E0B]'"></span>
-                                    <svg v-if="p.opened" title="Locker opened — in use" class="w-3.5 h-3.5 text-[#3B82F6]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 018 0M5 11h14a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1v-7a1 1 0 011-1z"/></svg>
+                                    <svg v-if="p.opened" title="Locker opened — in use" class="w-3.5 h-3.5 text-[#10B981]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 018 0M5 11h14a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1v-7a1 1 0 011-1z"/></svg>
                                 </div>
                             </div>
                             <div v-else-if="sizeBreakdown(b).length" class="flex flex-col gap-1">
@@ -188,7 +188,7 @@
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12a8 8 0 018-8v4l5-5-5-5v4a10 10 0 100 20"/></svg>
                                 </button>
                                 <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="reissuePin(b.id)" title="Generate new PIN"
-                                    class="action-icon text-[#F59E0B] hover:bg-[#F59E0B]/15" aria-label="New PIN">
+                                    class="action-icon" aria-label="New PIN">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="16" r="1"/><path d="M7 11V7a5 5 0 0110 0v4"/><rect x="3" y="11" width="18" height="11" rx="2"/></svg>
                                 </button>
                                 <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="extendOpen = b" title="Extend duration"
@@ -196,7 +196,7 @@
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
                                 </button>
                                 <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="cancelBooking(b.id)" title="Cancel booking"
-                                    class="action-icon text-[#EF4444] hover:bg-[#EF4444]/15" aria-label="Cancel">
+                                    class="action-icon" aria-label="Cancel">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                                 </button>
                                 <button v-if="isFinal(b)" @click="deleteBooking(b.id)" title="Delete permanently"
@@ -223,7 +223,7 @@
                 <div class="hidden sm:flex items-center gap-3 text-xs text-[#6B7280] border-l border-[#2A2A2A] pl-3">
                     <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>PIN on lock</span>
                     <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#F59E0B]"></span>no PIN / syncing</span>
-                    <span class="flex items-center gap-1.5"><svg class="w-3 h-3 text-[#3B82F6]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 018 0M5 11h14a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1v-7a1 1 0 011-1z"/></svg>opened / in use</span>
+                    <span class="flex items-center gap-1.5"><svg class="w-3 h-3 text-[#10B981]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 018 0M5 11h14a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1v-7a1 1 0 011-1z"/></svg>opened / in use</span>
                 </div>
             </div>
             <div v-if="pagination.last_page > 1" class="flex items-center gap-1 flex-wrap">
@@ -735,8 +735,8 @@ const formatDate = (d) => {
 };
 
 const statusClass = (s) => ({
-    confirmed: 'bg-[#10B981]/20 text-[#10B981]',
-    active: 'bg-blue-500/20 text-blue-400',
+    confirmed: 'bg-blue-500/20 text-blue-400',
+    active: 'bg-[#10B981]/20 text-[#10B981]',
     pending: 'bg-[#F59E0B]/20 text-[#F59E0B]',
     completed: 'bg-[#A0A0A0]/20 text-[#A0A0A0]',
     cancelled: 'bg-[#EF4444]/20 text-[#EF4444]',
