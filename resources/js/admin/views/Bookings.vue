@@ -16,7 +16,7 @@
                         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M6 12h12M9 18h6"/></svg>
                     </button>
                     <div v-if="sortMenuOpen" class="fixed inset-0 z-40" @click="sortMenuOpen = false"></div>
-                    <div v-if="sortMenuOpen" class="absolute right-0 top-full mt-1 w-56 bg-[#111] border border-[#2A2A2A] rounded-lg shadow-2xl z-50 overflow-hidden">
+                    <div v-if="sortMenuOpen" class="absolute right-0 top-full mt-1 w-56 max-h-[55vh] overflow-y-auto bg-[#111] border border-[#2A2A2A] rounded-lg shadow-2xl z-50">
                         <button v-for="opt in mobileSortOptions" :key="opt.value" type="button"
                             @click="setMobileSort(opt.value); sortMenuOpen = false"
                             class="w-full text-left px-3 py-2.5 text-xs flex items-center justify-between gap-2 transition"
