@@ -246,11 +246,20 @@
 
         <!-- Details modal -->
         <Modal :model-value="!!detailsBooking" @update:model-value="v => !v && (detailsBooking = null)"
-            size="lg" position="center" title="Booking details" :subtitle="detailsBooking ? '#' + (detailsBooking.booking_number ?? detailsBooking.id) : ''" no-padding>
+            size="lg" position="center" title="Booking details" no-padding>
             <div v-if="detailsBooking" class="p-4 space-y-5">
+                <!-- Status + traffic source on one line -->
+                <div class="flex items-center justify-between gap-3 flex-wrap">
+                    <span class="booking-pill" :class="statusClass((detailsBooking.display_status ?? detailsBooking.booking_status))">{{ statusLabel(detailsBooking.display_status ?? detailsBooking.booking_status) }}</span>
+                    <span class="flex items-center gap-1.5 text-sm text-[#A0A0A0]">
+                        <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="{ backgroundColor: sourceMeta(detailsBooking.marketing_source).color }"></span>
+                        {{ sourceMeta(detailsBooking.marketing_source).label }}
+                        <span v-if="detailsBooking.utm_campaign" class="text-xs text-[#6B7280]">· {{ detailsBooking.utm_campaign }}</span>
+                    </span>
+                </div>
                 <dl class="booking-dl">
-                    <div><dt class="booking-label">Status</dt>
-                        <dd><span class="booking-pill" :class="statusClass((detailsBooking.display_status ?? detailsBooking.booking_status))">{{ statusLabel(detailsBooking.display_status ?? detailsBooking.booking_status) }}</span></dd></div>
+                    <div v-if="detailsBooking.created_at"><dt class="booking-label">Created</dt>
+                        <dd class="booking-value">{{ formatDate(detailsBooking.created_at) }}</dd></div>
                     <div><dt class="booking-label">Booking ID</dt>
                         <dd class="booking-value font-mono">#{{ detailsBooking.booking_number ?? detailsBooking.id }}</dd></div>
                     <div><dt class="booking-label">Name</dt>
@@ -265,34 +274,27 @@
                         <dd class="booking-value">{{ formatDate(detailsBooking.check_in) || '—' }}</dd></div>
                     <div><dt class="booking-label">Check-out</dt>
                         <dd class="booking-value">{{ formatDate(detailsBooking.check_out) || '—' }}</dd></div>
-                    <div v-if="detailsBooking.created_at"><dt class="booking-label">Created</dt>
-                        <dd class="booking-value text-[#A0A0A0]">{{ formatDate(detailsBooking.created_at) }}</dd></div>
                     <div class="items-start"><dt class="booking-label">Items</dt>
                         <dd>
                             <div v-if="pinRows(detailsBooking).length" class="flex flex-col gap-1.5">
-                                <div v-for="p in pinRows(detailsBooking)" :key="p.number" class="flex items-center gap-2">
-                                    <span class="booking-pill" :class="sizeClass(p.size)">{{ p.size === 'large' ? 'B' : 'R' }}<template v-if="p.duration"> · {{ durationLabel(p.duration) }}</template></span>
+                                <div v-for="p in pinRows(detailsBooking)" :key="p.number" class="flex items-center flex-wrap gap-x-2 gap-y-0.5">
+                                    <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center shrink-0" :class="sizeClass(p.size)">{{ p.size === 'large' ? 'B' : 'R' }}</span>
                                     <span class="booking-value font-mono">{{ p.number || '—' }}</span>
-                                    <span class="booking-value font-mono text-[#F59E0B]">({{ p.pin || '——' }})</span>
+                                    <span class="font-mono font-semibold !text-[#F59E0B]">({{ p.pin || '——' }})</span>
+                                    <span v-if="p.duration" class="text-xs text-[#A0A0A0]">· {{ durationLabel(p.duration) }}</span>
                                 </div>
                             </div>
-                            <div v-else-if="sizeBreakdown(detailsBooking).length" class="flex flex-wrap gap-1">
-                                <span v-for="(line, i) in sizeBreakdown(detailsBooking)" :key="i" class="booking-pill" :class="sizeClass(line.size)">
-                                    {{ line.qty }}× {{ line.size === 'large' ? 'B' : 'R' }}<template v-if="line.duration"> · {{ durationLabel(line.duration) }}</template>
-                                </span>
+                            <div v-else-if="sizeBreakdown(detailsBooking).length" class="flex flex-col gap-1">
+                                <div v-for="(line, i) in sizeBreakdown(detailsBooking)" :key="i" class="flex items-center gap-2">
+                                    <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center shrink-0" :class="sizeClass(line.size)">{{ line.size === 'large' ? 'B' : 'R' }}</span>
+                                    <span class="booking-value">{{ line.qty }}×</span>
+                                    <span v-if="line.duration" class="text-xs text-[#A0A0A0]">· {{ durationLabel(line.duration) }}</span>
+                                </div>
                             </div>
                             <span v-else class="booking-value text-[#6B7280]">—</span>
                         </dd></div>
-                    <div v-if="false"><dt class="booking-label">Payment</dt>
-                        <dd><span class="booking-pill" :class="detailsBooking.payment_status === 'paid' ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-[#EF4444]/20 text-[#EF4444]'">{{ detailsBooking.payment_status === 'paid' ? 'paid' : 'unpaid' }}</span></dd></div>
                     <div><dt class="booking-label">Total</dt>
-                        <dd class="booking-value text-[#F59E0B]">€{{ Number(detailsBooking.total_eur).toFixed(2) }}</dd></div>
-                    <div><dt class="booking-label">Source</dt>
-                        <dd class="flex items-center gap-2">
-                            <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="{ backgroundColor: sourceMeta(detailsBooking.marketing_source).color }"></span>
-                            <span class="booking-value">{{ sourceMeta(detailsBooking.marketing_source).label }}</span>
-                            <span v-if="detailsBooking.utm_campaign" class="text-xs text-[#6B7280]">· {{ detailsBooking.utm_campaign }}</span>
-                        </dd></div>
+                        <dd class="booking-value !text-[#F59E0B] font-semibold">€{{ Number(detailsBooking.total_eur).toFixed(2) }}</dd></div>
                     <div v-if="detailsBooking.cancel_reason" class="items-start"><dt class="booking-label">Cancel reason</dt>
                         <dd class="booking-value text-[#EF4444]">{{ detailsBooking.cancel_reason }}</dd></div>
                 </dl>
