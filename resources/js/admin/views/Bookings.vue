@@ -44,7 +44,7 @@
             </div>
             <template v-for="g in mobileGroups" :key="g.key">
             <div v-if="g.label" class="sticky top-0 z-[5] -mx-px px-3 py-1.5 bg-[#0A0A0A]/95 backdrop-blur text-xs font-semibold uppercase tracking-wide text-[#A0A0A0] border-b border-[#2A2A2A]">{{ g.label }}</div>
-            <article v-for="b in g.items" :key="b.id" class="border rounded-xl p-4 transition" :class="b.payment_status === 'paid' ? 'bg-[#10B981]/[0.16] border-[#10B981]/60 active:bg-[#10B981]/25' : 'bg-[#1A1A1A] border-[#2A2A2A] active:bg-[#222]'" @click="openDetails(b)">
+            <article v-for="b in g.items" :key="b.id" class="border rounded-xl p-4" :class="b.payment_status === 'paid' ? 'bg-[#10B981]/[0.16] border-[#10B981]/60' : 'bg-[#1A1A1A] border-[#2A2A2A]'">
                 <div class="flex items-start justify-between gap-3 mb-3">
                     <div class="flex items-center gap-2 flex-wrap">
                         <span class="booking-pill" :class="statusClass((b.display_status ?? b.booking_status))">{{ statusLabel(b.display_status ?? b.booking_status) }}</span>
@@ -79,15 +79,17 @@
                         <dd class="booking-value !text-[#F59E0B] font-semibold">€{{ Number(b.total_eur).toFixed(2) }}</dd></div>
                 </dl>
 
-                <div class="mt-4 pt-3 border-t border-[#2A2A2A] space-y-2" @click.stop>
-                    <!-- Row 1: New PIN / Extend / Resend -->
-                    <div v-if="!isFinal(b)" class="grid grid-cols-3 gap-2">
+                <div class="mt-4 pt-3 border-t border-[#2A2A2A] space-y-2">
+                    <!-- Row 1: New PIN / Extend / Resend / Details (wrap 2-per-row) -->
+                    <div class="flex flex-wrap gap-2">
                         <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="reissuePin(b.id)"
-                            class="bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-2 py-2.5 text-xs font-semibold active:bg-[#333]">New PIN</button>
+                            class="flex-1 basis-[calc(50%-0.25rem)] bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-2 py-2.5 text-xs font-semibold active:bg-[#333]">New PIN</button>
                         <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="extendOpen = b"
-                            class="bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-2 py-2.5 text-xs font-semibold active:bg-[#333]">Extend</button>
-                        <button @click="resendConfirmation(b.id)"
-                            class="bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-2 py-2.5 text-xs font-semibold active:bg-[#333]">Resend</button>
+                            class="flex-1 basis-[calc(50%-0.25rem)] bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-2 py-2.5 text-xs font-semibold active:bg-[#333]">Extend</button>
+                        <button v-if="!isFinal(b)" @click="resendConfirmation(b.id)"
+                            class="flex-1 basis-[calc(50%-0.25rem)] bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-2 py-2.5 text-xs font-semibold active:bg-[#333]">Resend</button>
+                        <button @click="openDetails(b)"
+                            class="flex-1 basis-[calc(50%-0.25rem)] bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-2 py-2.5 text-xs font-semibold active:bg-[#333]">Details</button>
                     </div>
                     <!-- Row 2: Cancel/Delete (left) + Mark paid (right) -->
                     <div class="grid grid-cols-2 gap-2">
@@ -98,7 +100,7 @@
                         <span v-else></span>
                         <button v-if="(b.display_status ?? b.booking_status) !== 'cancelled'" @click="togglePaid(b)"
                             class="rounded-lg px-3 py-2.5 text-xs font-semibold"
-                            :class="b.payment_status === 'paid' ? 'bg-[#EF4444]/15 text-[#EF4444] active:bg-[#EF4444]/25' : 'bg-[#10B981]/15 text-[#10B981] active:bg-[#10B981]/25'">
+                            :class="b.payment_status === 'paid' ? 'bg-[#2A2A2A] text-[#A0A0A0] active:bg-[#333]' : 'bg-[#10B981]/15 text-[#10B981] active:bg-[#10B981]/25'">
                             {{ b.payment_status === 'paid' ? 'Mark as unpaid' : 'Mark as paid' }}</button>
                     </div>
                 </div>
@@ -244,7 +246,7 @@
 
         <!-- Details modal -->
         <Modal :model-value="!!detailsBooking" @update:model-value="v => !v && (detailsBooking = null)"
-            size="lg" title="Booking details" :subtitle="detailsBooking ? '#' + (detailsBooking.uuid?.slice(0, 8) || '') : ''" no-padding>
+            size="lg" position="center" title="Booking details" :subtitle="detailsBooking ? '#' + (detailsBooking.booking_number ?? detailsBooking.id) : ''" no-padding>
             <div v-if="detailsBooking" class="p-4 space-y-5">
                 <dl class="booking-dl">
                     <div><dt class="booking-label">Status</dt>
@@ -295,13 +297,6 @@
                         <dd class="booking-value text-[#EF4444]">{{ detailsBooking.cancel_reason }}</dd></div>
                 </dl>
 
-                    <div v-if="(detailsBooking.display_status ?? detailsBooking.booking_status) !== 'cancelled'" class="pt-4">
-                        <button @click="togglePaid(detailsBooking)"
-                            class="w-full rounded-lg px-4 py-3 text-sm font-semibold transition"
-                            :class="detailsBooking.payment_status === 'paid' ? 'bg-[#EF4444]/15 text-[#EF4444] hover:bg-[#EF4444]/25' : 'bg-[#10B981]/15 text-[#10B981] hover:bg-[#10B981]/25'">
-                            {{ detailsBooking.payment_status === 'paid' ? '✓ Paid — tap to mark unpaid' : 'Mark as paid' }}</button>
-                    </div>
-
                     <div v-if="detailsBooking.notification_logs?.length" class="pt-4 border-t border-[#2A2A2A]">
                         <button @click="notifBooking = detailsBooking"
                             class="w-full bg-[#111] border border-[#2A2A2A] hover:border-[#3A3A3A] rounded-lg px-4 py-3 flex items-center justify-between transition">
@@ -317,7 +312,7 @@
 
         <!-- Notification history modal — opened from booking details, works on desktop and mobile -->
         <Modal :model-value="!!notifBooking" @update:model-value="v => !v && (notifBooking = null)"
-            size="lg" title="Notification history" :subtitle="notifBooking ? '#' + (notifBooking.uuid?.slice(0, 8) || '') : ''">
+            size="lg" position="center" title="Notification history" :subtitle="notifBooking ? '#' + (notifBooking.booking_number ?? notifBooking.id) : ''">
             <ul v-if="notifBooking" class="flex flex-col gap-2">
                 <li v-for="log in notifBooking.notification_logs" :key="log.id"
                     class="bg-[#111] border border-[#2A2A2A]/60 rounded-lg px-3 py-2 grid grid-cols-[auto_1fr_auto_auto] items-center gap-x-3 gap-y-1">
@@ -335,19 +330,10 @@
 
         <!-- Extend modal -->
         <Modal :model-value="!!extendOpen" @update:model-value="v => !v && (extendOpen = null)"
-            size="sm" title="Extend booking">
+            size="sm" position="center" title="Extend booking">
             <template v-if="extendOpen">
                 <p class="text-xs text-[#A0A0A0] mb-4">Add more time on top of current check-out ({{ formatDate(extendOpen.check_out) }}).</p>
-                <select v-model="extendDuration" class="w-full bg-[#111] border border-[#2A2A2A] rounded-lg px-3 py-2 text-sm focus:border-[#F59E0B] focus:outline-none">
-                    <option value="6h">+ 6 hours</option>
-                    <option value="24h">+ 24 hours</option>
-                    <option value="2_days">+ 2 days</option>
-                    <option value="3_days">+ 3 days</option>
-                    <option value="5_days">+ 5 days</option>
-                    <option value="1_week">+ 1 week</option>
-                    <option value="2_weeks">+ 2 weeks</option>
-                    <option value="1_month">+ 1 month</option>
-                </select>
+                <Select :model-value="extendDuration" :options="extendOptions" @update:model-value="extendDuration = $event" />
             </template>
             <template #footer>
                 <div class="flex gap-2 justify-end">
@@ -418,6 +404,16 @@ const detailsBooking = ref(null);
 const notifBooking = ref(null);
 const extendOpen = ref(null);
 const extendDuration = ref('24h');
+const extendOptions = [
+    { value: '6h', label: '+ 6 hours' },
+    { value: '24h', label: '+ 24 hours' },
+    { value: '2_days', label: '+ 2 days' },
+    { value: '3_days', label: '+ 3 days' },
+    { value: '5_days', label: '+ 5 days' },
+    { value: '1_week', label: '+ 1 week' },
+    { value: '2_weeks', label: '+ 2 weeks' },
+    { value: '1_month', label: '+ 1 month' },
+];
 
 let searchTimer = null;
 let reqToken = 0;
