@@ -43,17 +43,17 @@
             </div>
             <template v-for="g in mobileGroups" :key="g.key">
             <div v-if="g.label" class="sticky top-0 z-[5] -mx-px px-3 py-1.5 bg-[#0A0A0A]/95 backdrop-blur text-xs font-semibold uppercase tracking-wide text-[#A0A0A0] border-b border-[#2A2A2A]">{{ g.label }}</div>
-            <article v-for="b in g.items" :key="b.id" class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 active:bg-[#222] transition" @click="openDetails(b)">
+            <article v-for="b in g.items" :key="b.id" class="border rounded-xl p-4 transition" :class="b.payment_status === 'paid' ? 'bg-[#10B981]/[0.07] border-[#10B981]/40 active:bg-[#10B981]/[0.12]' : 'bg-[#1A1A1A] border-[#2A2A2A] active:bg-[#222]'" @click="openDetails(b)">
                 <div class="flex items-start justify-between gap-3 mb-3">
                     <div class="flex items-center gap-2 flex-wrap">
-                        <span class="booking-pill" :class="statusClass((b.display_status ?? b.booking_status))">{{ (b.display_status ?? b.booking_status) }}</span>
+                        <span class="booking-pill" :class="statusClass((b.display_status ?? b.booking_status))">{{ statusLabel(b.display_status ?? b.booking_status) }}</span>
                         <span v-if="(b.display_status ?? b.booking_status) !== 'cancelled'" class="booking-pill" :class="b.payment_status === 'paid' ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-[#EF4444]/20 text-[#EF4444]'">{{ b.payment_status === 'paid' ? 'paid' : 'unpaid' }}</span>
                     </div>
                     <div v-if="b.pins?.length" class="flex flex-col items-end gap-1 text-xs">
                         <div v-for="p in b.pins" :key="p.locker_number" class="flex items-center gap-1.5">
                             <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center" :class="sizeClass(p.size || 'standard')">{{ (p.size || 'standard') === 'large' ? 'B' : 'R' }}</span>
-                            <span class="font-mono font-semibold text-white">{{ p.locker_number || '—' }}</span>
-                            <span class="font-mono font-bold text-[#F59E0B]">({{ p.pin || '——' }})</span>
+                            <span class="font-mono font-semibold text-white text-[15px]">{{ p.locker_number || '—' }}</span>
+                            <span class="font-mono font-bold text-[#F59E0B] text-[15px]">({{ p.pin || '——' }})</span>
                             <span v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))"
                                 :title="p.ttlock_registered ? 'PIN active on smart lock' : 'PIN waiting for gateway sync'"
                                 class="w-1.5 h-1.5 rounded-full shrink-0" :class="p.ttlock_registered ? 'bg-[#10B981]' : 'bg-[#F59E0B]'"></span>
@@ -129,7 +129,7 @@
                     <tr v-if="!bookings.length && loading">
                         <td colspan="8" class="px-4 py-8 text-center text-[#A0A0A0]">Loading…</td>
                     </tr>
-                    <tr v-for="b in bookings" :key="b.id" class="border-b border-[#2A2A2A]/50 hover:bg-[#111]">
+                    <tr v-for="b in bookings" :key="b.id" class="border-b border-[#2A2A2A]/50" :class="b.payment_status === 'paid' ? 'bg-[#10B981]/[0.07] hover:bg-[#10B981]/[0.12]' : 'hover:bg-[#111]'">
                         <td class="px-3 py-3 text-[#6B7280] font-mono text-xs whitespace-nowrap">#{{ b.booking_number ?? b.id }}</td>
                         <td class="px-4 py-3 max-w-[220px]">
                             <div class="truncate">{{ b.customer?.full_name }}</div>
@@ -145,8 +145,8 @@
                             <div v-if="b.pins?.length" class="flex flex-col gap-1 text-xs">
                                 <div v-for="p in b.pins" :key="p.locker_number" class="flex items-center gap-1.5">
                                     <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center" :class="sizeClass(p.size || 'standard')">{{ (p.size || 'standard') === 'large' ? 'B' : 'R' }}</span>
-                                    <span class="font-mono font-semibold text-white">{{ p.locker_number || '—' }}</span>
-                                    <span class="font-mono font-bold text-[#F59E0B]">({{ p.pin || '——' }})</span>
+                                    <span class="font-mono font-semibold text-white text-[15px]">{{ p.locker_number || '—' }}</span>
+                                    <span class="font-mono font-bold text-[#F59E0B] text-[15px]">({{ p.pin || '——' }})</span>
                                     <span v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))"
                                         :title="p.ttlock_registered ? 'PIN active on smart lock' : 'PIN waiting for gateway sync'"
                                         class="w-1.5 h-1.5 rounded-full" :class="p.ttlock_registered ? 'bg-[#10B981]' : 'bg-[#F59E0B]'"></span>
@@ -163,7 +163,7 @@
                         <td class="px-4 py-3 text-[#F59E0B] font-medium whitespace-nowrap">€{{ Number(b.total_eur).toFixed(2) }}</td>
                         <td class="px-4 py-3 whitespace-nowrap">
                             <div class="flex flex-col gap-1 items-start">
-                                <span class="px-2 py-0.5 rounded-full text-xs text-center min-w-[5.5rem] inline-block" :class="statusClass((b.display_status ?? b.booking_status))">{{ (b.display_status ?? b.booking_status) }}</span>
+                                <span class="px-2 py-0.5 rounded-full text-xs text-center min-w-[5.5rem] inline-block" :class="statusClass((b.display_status ?? b.booking_status))">{{ statusLabel(b.display_status ?? b.booking_status) }}</span>
                                 <span class="px-2 py-0.5 rounded-full text-xs text-center min-w-[5.5rem] inline-block"
                                     :class="b.payment_status === 'paid' ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-[#EF4444]/20 text-[#EF4444]'">
                                     {{ b.payment_status === 'paid' ? 'paid' : 'unpaid' }}
@@ -244,7 +244,7 @@
             <div v-if="detailsBooking" class="p-4 space-y-5">
                 <dl class="booking-dl">
                     <div><dt class="booking-label">Status</dt>
-                        <dd><span class="booking-pill" :class="statusClass((detailsBooking.display_status ?? detailsBooking.booking_status))">{{ (detailsBooking.display_status ?? detailsBooking.booking_status) }}</span></dd></div>
+                        <dd><span class="booking-pill" :class="statusClass((detailsBooking.display_status ?? detailsBooking.booking_status))">{{ statusLabel(detailsBooking.display_status ?? detailsBooking.booking_status) }}</span></dd></div>
                     <div><dt class="booking-label">Booking ID</dt>
                         <dd class="booking-value font-mono">#{{ detailsBooking.booking_number ?? detailsBooking.id }}</dd></div>
                     <div><dt class="booking-label">Name</dt>
@@ -738,6 +738,11 @@ const statusClass = (s) => ({
     cancelled: 'bg-[#EF4444]/20 text-[#EF4444]',
     expired: 'bg-[#6B7280]/20 text-[#6B7280]',
 }[s] || 'bg-[#2A2A2A] text-[#A0A0A0]');
+
+// Display label for a status: 'confirmed' reads as 'upcoming' (clearer vs
+// 'active'); everything else shows its raw value. Styling still keys off the
+// raw value via statusClass().
+const statusLabel = (s) => (s === 'confirmed' ? 'upcoming' : s);
 
 const lockerNumbers = (b) => b.lockers?.length ? b.lockers.map(l => l.number).join(', ') : '—';
 
