@@ -63,7 +63,6 @@
                     </div>
                     <div v-if="b.pins?.length" class="flex flex-col items-end gap-1 text-xs">
                         <div v-for="p in b.pins" :key="p.locker_number" class="flex items-center gap-1.5">
-                            <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center" :class="sizeClass(p.size || 'standard')">{{ (p.size || 'standard') === 'large' ? 'B' : 'R' }}</span>
                             <span class="font-mono font-semibold text-white text-[15px]">{{ p.locker_number || '—' }}</span>
                             <span class="font-mono font-bold text-[#F59E0B] text-[15px]">({{ p.pin ? p.pin + '#' : '——' }})</span>
                             <span v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))"
@@ -157,8 +156,7 @@
                         <td class="px-4 py-3 whitespace-nowrap">
                             <div v-if="b.pins?.length" class="flex flex-col gap-1 text-xs">
                                 <div v-for="p in b.pins" :key="p.locker_number" class="flex items-center gap-1.5">
-                                    <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center" :class="sizeClass(p.size || 'standard')">{{ (p.size || 'standard') === 'large' ? 'B' : 'R' }}</span>
-                                    <span class="font-mono font-semibold text-white text-[15px]">{{ p.locker_number || '—' }}</span>
+                                            <span class="font-mono font-semibold text-white text-[15px]">{{ p.locker_number || '—' }}</span>
                                     <span class="font-mono font-bold text-[#F59E0B] text-[15px]">({{ p.pin ? p.pin + '#' : '——' }})</span>
                                     <span v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))"
                                         :title="p.ttlock_registered ? 'PIN active on smart lock' : 'PIN waiting for gateway sync'"
@@ -289,7 +287,6 @@
                         <dd>
                             <div v-if="pinRows(detailsBooking).length" class="flex flex-col gap-1.5">
                                 <div v-for="p in pinRows(detailsBooking)" :key="p.number" class="flex items-center flex-wrap gap-x-2 gap-y-0.5">
-                                    <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center shrink-0" :class="sizeClass(p.size)">{{ p.size === 'large' ? 'B' : 'R' }}</span>
                                     <span class="booking-value font-mono">{{ p.number || '—' }}</span>
                                     <span class="font-mono !text-[#F59E0B]">({{ p.pin ? p.pin + '#' : '——' }})</span>
                                 </div>
