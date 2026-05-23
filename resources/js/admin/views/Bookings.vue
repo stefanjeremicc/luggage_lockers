@@ -118,7 +118,6 @@
                     <tr class="text-[#A0A0A0] text-left select-none">
                         <th class="px-3 py-3 font-medium cursor-pointer hover:text-white" @click="toggleSort('number')">ID<span v-if="sortCol==='number'" class="text-[#F59E0B] ml-0.5">{{ sortDir==='asc'?'↑':'↓' }}</span></th>
                         <th class="px-4 py-3 font-medium cursor-pointer hover:text-white" @click="toggleSort('customer')">Customer<span v-if="sortCol==='customer'" class="text-[#F59E0B] ml-0.5">{{ sortDir==='asc'?'↑':'↓' }}</span></th>
-                        <th class="px-4 py-3 font-medium cursor-pointer hover:text-white" @click="toggleSort('location')">Location<span v-if="sortCol==='location'" class="text-[#F59E0B] ml-0.5">{{ sortDir==='asc'?'↑':'↓' }}</span></th>
                         <th class="px-4 py-3 font-medium cursor-pointer hover:text-white" @click="toggleSort('period')">Period<span v-if="sortCol==='period'" class="text-[#F59E0B] ml-0.5">{{ sortDir==='asc'?'↑':'↓' }}</span></th>
                         <th class="px-4 py-3 font-medium cursor-pointer hover:text-white" @click="toggleSort('type')">Type + Locker + PIN<span v-if="sortCol==='type'" class="text-[#F59E0B] ml-0.5">{{ sortDir==='asc'?'↑':'↓' }}</span></th>
                         <th class="px-4 py-3 font-medium cursor-pointer hover:text-white" @click="toggleSort('total')">Total<span v-if="sortCol==='total'" class="text-[#F59E0B] ml-0.5">{{ sortDir==='asc'?'↑':'↓' }}</span></th>
@@ -128,10 +127,10 @@
                 </thead>
                 <tbody>
                     <tr v-if="!bookings.length && !loading">
-                        <td colspan="8" class="px-4 py-8 text-center text-[#A0A0A0]">No bookings.</td>
+                        <td colspan="7" class="px-4 py-8 text-center text-[#A0A0A0]">No bookings.</td>
                     </tr>
                     <tr v-if="!bookings.length && loading">
-                        <td colspan="8" class="px-4 py-8 text-center text-[#A0A0A0]">Loading…</td>
+                        <td colspan="7" class="px-4 py-8 text-center text-[#A0A0A0]">Loading…</td>
                     </tr>
                     <tr v-for="b in bookings" :key="b.id" class="border-b border-[#2A2A2A]/50" :class="b.payment_status === 'paid' ? 'bg-[#10B981]/[0.16] hover:bg-[#10B981]/25' : 'hover:bg-[#111]'">
                         <td class="px-3 py-3 text-[#6B7280] font-mono text-xs whitespace-nowrap">#{{ b.booking_number ?? b.id }}</td>
@@ -140,7 +139,6 @@
                             <div class="text-xs text-[#A0A0A0] truncate">{{ b.customer?.email }}</div>
                             <div v-if="b.customer?.phone" class="text-xs text-[#A0A0A0] truncate">{{ b.customer.phone }}</div>
                         </td>
-                        <td class="px-4 py-3 whitespace-nowrap">{{ b.location?.name }}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-xs leading-tight">
                             <div class="text-white">{{ formatDate(b.check_in) }}</div>
                             <div class="text-[#6B7280] mt-1">{{ formatDate(b.check_out) }}</div>
