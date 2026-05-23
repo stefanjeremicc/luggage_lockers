@@ -11,8 +11,9 @@
             </div>
         </div>
 
-        <div class="flex gap-2 mb-4 overflow-x-auto pb-1 -mx-1 px-1 sm:flex-wrap sm:overflow-visible sm:mx-0 sm:px-0 sm:pb-0">
+        <div class="relative z-20 flex gap-2 mb-4 overflow-x-auto pb-1 -mx-1 px-1 sm:flex-wrap sm:overflow-visible sm:mx-0 sm:px-0 sm:pb-0">
             <button v-for="t in tabs" :key="t.key"
+                type="button"
                 @click="setTab(t.key)"
                 class="px-3 py-1.5 rounded-full text-xs border transition shrink-0 whitespace-nowrap"
                 :class="tab === t.key ? 'bg-[#F59E0B] text-black border-[#F59E0B]' : 'border-[#2A2A2A] text-[#A0A0A0] hover:border-[#F59E0B]'">
@@ -41,7 +42,7 @@
                 No bookings.
             </div>
             <template v-for="g in mobileGroups" :key="g.key">
-            <div v-if="g.label" class="sticky top-0 z-10 -mx-px px-3 py-1.5 bg-[#0A0A0A]/95 backdrop-blur text-xs font-semibold uppercase tracking-wide text-[#A0A0A0] border-b border-[#2A2A2A]">{{ g.label }}</div>
+            <div v-if="g.label" class="sticky top-0 z-[5] -mx-px px-3 py-1.5 bg-[#0A0A0A]/95 backdrop-blur text-xs font-semibold uppercase tracking-wide text-[#A0A0A0] border-b border-[#2A2A2A]">{{ g.label }}</div>
             <article v-for="b in g.items" :key="b.id" class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 active:bg-[#222] transition" @click="openDetails(b)">
                 <div class="flex items-start justify-between gap-3 mb-3">
                     <div class="flex items-center gap-2 flex-wrap">
