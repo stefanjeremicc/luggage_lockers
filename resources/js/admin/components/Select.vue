@@ -12,10 +12,11 @@
             <svg class="text-[#A0A0A0] shrink-0 transition" :class="[open ? 'rotate-180' : '', size === 'sm' ? 'w-3 h-3' : 'w-4 h-4']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
         </button>
 
+        <Teleport to="body">
         <Transition name="dropdown">
-            <div v-if="open"
-                class="absolute left-0 right-0 bg-[#111] border border-[#2A2A2A] rounded-lg shadow-2xl z-50 overflow-hidden"
-                :class="dropUp ? 'bottom-full mb-1' : 'top-full mt-1'">
+            <div v-if="open" ref="menuRef"
+                class="fixed bg-[#111] border border-[#2A2A2A] rounded-lg shadow-2xl z-[60] overflow-hidden"
+                :style="menuStyle">
                 <div v-if="searchable" class="p-2 border-b border-[#2A2A2A]">
                     <input v-model="query" ref="searchInput" :placeholder="searchPlaceholder"
                         class="w-full bg-[#0A0A0A] border border-[#2A2A2A] rounded px-3 py-1.5 text-sm text-white focus:border-[#F59E0B] focus:outline-none">
@@ -33,6 +34,7 @@
                 </div>
             </div>
         </Transition>
+        </Teleport>
     </div>
 </template>
 <script setup>
@@ -53,7 +55,9 @@ const emit = defineEmits(['update:modelValue']);
 const open = ref(false);
 const query = ref('');
 const rootRef = ref(null);
+const menuRef = ref(null);
 const searchInput = ref(null);
+const menuStyle = ref({});
 
 const selected = computed(() => props.options.find(o => o.value === props.modelValue));
 
@@ -68,18 +72,27 @@ const filteredOptions = computed(() => {
 
 const dropUp = ref(false);
 
+// Position the (teleported, position:fixed) menu under/over the trigger so it
+// escapes any parent overflow (e.g. modal bodies clipping the dropdown).
+const updateMenuPos = () => {
+    const rect = rootRef.value?.getBoundingClientRect();
+    if (!rect) return;
+    const menuH = Math.min(264, props.options.length * 40 + (props.searchable ? 48 : 8));
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    dropUp.value = spaceBelow < menuH && spaceAbove > spaceBelow;
+    const style = { left: rect.left + 'px', width: rect.width + 'px' };
+    if (dropUp.value) {
+        style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+    } else {
+        style.top = (rect.bottom + 4) + 'px';
+    }
+    menuStyle.value = style;
+};
+
 const toggle = () => {
     if (props.disabled) return;
-    if (!open.value) {
-        // Decide flip direction based on available viewport space.
-        const rect = rootRef.value?.getBoundingClientRect();
-        if (rect) {
-            const menuH = Math.min(264, props.options.length * 40 + (props.searchable ? 48 : 8));
-            const spaceBelow = window.innerHeight - rect.bottom;
-            const spaceAbove = rect.top;
-            dropUp.value = spaceBelow < menuH && spaceAbove > spaceBelow;
-        }
-    }
+    if (!open.value) updateMenuPos();
     open.value = !open.value;
 };
 
@@ -97,17 +110,27 @@ watch(open, async (v) => {
 });
 
 const closeOnOutside = (e) => {
-    if (open.value && rootRef.value && !rootRef.value.contains(e.target)) open.value = false;
+    if (!open.value) return;
+    const inRoot = rootRef.value && rootRef.value.contains(e.target);
+    const inMenu = menuRef.value && menuRef.value.contains(e.target);
+    if (!inRoot && !inMenu) open.value = false;
 };
 const onKey = (e) => { if (e.key === 'Escape') open.value = false; };
+// While open, keep the menu glued to the trigger if the page/modal scrolls or
+// resizes (capture phase catches scrolls inside nested containers too).
+const onReposition = () => { if (open.value) updateMenuPos(); };
 
 onMounted(() => {
     document.addEventListener('click', closeOnOutside);
     document.addEventListener('keydown', onKey);
+    window.addEventListener('resize', onReposition);
+    window.addEventListener('scroll', onReposition, true);
 });
 onUnmounted(() => {
     document.removeEventListener('click', closeOnOutside);
     document.removeEventListener('keydown', onKey);
+    window.removeEventListener('resize', onReposition);
+    window.removeEventListener('scroll', onReposition, true);
 });
 </script>
 <style scoped>
