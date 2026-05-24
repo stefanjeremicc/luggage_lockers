@@ -78,6 +78,7 @@ class BookingNotifier
         $vars = self::buildVars($booking, $locale) + self::pinVars($booking, $locale) + [
             'customer_email' => $booking->customer->email ?? '—',
             'customer_phone' => $booking->customer->phone ?? '—',
+            'admin_lockers_block' => self::adminLockersBlock($booking, $locale),
         ];
 
         $rendered = NotificationTemplate::render('booking_confirmed_admin', $locale, 'email', $vars);
@@ -99,6 +100,33 @@ class BookingNotifier
                 self::log($booking, 'email', 'booking_confirmed_admin', $to, 'failed', $e->getMessage(), null);
             }
         }
+    }
+
+    /**
+     * Render + send the admin "new booking" email to ONE explicit recipient.
+     * Used for testing/preview so we can verify the layout without spraying the
+     * whole admin distribution list. Mirrors sendBookingConfirmedAdmin() exactly
+     * (same template + vars) but targets a single address.
+     */
+    public static function sendBookingConfirmedAdminTo(Booking $booking, string $to): void
+    {
+        $booking->loadMissing(['customer', 'location', 'bookingLockers.locker', 'items']);
+        $locale = 'en';
+        $vars = self::buildVars($booking, $locale) + self::pinVars($booking, $locale) + [
+            'customer_email' => $booking->customer->email ?? '—',
+            'customer_phone' => $booking->customer->phone ?? '—',
+            'admin_lockers_block' => self::adminLockersBlock($booking, $locale),
+        ];
+
+        $rendered = NotificationTemplate::render('booking_confirmed_admin', $locale, 'email', $vars);
+        if (!$rendered) {
+            Log::warning('booking_confirmed_admin template not found (preview send)', ['locale' => $locale]);
+            return;
+        }
+
+        Mail::html($rendered['body'], function ($m) use ($to, $rendered) {
+            $m->to($to)->subject(($rendered['subject'] ?? 'New booking') . ' [TEST]');
+        });
     }
 
     /**
@@ -232,6 +260,61 @@ class BookingNotifier
             'codes_block' => $entryBlock . implode('', $blocks),
             'entry_door_code' => $entryCode.'#',
         ];
+    }
+
+    /**
+     * Build the per-locker breakdown table for the ADMIN "new booking" email.
+     * One row per booking_locker showing: locker number, size, its own PIN (+#)
+     * and the item's duration. A multi-locker booking (e.g. B-03 / B-07 / R-12)
+     * therefore lists every locker + code + duration instead of just the first.
+     *
+     * Duration is read from the per-item `duration_key` (so mixed-duration
+     * bookings render correctly); falls back to the booking-level label.
+     */
+    private static function adminLockersBlock(Booking $booking, string $locale): string
+    {
+        $bls = $booking->bookingLockers ?? collect();
+
+        $sizeDisplay = static function ($size): string {
+            if ($size === null) return '';
+            $key = is_object($size) ? $size->value : (string) $size;
+            return $key === 'large' ? 'Big' : 'Regular';
+        };
+
+        $L = static fn (string $en, string $sr) => $locale === 'sr' ? $sr : $en;
+
+        $rows = '';
+        foreach ($bls as $bl) {
+            try {
+                $pin = Crypt::decryptString($bl->pin_code_encrypted);
+            } catch (\Throwable) {
+                $pin = null;
+            }
+            $number = $bl->locker->number ?? '—';
+            $item = $bl->bookingItem;
+            $size = $sizeDisplay($item?->locker_size ?? $booking->locker_size);
+            $durationKey = $item?->duration_key ?: $booking->duration_label;
+            $duration = self::localiseDurationLabel($durationKey, $locale);
+
+            $rows .= '<tr>'
+                .'<td style="padding:10px 12px;border-bottom:1px solid #2A2A2A;color:#fff;font-weight:bold;white-space:nowrap">'.e($number).'</td>'
+                .'<td style="padding:10px 12px;border-bottom:1px solid #2A2A2A;color:#A0A0A0;white-space:nowrap">'.e($size).'</td>'
+                .'<td style="padding:10px 12px;border-bottom:1px solid #2A2A2A;color:#F59E0B;font-family:monospace;font-weight:bold;white-space:nowrap">'.($pin !== null ? e($pin).'#' : '—').'</td>'
+                .'<td style="padding:10px 12px;border-bottom:1px solid #2A2A2A;color:#fff;white-space:nowrap">'.e($duration).'</td>'
+                .'</tr>';
+        }
+
+        if ($rows === '') {
+            return '<p style="color:#A0A0A0;font-size:14px">'.$L('No lockers assigned yet.', 'Još nema dodeljenih ormarića.').'</p>';
+        }
+
+        $th = static fn (string $t) =>
+            '<th style="text-align:left;padding:8px 12px;color:#A0A0A0;font-size:11px;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #2A2A2A">'.$t.'</th>';
+
+        return '<table style="width:100%;border-collapse:collapse;font-size:14px;margin:4px 0 8px">'
+            .'<thead><tr>'
+            .$th($L('Locker', 'Ormarić')).$th($L('Type', 'Tip')).$th('PIN').$th($L('Duration', 'Trajanje'))
+            .'</tr></thead><tbody>'.$rows.'</tbody></table>';
     }
 
     /**

@@ -147,14 +147,11 @@ class NotificationTemplateSeeder extends Seeder
                     '<tr><td style="padding:6px 0;color:#A0A0A0">Email</td><td style="padding:6px 0"><a href="mailto:{{ customer_email }}" style="color:#F59E0B">{{ customer_email }}</a></td></tr>'.
                     '<tr><td style="padding:6px 0;color:#A0A0A0">Phone</td><td style="padding:6px 0"><a href="tel:{{ customer_phone }}" style="color:#F59E0B">{{ customer_phone }}</a></td></tr>'.
                     '<tr><td style="padding:6px 0;color:#A0A0A0">Location</td><td style="padding:6px 0;color:#fff">{{ location_name }}</td></tr>'.
-                    '<tr><td style="padding:6px 0;color:#A0A0A0">Locker</td><td style="padding:6px 0;color:#fff"><strong>{{ locker_number }}</strong></td></tr>'.
-                    '<tr><td style="padding:6px 0;color:#A0A0A0">PIN</td><td style="padding:6px 0;color:#F59E0B;font-family:monospace;font-weight:bold">{{ pin_code }}</td></tr>'.
-                    '<tr><td style="padding:6px 0;color:#A0A0A0">Type</td><td style="padding:6px 0;color:#fff">{{ items_summary }}</td></tr>'.
-                    '<tr><td style="padding:6px 0;color:#A0A0A0">Duration</td><td style="padding:6px 0;color:#fff">{{ duration_label }}</td></tr>'.
                     '<tr><td style="padding:6px 0;color:#A0A0A0">Check-in</td><td style="padding:6px 0;color:#fff">{{ check_in_full }}</td></tr>'.
                     '<tr><td style="padding:6px 0;color:#A0A0A0">Check-out</td><td style="padding:6px 0;color:#fff">{{ check_out_full }}</td></tr>'.
                     '<tr><td style="padding:6px 0;color:#A0A0A0">Total</td><td style="padding:6px 0;color:#fff"><strong>€{{ total_eur }}</strong></td></tr>'.
-                    '</table></div>'),
+                    '</table></div>'.
+                    '<div class="info" style="margin-top:14px"><p style="margin:0 0 6px;color:#A0A0A0;font-size:12px;text-transform:uppercase;letter-spacing:1px">Lockers</p>{{ admin_lockers_block }}</div>'),
             ],
             [
                 'key' => 'booking_confirmed_admin', 'channel' => 'email', 'locale' => 'sr',
@@ -167,14 +164,11 @@ class NotificationTemplateSeeder extends Seeder
                     '<tr><td style="padding:6px 0;color:#A0A0A0">Email</td><td style="padding:6px 0"><a href="mailto:{{ customer_email }}" style="color:#F59E0B">{{ customer_email }}</a></td></tr>'.
                     '<tr><td style="padding:6px 0;color:#A0A0A0">Telefon</td><td style="padding:6px 0"><a href="tel:{{ customer_phone }}" style="color:#F59E0B">{{ customer_phone }}</a></td></tr>'.
                     '<tr><td style="padding:6px 0;color:#A0A0A0">Lokacija</td><td style="padding:6px 0;color:#fff">{{ location_name }}</td></tr>'.
-                    '<tr><td style="padding:6px 0;color:#A0A0A0">Ormarić</td><td style="padding:6px 0;color:#fff"><strong>{{ locker_number }}</strong></td></tr>'.
-                    '<tr><td style="padding:6px 0;color:#A0A0A0">PIN</td><td style="padding:6px 0;color:#F59E0B;font-family:monospace;font-weight:bold">{{ pin_code }}</td></tr>'.
-                    '<tr><td style="padding:6px 0;color:#A0A0A0">Tip</td><td style="padding:6px 0;color:#fff">{{ items_summary }}</td></tr>'.
-                    '<tr><td style="padding:6px 0;color:#A0A0A0">Trajanje</td><td style="padding:6px 0;color:#fff">{{ duration_label }}</td></tr>'.
                     '<tr><td style="padding:6px 0;color:#A0A0A0">Dolazak</td><td style="padding:6px 0;color:#fff">{{ check_in_full }}</td></tr>'.
                     '<tr><td style="padding:6px 0;color:#A0A0A0">Odlazak</td><td style="padding:6px 0;color:#fff">{{ check_out_full }}</td></tr>'.
                     '<tr><td style="padding:6px 0;color:#A0A0A0">Ukupno</td><td style="padding:6px 0;color:#fff"><strong>€{{ total_eur }}</strong></td></tr>'.
-                    '</table></div>'),
+                    '</table></div>'.
+                    '<div class="info" style="margin-top:14px"><p style="margin:0 0 6px;color:#A0A0A0;font-size:12px;text-transform:uppercase;letter-spacing:1px">Ormarići</p>{{ admin_lockers_block }}</div>'),
             ],
 
             // ─── booking_cancelled_by_customer (customer initiated) ───────────────
