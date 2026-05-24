@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\LockerSize;
 use App\Enums\LockerStatus;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -36,6 +37,20 @@ class Locker extends Model
             'last_synced_at' => 'datetime',
             'last_used_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Display-normalise the locker number on READ only: collapse any spaces
+     * around the dash so "B - 01" shows as "B-01" everywhere (admin + emails).
+     * The raw DB value is untouched, and Eloquent query builders (e.g. the
+     * TTLock alias pairing `where('number', ...)`) hit the raw column, so this
+     * is purely cosmetic and cannot affect booking/reservation logic.
+     */
+    protected function number(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => is_string($value) ? preg_replace('/\s*-\s*/', '-', $value) : $value,
+        );
     }
 
     public function location(): BelongsTo
