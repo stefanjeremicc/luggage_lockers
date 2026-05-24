@@ -203,6 +203,20 @@
                     <Btn variant="primary" size="sm" :disabled="busy || newSize === locker?.size" @click="saveSize">Save</Btn>
                 </div>
             </div>
+
+            <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 max-w-xl">
+                <h3 class="font-semibold mb-3">Permanent PIN</h3>
+                <p class="text-xs text-[#A0A0A0] mb-2">
+                    The fixed keypad code set on this lock in the TTLock app. Used as a fallback
+                    when the TTLock monthly API limit is reached — customers get this code instead
+                    of a timed one. Digits only (the “#” is added automatically). Leave empty if the lock has none.
+                </p>
+                <div class="flex gap-2">
+                    <input v-model="newPermanentPin" inputmode="numeric" placeholder="e.g. 3927"
+                        class="flex-1 bg-[#111] border border-[#2A2A2A] rounded px-3 py-2 text-sm font-mono" />
+                    <Btn variant="primary" size="sm" :disabled="busy" @click="savePermanentPin">Save</Btn>
+                </div>
+            </div>
         </div>
     </div>
 </template>
@@ -262,6 +276,7 @@ const bookings = ref([]);
 const bookingsLoading = ref(false);
 const newAlias = ref('');
 const newSize = ref('standard');
+const newPermanentPin = ref('');
 // `code_generated` flips true when the admin clicks "Generate random" and
 // resets to false on every manual keystroke. We send it to the API so the
 // backend knows whether to silently auto-retry on TTLock's -3007 collision
@@ -290,6 +305,7 @@ const load = async () => {
         detail.value = data.ttlock_detail;
         newAlias.value = data.locker?.number || '';
         newSize.value = data.locker?.size || 'standard';
+        newPermanentPin.value = data.locker?.permanent_pin || '';
     } catch (e) { toast.error(friendlyError(e.message)); }
 };
 
@@ -428,6 +444,23 @@ const saveSize = async () => {
         if (!res.ok) throw new Error(data.message || 'Update failed');
         await load();
         toast.success(`Size set to ${newSize.value === 'large' ? 'Big' : 'Regular'}`);
+    } catch (e) { toast.error(friendlyError(e.message)); }
+    finally { busy.value = false; }
+};
+
+const savePermanentPin = async () => {
+    busy.value = true;
+    try {
+        // Strip any non-digits (e.g. a typed "#") — stored as digits only.
+        const clean = (newPermanentPin.value || '').replace(/\D/g, '');
+        const res = await apiFetch(`/api/admin/lockers/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ permanent_pin: clean || null }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Update failed');
+        await load();
+        toast.success(clean ? `Permanent PIN saved (${clean}#)` : 'Permanent PIN cleared');
     } catch (e) { toast.error(friendlyError(e.message)); }
     finally { busy.value = false; }
 };

@@ -2,6 +2,8 @@
 
 namespace App\Jobs;
 
+use App\Enums\BookingStatus;
+use App\Models\BookingLocker;
 use App\Models\Locker;
 use App\Services\Lock\LockServiceInterface;
 use Carbon\Carbon;
@@ -19,11 +21,27 @@ class SyncUnlockRecords implements ShouldQueue
     public function handle(LockServiceInterface $lockService): void
     {
         $end = Carbon::now();
-        // Look back 1h on each run; the scheduler runs this every 15 min so we
-        // overlap to avoid missing records when TTLock's cloud is laggy.
-        $start = $end->copy()->subHour();
+        // Overlap the look-back window so we don't miss records if TTLock's
+        // cloud is laggy.
+        $start = $end->copy()->subHours(2);
 
-        $lockers = Locker::whereNotNull('ttlock_lock_id')->get();
+        // Poll ONLY lockers that have a currently-active booking — not all 41.
+        // This is the single biggest API-call saver. (The TTLock webhook delivers
+        // most unlock events with zero polling; this is the backup path.)
+        $activeLockerIds = BookingLocker::query()
+            ->whereHas('booking', fn ($q) => $q
+                ->where('booking_status', '!=', BookingStatus::Cancelled)
+                ->where('check_in', '<=', $end)
+                ->where('check_out', '>=', $end))
+            ->pluck('locker_id')
+            ->unique()
+            ->all();
+
+        if (empty($activeLockerIds)) {
+            return;
+        }
+
+        $lockers = Locker::whereNotNull('ttlock_lock_id')->whereIn('id', $activeLockerIds)->get();
 
         foreach ($lockers as $locker) {
             try {

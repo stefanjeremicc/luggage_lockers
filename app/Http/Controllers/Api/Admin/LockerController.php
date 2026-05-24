@@ -74,7 +74,7 @@ class LockerController extends Controller
         $locker = Locker::findOrFail($id);
         $locker->update($request->only([
             'number', 'size', 'ttlock_lock_id', 'status', 'is_active',
-            'sort_order', 'location_id',
+            'sort_order', 'location_id', 'permanent_pin',
         ]));
         return response()->json($locker);
     }

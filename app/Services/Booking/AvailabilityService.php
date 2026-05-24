@@ -5,6 +5,7 @@ namespace App\Services\Booking;
 use App\Enums\BookingStatus;
 use App\Models\BookingItem;
 use App\Models\Locker;
+use App\Services\Lock\TtlockQuota;
 use Carbon\Carbon;
 
 class AvailabilityService
@@ -19,10 +20,10 @@ class AvailabilityService
         $checkOut = $this->calculateCheckOut($checkIn, $duration);
 
         $bookedStandard = $this->getBookedCount($locationId, 'standard', $checkIn, $checkOut);
-        $totalStandard = Locker::where('location_id', $locationId)->where('size', 'standard')->bookable()->count();
+        $totalStandard = $this->bookableCount($locationId, 'standard');
 
         $bookedLarge = $this->getBookedCount($locationId, 'large', $checkIn, $checkOut);
-        $totalLarge = Locker::where('location_id', $locationId)->where('size', 'large')->bookable()->count();
+        $totalLarge = $this->bookableCount($locationId, 'large');
 
         return [
             'standard' => [
@@ -60,7 +61,7 @@ class AvailabilityService
             $checkIn = $base->copy();
             $checkOut = $this->calculateCheckOut($checkIn, $dur);
             $booked = $this->getBookedCount($locationId, $size, $checkIn, $checkOut);
-            $total = Locker::where('location_id', $locationId)->where('size', $size)->bookable()->count();
+            $total = $this->bookableCount($locationId, $size);
 
             $out[$size] = [
                 'total' => $total,
@@ -90,6 +91,20 @@ class AvailabilityService
                     ->whereIn('booking_status', [BookingStatus::Confirmed, BookingStatus::Active]);
             })
             ->sum('qty');
+    }
+
+    /**
+     * Count bookable lockers for a size. In permanent-PIN mode (TTLock quota
+     * exhausted), only lockers WITH a permanent PIN count — the rest are
+     * temporarily unbookable since we can't hand out a working code.
+     */
+    private function bookableCount(int $locationId, string $size): int
+    {
+        return Locker::where('location_id', $locationId)
+            ->where('size', $size)
+            ->bookable()
+            ->when(TtlockQuota::isExceeded(), fn($q) => $q->whereNotNull('permanent_pin')->where('permanent_pin', '!=', ''))
+            ->count();
     }
 
     public function calculateCheckOut(Carbon $checkIn, string $duration): Carbon

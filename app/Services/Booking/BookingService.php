@@ -11,6 +11,7 @@ use App\Models\Booking;
 use App\Models\BookingItem;
 use App\Models\BookingLocker;
 use App\Models\Locker;
+use App\Services\Lock\TtlockQuota;
 use App\Services\Notification\BookingNotifier;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
@@ -36,6 +37,11 @@ class BookingService
                 'size' => $data['locker_size'] ?? 'standard',
                 'qty' => (int) ($data['locker_qty'] ?? 1),
             ]];
+            // When the TTLock quota is exhausted we operate in permanent-PIN mode:
+            // assign each locker its fixed permanent code (no TTLock call) and only
+            // consider lockers that actually have one.
+            $quotaExceeded = TtlockQuota::isExceeded();
+
             $items = array_values(array_filter(
                 $items,
                 fn($i) => isset($i['size'], $i['qty']) && (int) $i['qty'] > 0
@@ -97,6 +103,9 @@ class BookingService
                 $candidates = Locker::where('location_id', $data['location_id'])
                     ->where('size', $size)
                     ->bookable()
+                    // In permanent-PIN mode, only lockers that have a permanent code
+                    // can be booked (others have no working code to hand out).
+                    ->when($quotaExceeded, fn($q) => $q->whereNotNull('permanent_pin')->where('permanent_pin', '!=', ''))
                     ->orderByRaw('last_used_at IS NULL DESC')
                     ->orderBy('last_used_at')
                     ->orderBy('id')
@@ -173,7 +182,11 @@ class BookingService
                 ]);
 
                 foreach ($r['lockers'] as $locker) {
-                    $pin = $this->generatePin();
+                    // Permanent-PIN mode: use the locker's fixed code (no TTLock).
+                    // Otherwise generate a fresh timed PIN to register on the lock.
+                    $pin = ($quotaExceeded && $locker->permanent_pin)
+                        ? $locker->permanent_pin
+                        : $this->generatePin();
                     $bl = BookingLocker::create([
                         'booking_id' => $booking->id,
                         'booking_item_id' => $item->id,
@@ -198,15 +211,25 @@ class BookingService
         //
         // Each sync call is guarded — a transient TTLock outage falls back to the
         // queued retry/backoff path so we never roll back a paid booking.
-        $bookingLockerIds = BookingLocker::where('booking_id', $booking->id)->pluck('id');
-        foreach ($bookingLockerIds as $blId) {
-            try {
-                CreateTTLockAccessCode::dispatchSync($blId);
-            } catch (\Throwable $e) {
-                \Log::error('Sync TTLock PIN registration failed, falling back to queue', [
-                    'booking_locker_id' => $blId, 'error' => $e->getMessage(),
-                ]);
-                CreateTTLockAccessCode::dispatch($blId);
+        // Permanent-PIN mode: the PIN is already the locker's fixed code and the
+        // lock knows it — do NOT call TTLock at all (no add, nothing to delete later).
+        if (!TtlockQuota::isExceeded()) {
+            $bookingLockerIds = BookingLocker::where('booking_id', $booking->id)->pluck('id');
+            foreach ($bookingLockerIds as $blId) {
+                try {
+                    CreateTTLockAccessCode::dispatchSync($blId);
+                } catch (\App\Exceptions\TtlockQuotaExceededException $e) {
+                    // Quota flipped mid-request: leave the generated PIN as-is and
+                    // skip — the booking still succeeds, code handled next month.
+                    \Log::warning('TTLock quota exceeded mid-booking; skipped registration', [
+                        'booking_locker_id' => $blId,
+                    ]);
+                } catch (\Throwable $e) {
+                    \Log::error('Sync TTLock PIN registration failed, falling back to queue', [
+                        'booking_locker_id' => $blId, 'error' => $e->getMessage(),
+                    ]);
+                    CreateTTLockAccessCode::dispatch($blId);
+                }
             }
         }
 

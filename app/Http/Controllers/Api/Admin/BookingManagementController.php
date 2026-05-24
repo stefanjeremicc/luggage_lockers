@@ -11,6 +11,7 @@ use App\Jobs\DeleteTTLockAccessCode;
 use App\Jobs\SendBookingConfirmation;
 use App\Models\BookingLocker;
 use App\Services\Booking\BookingService;
+use App\Services\Lock\TtlockQuota;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
@@ -187,6 +188,22 @@ class BookingManagementController extends Controller
     {
         $booking = Booking::with('lockers')->findOrFail($id);
         $reissued = 0;
+
+        // Permanent-PIN mode (TTLock quota exhausted): re-set each locker's
+        // permanent code locally, no TTLock calls, nothing deleted.
+        if (TtlockQuota::isExceeded()) {
+            foreach (BookingLocker::with('locker')->where('booking_id', $booking->id)->get() as $bl) {
+                $pp = $bl->locker?->permanent_pin;
+                if ($pp) {
+                    $bl->update(['pin_code_encrypted' => Crypt::encryptString($pp), 'ttlock_keyboard_pwd_id' => null]);
+                    $reissued++;
+                }
+            }
+            $fresh = $booking->fresh(['customer', 'location', 'bookingLockers.locker']);
+            try { \App\Services\Notification\BookingNotifier::sendPinReissued($fresh); } catch (\Throwable $e) {}
+            try { \App\Services\Notification\BookingNotifier::sendPinReissuedAdmin($fresh); } catch (\Throwable $e) {}
+            return response()->json(['message' => "Re-sent permanent PIN for {$reissued} locker(s) (TTLock quota mode)."]);
+        }
 
         foreach (BookingLocker::where('booking_id', $booking->id)->get() as $bl) {
             // 1. Delete the old TTLock keyboard password BEFORE overwriting it locally —

@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Locker extends Model
 {
     protected $fillable = [
-        'location_id', 'ttlock_lock_id', 'uuid', 'number', 'size', 'status',
+        'location_id', 'ttlock_lock_id', 'permanent_pin', 'uuid', 'number', 'size', 'status',
         'battery_level', 'is_online', 'dimensions_cm', 'sort_order',
         'is_active', 'last_synced_at', 'last_used_at',
     ];

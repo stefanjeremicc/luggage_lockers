@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AvailabilityController;
 use App\Http\Controllers\Api\BookingApiController;
 use App\Http\Controllers\Api\PricingController;
+use App\Http\Controllers\Api\TtlockCallbackController;
 use App\Http\Controllers\Api\Auth\GuestController;
 use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Admin\DashboardController;
@@ -34,6 +35,10 @@ Route::middleware(SetLocale::class)->group(function () {
     Route::post('/bookings', [BookingApiController::class, 'store'])->middleware(['auth:sanctum', 'throttle:10,1']);
 });
 Route::post('/bookings/{uuid}/cancel', [BookingApiController::class, 'cancel'])->middleware('throttle:6,1');
+
+// TTLock Open Platform pushes unlock records here (set as the app's Callback URL).
+// Public + unauthenticated (TTLock can't send credentials); tolerant by design.
+Route::post('/ttlock/callback', [TtlockCallbackController::class, 'handle']);
 
 // Auth — rate-limited to defeat brute-force on credentials and password-reset spam
 Route::middleware('throttle:6,1')->group(function () {

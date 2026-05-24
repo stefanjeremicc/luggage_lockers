@@ -2,8 +2,10 @@
 
 namespace App\Services\Lock;
 
+use App\Exceptions\TtlockQuotaExceededException;
 use App\Models\TtlockApiLog;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 class TTLockService implements LockServiceInterface
@@ -34,8 +36,13 @@ class TTLockService implements LockServiceInterface
 
     private function getAccessToken(): string
     {
-        if ($this->accessToken && $this->tokenExpiry && time() < $this->tokenExpiry) {
-            return $this->accessToken;
+        // Cache the OAuth token GLOBALLY (database cache) so it's shared across
+        // every request and queued job, instead of fetching a fresh token per
+        // process. TTLock tokens last ~2h; this collapses thousands of
+        // /oauth2/token calls per day down to a handful.
+        $cached = Cache::get('ttlock:access_token');
+        if (is_array($cached) && !empty($cached['token']) && ($cached['expiry'] ?? 0) > time()) {
+            return $cached['token'];
         }
 
         $response = $this->request('POST', '/oauth2/token', [
@@ -45,10 +52,13 @@ class TTLockService implements LockServiceInterface
             'password' => md5(config('services.ttlock.password', '')),
         ], false);
 
-        $this->accessToken = $response['access_token'] ?? '';
-        $this->tokenExpiry = time() + ($response['expires_in'] ?? 7200) - 300;
+        $token = $response['access_token'] ?? '';
+        $ttl = ($response['expires_in'] ?? 7200) - 300; // refresh 5 min early
+        if ($token !== '') {
+            Cache::put('ttlock:access_token', ['token' => $token, 'expiry' => time() + $ttl], $ttl);
+        }
 
-        return $this->accessToken;
+        return $token;
     }
 
     private function request(string $method, string $endpoint, array $params = [], bool $auth = true): array
@@ -59,6 +69,13 @@ class TTLockService implements LockServiceInterface
         // a 500 to the admin SPA.
         if (!$this->isConfigured()) {
             throw new \RuntimeException('TTLock provider is not configured (TTLOCK_CLIENT_ID empty).');
+        }
+
+        // When the monthly quota is exhausted, do NOT make any HTTP call (every
+        // call — even a failing one — still counts against TTLock's limit). Fail
+        // fast so callers fall back to permanent PINs and we stop bleeding calls.
+        if (TtlockQuota::isExceeded()) {
+            throw new TtlockQuotaExceededException();
         }
 
         $startTime = microtime(true);
@@ -94,7 +111,15 @@ class TTLockService implements LockServiceInterface
             'created_at' => now(),
         ]);
 
+        // Count this call toward the monthly budget + fire 20k/25k alerts.
+        TtlockQuota::recordCall();
+
         if ($errcode !== null && $errcode !== 0) {
+            // 30007 = monthly API limit exceeded → flip into permanent-PIN mode.
+            if ((int) $errcode === 30007) {
+                TtlockQuota::markExceeded();
+                throw new TtlockQuotaExceededException("TTLock API error [30007]: " . ($body['errmsg'] ?? 'monthly limit exceeded'));
+            }
             throw new \RuntimeException("TTLock API error [{$errcode}]: " . ($body['errmsg'] ?? 'Unknown'));
         }
 
