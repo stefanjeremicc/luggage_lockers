@@ -275,15 +275,9 @@ class BookingNotifier
     {
         $bls = $booking->bookingLockers ?? collect();
 
-        $sizeDisplay = static function ($size): string {
-            if ($size === null) return '';
-            $key = is_object($size) ? $size->value : (string) $size;
-            return $key === 'large' ? 'Big' : 'Regular';
-        };
-
         $L = static fn (string $en, string $sr) => $locale === 'sr' ? $sr : $en;
 
-        $rows = '';
+        $lines = '';
         foreach ($bls as $bl) {
             try {
                 $pin = Crypt::decryptString($bl->pin_code_encrypted);
@@ -292,29 +286,24 @@ class BookingNotifier
             }
             $number = $bl->locker->number ?? '—';
             $item = $bl->bookingItem;
-            $size = $sizeDisplay($item?->locker_size ?? $booking->locker_size);
             $durationKey = $item?->duration_key ?: $booking->duration_label;
             $duration = self::localiseDurationLabel($durationKey, $locale);
 
-            $rows .= '<tr>'
-                .'<td style="padding:10px 12px;border-bottom:1px solid #2A2A2A;color:#fff;font-weight:bold;white-space:nowrap">'.e($number).'</td>'
-                .'<td style="padding:10px 12px;border-bottom:1px solid #2A2A2A;color:#A0A0A0;white-space:nowrap">'.e($size).'</td>'
-                .'<td style="padding:10px 12px;border-bottom:1px solid #2A2A2A;color:#F59E0B;font-family:monospace;font-weight:bold;white-space:nowrap">'.($pin !== null ? e($pin).'#' : '—').'</td>'
-                .'<td style="padding:10px 12px;border-bottom:1px solid #2A2A2A;color:#fff;white-space:nowrap">'.e($duration).'</td>'
-                .'</tr>';
+            // One line per locker: "B-03 (9802#) — Up to 6 hours".
+            $pinText = $pin !== null
+                ? '<span style="color:#F59E0B;font-family:monospace;font-weight:bold">('.e($pin).'#)</span>'
+                : '';
+            $lines .= '<div style="padding:8px 0;border-bottom:1px solid #2A2A2A;font-size:15px;color:#fff">'
+                .'<strong>'.e($number).'</strong> '.$pinText
+                .' <span style="color:#A0A0A0">— '.e($duration).'</span>'
+                .'</div>';
         }
 
-        if ($rows === '') {
+        if ($lines === '') {
             return '<p style="color:#A0A0A0;font-size:14px">'.$L('No lockers assigned yet.', 'Još nema dodeljenih ormarića.').'</p>';
         }
 
-        $th = static fn (string $t) =>
-            '<th style="text-align:left;padding:8px 12px;color:#A0A0A0;font-size:11px;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #2A2A2A">'.$t.'</th>';
-
-        return '<table style="width:100%;border-collapse:collapse;font-size:14px;margin:4px 0 8px">'
-            .'<thead><tr>'
-            .$th($L('Locker', 'Ormarić')).$th($L('Type', 'Tip')).$th('PIN').$th($L('Duration', 'Trajanje'))
-            .'</tr></thead><tbody>'.$rows.'</tbody></table>';
+        return '<div style="margin:4px 0 8px">'.$lines.'</div>';
     }
 
     /**
