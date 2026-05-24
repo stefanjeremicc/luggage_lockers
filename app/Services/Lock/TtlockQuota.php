@@ -33,7 +33,12 @@ class TtlockQuota
 
     private static function secondsToMonthEnd(): int
     {
-        return max(60, now()->endOfMonth()->diffInSeconds(now()));
+        // Argument order matters: $a->diffInSeconds($b) == ($b - $a). We want
+        // (endOfMonth - now) which is POSITIVE. The reversed form returned a
+        // negative TTL on Carbon 3, so Cache::put/add stored nothing → the
+        // exceeded flag and the once-per-alert guard never persisted, spamming
+        // an email every scheduler tick. Keep now() first.
+        return max(60, (int) now()->diffInSeconds(now()->endOfMonth()));
     }
 
     public static function count(): int
