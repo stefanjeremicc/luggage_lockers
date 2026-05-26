@@ -191,21 +191,33 @@
                             <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
                                 <div v-for="(t, i) in axisTicksDesc" :key="i" class="border-t border-[#2A2A2A]/50"></div>
                             </div>
-                            <div class="absolute inset-0 flex items-end gap-1 px-1 overflow-x-auto">
-                                <div v-for="p in data.timeseries" :key="p.period"
-                                    class="flex-1 min-w-[8px] h-full flex flex-col items-center justify-end group relative">
-                                    <span v-if="data.timeseries.length <= 14 && p[tsMetric] > 0"
-                                        class="text-[9px] text-[#A0A0A0] mb-0.5 whitespace-nowrap">{{ axisLabel(p[tsMetric]) }}</span>
-                                    <div class="w-full max-w-[40px] rounded-t bg-[#F59E0B]/80 hover:bg-[#F59E0B] transition-all"
-                                        :style="{ height: barHeight(p) }"
-                                        :title="`${srDate(p.period)} · ${p.bookings} bookings · €${money(p.revenue)}`"></div>
+                            <div class="absolute inset-0 flex items-end gap-1 px-1">
+                                <div v-for="(p, i) in data.timeseries" :key="p.period"
+                                    @mouseenter="hoverIdx = i" @mouseleave="hoverIdx = null"
+                                    @click="clickIdx = clickIdx === i ? null : i"
+                                    class="flex-1 min-w-[8px] h-full flex flex-col items-center justify-end relative cursor-pointer">
+                                    <!-- custom tooltip (hover on desktop, tap on mobile) -->
+                                    <div v-if="hoverIdx === i || clickIdx === i"
+                                        class="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 z-20 whitespace-nowrap px-2.5 py-1.5 rounded-lg bg-[#0A0A0A] border border-[#3A3A3A] shadow-xl text-[11px] pointer-events-none">
+                                        <div class="text-white font-semibold">{{ srDate(p.period) }}</div>
+                                        <div class="text-[#A0A0A0]">{{ p.bookings }} bookings · <span class="text-[#10B981]">€{{ money(p.revenue) }}</span></div>
+                                    </div>
+                                    <div class="w-full max-w-[40px] rounded-t transition-all"
+                                        :class="(hoverIdx === i || clickIdx === i) ? 'bg-[#F59E0B]' : 'bg-[#F59E0B]/80'"
+                                        :style="{ height: barHeight(p) }"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="flex justify-between text-[10px] text-[#6B7280] mt-2 pl-14">
-                        <span>{{ srDate(data.timeseries[0].period) }}</span>
-                        <span>{{ srDate(data.timeseries[data.timeseries.length-1].period) }}</span>
+                    <!-- X-axis date labels, aligned under the bars -->
+                    <div class="flex gap-2 mt-1">
+                        <div class="w-12 shrink-0"></div>
+                        <div class="flex-1 flex gap-1 px-1">
+                            <div v-for="(p, i) in data.timeseries" :key="i"
+                                class="flex-1 min-w-[8px] text-center text-[9px] text-[#6B7280] whitespace-nowrap overflow-hidden">
+                                <span v-if="i % labelStep === 0">{{ shortDate(p.period) }}</span>
+                            </div>
+                        </div>
                     </div>
                 </template>
             </div>
@@ -366,6 +378,8 @@ const channelLegend = [
     { key: 'unknown', desc: 'booked before source tracking existed.' },
 ];
 const tsMetric = ref('revenue');
+const hoverIdx = ref(null);
+const clickIdx = ref(null);
 const origin = window.location.origin;
 const ga = ref(null);
 const gaLoading = ref(true);
@@ -391,6 +405,13 @@ const srDate = (s) => {
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || '');
     return m ? `${m[3]}.${m[2]}.${m[1]}` : (s || '');
 };
+// Compact axis label: 'YYYY-MM-DD' → 'DD.MM'; week/month keys shown as-is.
+const shortDate = (s) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || '');
+    return m ? `${m[3]}.${m[2]}` : (s || '');
+};
+// Show ~8 x-axis labels max so they don't overlap.
+const labelStep = computed(() => Math.max(1, Math.ceil((data.value?.timeseries?.length || 1) / 8)));
 
 const CHANNEL_META = {
     google_ads: { label: 'Google Ads', color: '#4285F4' },
