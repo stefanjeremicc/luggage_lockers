@@ -265,8 +265,8 @@
 
             <!-- Source links (utm) -->
             <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 mb-6">
-                <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0] mb-1">By link (UTM source / medium / campaign)</h2>
-                <p class="text-xs text-[#6B7280] mb-4">Each marketing link (QR code, Google Ads, etc.) tagged with its own UTM shows here.</p>
+                <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0] mb-1">By link (UTM tags)</h2>
+                <p class="text-xs text-[#6B7280] mb-4">Bookings grouped by the UTM tag on the link they arrived through. <b>“—”</b> = that tag wasn’t set. <b>“Untagged”</b> = arrived via a link with no UTM (typed address, organic, plain referral). Tagged campaigns (QR, Google Ads…) appear here once people use those links.</p>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm min-w-[560px]">
                         <thead>
@@ -280,7 +280,7 @@
                         </thead>
                         <tbody>
                             <tr v-for="(c,i) in sorted(data.by_source, sSource)" :key="i" class="border-t border-[#2A2A2A]">
-                                <td class="py-2">{{ c.utm_source }}</td>
+                                <td class="py-2">{{ c.utm_source === '(none)' ? 'Untagged' : c.utm_source }}</td>
                                 <td class="py-2 text-[#A0A0A0]">{{ c.utm_medium || '—' }}</td>
                                 <td class="py-2 text-[#A0A0A0]">{{ c.utm_campaign || '—' }}</td>
                                 <td class="py-2 text-right tabular-nums">{{ c.count }}</td>
