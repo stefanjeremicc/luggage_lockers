@@ -1,28 +1,29 @@
 <template>
     <VueDatePicker
-        v-model="internal"
+        :model-value="modelValue"
+        model-type="yyyy-MM-dd"
         :enable-time-picker="false"
         format="dd.MM.yyyy"
-        dark
+        :dark="true"
         :teleport="true"
         :auto-apply="true"
-        :month-change-on-scroll="false"
         :clearable="false"
+        :month-change-on-scroll="false"
         :min-date="minDate"
         :max-date="maxDate"
         class="bll-datepicker"
-        @update:model-value="onChange"
+        @update:model-value="(v) => emit('update:modelValue', v)"
     />
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue';
+import { computed } from 'vue';
 import { VueDatePicker } from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css';
 
-// Date-only picker (no time) bound to a 'YYYY-MM-DD' string. Matches the rest
-// of the admin via the shared .bll-datepicker theme + dark mode; the whole
-// field is clickable to open the calendar (native input quirks avoided).
+// Date-only picker bound to a 'YYYY-MM-DD' string (model-type handles the
+// conversion, so no time component and the value stays a plain date). Themed
+// + whole-field clickable like the rest of the admin.
 const props = defineProps({
     modelValue: { type: String, default: null },
     min: { type: String, default: null },
@@ -30,17 +31,6 @@ const props = defineProps({
 });
 const emit = defineEmits(['update:modelValue']);
 
-const pad = (n) => String(n).padStart(2, '0');
-const toDate = (v) => v ? new Date(v + 'T00:00:00') : null;
-const toYmd = (d) => d ? `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` : null;
-
-const internal = ref(toDate(props.modelValue));
-const minDate = computed(() => toDate(props.min));
-const maxDate = computed(() => toDate(props.max));
-
-watch(() => props.modelValue, (v) => { internal.value = toDate(v); });
-
-const onChange = (val) => {
-    emit('update:modelValue', val ? toYmd(new Date(val)) : null);
-};
+const minDate = computed(() => props.min ? new Date(props.min + 'T00:00:00') : null);
+const maxDate = computed(() => props.max ? new Date(props.max + 'T00:00:00') : null);
 </script>
