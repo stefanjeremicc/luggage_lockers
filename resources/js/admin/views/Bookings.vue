@@ -72,9 +72,9 @@
                             {{ sourceMeta(b.marketing_source).label }}
                         </span>
                     </div>
-                    <div v-if="b.pins?.length" class="flex flex-col items-end gap-1 text-xs">
-                        <div v-for="p in b.pins" :key="p.locker_number" class="flex items-center gap-1.5">
-                            <span class="font-mono font-semibold text-white text-[15px]">{{ p.locker_number || '—' }}</span>
+                    <div v-if="b.pins?.length" class="flex flex-col items-end gap-1 text-xs shrink-0">
+                        <div v-for="p in b.pins" :key="p.locker_number" class="flex items-center gap-1.5 whitespace-nowrap">
+                            <span class="font-mono font-semibold text-white text-[15px] whitespace-nowrap">{{ p.locker_number || '—' }}</span>
                             <span class="font-mono font-bold text-[#F59E0B] text-[15px]">({{ p.pin ? p.pin + '#' : '——' }})</span>
                             <span v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))"
                                 :title="p.ttlock_registered ? 'PIN active on smart lock' : 'PIN waiting for gateway sync'"
