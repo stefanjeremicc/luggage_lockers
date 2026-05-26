@@ -9,8 +9,8 @@
 
         <!-- Landing-page reveal toast (full URL + open link); backdrop closes it -->
         <div v-if="pageTip" class="fixed inset-0 z-40" @click="pageTip = null"></div>
-        <div v-if="pageTip" class="fixed z-50 px-3 py-2 rounded-lg bg-[#0A0A0A] border border-[#3A3A3A] shadow-xl text-[11px] max-w-[280px]"
-            :style="{ left: tipX + 'px', top: (tipY - 12) + 'px', transform: 'translate(-50%, -100%)' }">
+        <div v-if="pageTip" class="fixed z-50 px-3 py-2 rounded-lg bg-[#0A0A0A] border border-[#3A3A3A] shadow-xl text-[11px]"
+            :style="pageTipStyle">
             <div class="text-white break-all">{{ pageTip.landing_page }}</div>
             <div class="text-[#A0A0A0] mt-1">{{ pageTip.count }} bookings · <span class="text-[#10B981]">€{{ money(pageTip.revenue) }}</span></div>
             <a v-if="isPath(pageTip.landing_page)" :href="origin + pageTip.landing_page" target="_blank" rel="noopener" class="inline-block mt-1.5 text-[#F59E0B] hover:underline">Open ↗</a>
@@ -369,7 +369,7 @@
     </div>
 </template>
 <script setup>
-import { ref, reactive, computed, onMounted, nextTick, h } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick, h } from 'vue';
 import { useAuth } from '../composables/useAuth';
 import Select from '../components/Select.vue';
 import DatePicker from '../components/DatePicker.vue';
@@ -444,12 +444,36 @@ const hasTaggedCampaigns = computed(() => (data.value?.by_source ?? []).some(r =
 const hasMultipleLocations = computed(() => (data.value?.by_location?.length ?? 0) > 1);
 
 // Tap-to-reveal full landing page (long auto-tagged URLs truncate in the table).
+// The toast is anchored to the clicked row, clamped on-screen, and re-positioned
+// on scroll/resize so it tracks the element instead of staying stuck.
 const pageTip = ref(null);
-const openPageTip = (e, row) => {
-    pageTip.value = pageTip.value === row ? null : row;
-    tipX.value = e.clientX;
-    tipY.value = e.clientY;
+const pageTipEl = ref(null);
+const pageTipStyle = ref({});
+const PAGETIP_MARGIN = 16;
+const computePageTipPos = () => {
+    const el = pageTipEl.value;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    if (r.bottom < 0 || r.top > window.innerHeight) { pageTip.value = null; return; } // scrolled away
+    const w = Math.min(280, window.innerWidth - PAGETIP_MARGIN * 2);
+    const left = Math.min(Math.max(PAGETIP_MARGIN, r.left), window.innerWidth - w - PAGETIP_MARGIN);
+    pageTipStyle.value = { left: left + 'px', top: (r.top - 8) + 'px', transform: 'translateY(-100%)', maxWidth: w + 'px' };
 };
+const openPageTip = (e, row) => {
+    if (pageTip.value === row) { pageTip.value = null; return; }
+    pageTip.value = row;
+    pageTipEl.value = e.currentTarget;
+    computePageTipPos();
+};
+const onPageTipReposition = () => { if (pageTip.value) computePageTipPos(); };
+onMounted(() => {
+    window.addEventListener('scroll', onPageTipReposition, true);
+    window.addEventListener('resize', onPageTipReposition);
+});
+onUnmounted(() => {
+    window.removeEventListener('scroll', onPageTipReposition, true);
+    window.removeEventListener('resize', onPageTipReposition);
+});
 
 const CHANNEL_META = {
     google_ads: { label: 'Google Ads', color: '#4285F4' },
