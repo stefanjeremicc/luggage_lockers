@@ -1,6 +1,36 @@
 <template>
     <div>
-        <h1 class="text-2xl font-bold mb-6">Analytics</h1>
+        <div class="flex items-center justify-between gap-3 mb-4">
+            <h1 class="text-2xl font-bold">Analytics</h1>
+            <button @click="showHelp = !showHelp"
+                class="flex items-center gap-1.5 text-xs text-[#A0A0A0] hover:text-white transition shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                {{ showHelp ? 'Hide guide' : 'What do these mean?' }}
+            </button>
+        </div>
+
+        <!-- Legend / explanation -->
+        <div v-if="showHelp" class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 mb-6 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+            <div>
+                <h3 class="text-xs uppercase tracking-wide text-[#A0A0A0] mb-2">Money (per check-in date)</h3>
+                <dl class="space-y-1.5 text-[#A0A0A0]">
+                    <div><span class="text-[#10B981] font-semibold">Paid</span> — money already collected.</div>
+                    <div><span class="text-[#F59E0B] font-semibold">Unpaid</span> — still expected (not yet marked paid).</div>
+                    <div><span class="text-white font-semibold">Total</span> — Paid + Unpaid (cancelled excluded).</div>
+                    <div><span class="text-[#6B7280] font-semibold">Cancelled</span> — count + value of cancelled bookings (not counted as revenue).</div>
+                </dl>
+                <p class="text-xs text-[#6B7280] mt-3"><b>Over time</b> chart: each bar = a day/week/month. Toggle <b>Revenue</b> (€) or <b>Bookings</b> (count). Y-axis shows the scale.</p>
+            </div>
+            <div>
+                <h3 class="text-xs uppercase tracking-wide text-[#A0A0A0] mb-2">Where visitors came from (channel)</h3>
+                <dl class="space-y-1.5 text-[#A0A0A0]">
+                    <div v-for="c in channelLegend" :key="c.key" class="flex gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full shrink-0 mt-1" :style="{ backgroundColor: channelMeta(c.key).color }"></span>
+                        <span><span class="text-white font-medium">{{ channelMeta(c.key).label }}</span> — {{ c.desc }}</span>
+                    </div>
+                </dl>
+            </div>
+        </div>
 
         <!-- Filters -->
         <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 mb-6">
@@ -150,18 +180,38 @@
                     </div>
                 </div>
                 <div v-if="!data.timeseries.length" class="text-sm text-[#6B7280] italic">No data in range.</div>
-                <div v-else class="flex items-end gap-1 h-44 overflow-x-auto pb-1">
-                    <div v-for="p in data.timeseries" :key="p.period"
-                        class="flex-1 min-w-[8px] h-full flex flex-col items-center justify-end group relative">
-                        <div class="w-full max-w-[40px] rounded-t bg-[#F59E0B]/80 hover:bg-[#F59E0B] transition-all"
-                            :style="{ height: barHeight(p) }"
-                            :title="`${p.period} · ${p.bookings} bookings · €${money(p.revenue)}`"></div>
+                <template v-else>
+                    <div class="flex gap-2">
+                        <!-- Y axis ticks -->
+                        <div class="flex flex-col justify-between text-[10px] text-[#6B7280] text-right w-12 shrink-0 h-44 py-0.5">
+                            <span>{{ axisLabel(tsMax) }}</span>
+                            <span>{{ axisLabel(tsMax * 0.5) }}</span>
+                            <span>0</span>
+                        </div>
+                        <!-- Plot area with horizontal gridlines -->
+                        <div class="relative flex-1 h-44 border-l border-b border-[#2A2A2A]">
+                            <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                                <div class="border-t border-[#2A2A2A]/50"></div>
+                                <div class="border-t border-[#2A2A2A]/50"></div>
+                                <div></div>
+                            </div>
+                            <div class="absolute inset-0 flex items-end gap-1 px-1 overflow-x-auto">
+                                <div v-for="p in data.timeseries" :key="p.period"
+                                    class="flex-1 min-w-[8px] h-full flex flex-col items-center justify-end group relative">
+                                    <span v-if="data.timeseries.length <= 14 && p[tsMetric] > 0"
+                                        class="text-[9px] text-[#A0A0A0] mb-0.5 whitespace-nowrap">{{ axisLabel(p[tsMetric]) }}</span>
+                                    <div class="w-full max-w-[40px] rounded-t bg-[#F59E0B]/80 hover:bg-[#F59E0B] transition-all"
+                                        :style="{ height: barHeight(p) }"
+                                        :title="`${srDate(p.period)} · ${p.bookings} bookings · €${money(p.revenue)}`"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div v-if="data.timeseries.length" class="flex justify-between text-[10px] text-[#6B7280] mt-2">
-                    <span>{{ srDate(data.timeseries[0].period) }}</span>
-                    <span>{{ srDate(data.timeseries[data.timeseries.length-1].period) }}</span>
-                </div>
+                    <div class="flex justify-between text-[10px] text-[#6B7280] mt-2 pl-14">
+                        <span>{{ srDate(data.timeseries[0].period) }}</span>
+                        <span>{{ srDate(data.timeseries[data.timeseries.length-1].period) }}</span>
+                    </div>
+                </template>
             </div>
 
             <!-- Channels + Landing pages -->
@@ -307,6 +357,18 @@ const loading = ref(true);
 const refreshing = ref(false);
 const error = ref(null);
 const filtersOpen = ref(false);
+const showHelp = ref(false);
+
+// Plain-language channel descriptions for the legend.
+const channelLegend = [
+    { key: 'direct', desc: 'typed the address or used a bookmark / QR with no tag.' },
+    { key: 'organic', desc: 'found you via a search engine (Google, Bing…) unpaid.' },
+    { key: 'google_ads', desc: 'clicked a paid Google ad.' },
+    { key: 'facebook', desc: 'came from Facebook or Instagram.' },
+    { key: 'qr', desc: 'scanned a QR code link tagged utm_source=qr.' },
+    { key: 'referral', desc: 'came from another website / partner link.' },
+    { key: 'unknown', desc: 'booked before source tracking existed.' },
+];
 const tsMetric = ref('revenue');
 const origin = window.location.origin;
 const ga = ref(null);
@@ -403,6 +465,8 @@ const tsMax = computed(() => {
     return Math.max(1, ...data.value.timeseries.map(p => p[tsMetric.value]));
 });
 const barHeight = (p) => `${Math.max(2, (p[tsMetric.value] / tsMax.value) * 100)}%`;
+// Y-axis tick label — money for revenue, plain count for bookings.
+const axisLabel = (v) => tsMetric.value === 'revenue' ? '€' + Math.round(v) : String(Math.round(v));
 
 // ── Client-side sorting per table ────────────────────────────────────────────
 const sChannel = reactive({ col: 'count', dir: 'desc' });
