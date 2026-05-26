@@ -184,16 +184,12 @@
                     <div class="flex gap-2">
                         <!-- Y axis ticks -->
                         <div class="flex flex-col justify-between text-[10px] text-[#6B7280] text-right w-12 shrink-0 h-44 py-0.5">
-                            <span>{{ axisLabel(tsMax) }}</span>
-                            <span>{{ axisLabel(tsMax * 0.5) }}</span>
-                            <span>0</span>
+                            <span v-for="t in axisTicksDesc" :key="t">{{ axisLabel(t) }}</span>
                         </div>
                         <!-- Plot area with horizontal gridlines -->
                         <div class="relative flex-1 h-44 border-l border-b border-[#2A2A2A]">
                             <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
-                                <div class="border-t border-[#2A2A2A]/50"></div>
-                                <div class="border-t border-[#2A2A2A]/50"></div>
-                                <div></div>
+                                <div v-for="(t, i) in axisTicksDesc" :key="i" class="border-t border-[#2A2A2A]/50"></div>
                             </div>
                             <div class="absolute inset-0 flex items-end gap-1 px-1 overflow-x-auto">
                                 <div v-for="p in data.timeseries" :key="p.period"
@@ -483,7 +479,23 @@ const tsMax = computed(() => {
     if (!data.value?.timeseries?.length) return 1;
     return Math.max(1, ...data.value.timeseries.map(p => p[tsMetric.value]));
 });
-const barHeight = (p) => `${Math.max(2, (p[tsMetric.value] / tsMax.value) * 100)}%`;
+// "Nice numbers" axis: round max + round step (1/2/5 × 10ⁿ) so ticks read as
+// 0/20/40/60/80/100 instead of arbitrary values like €95/€48.
+const niceScale = (max, count = 5) => {
+    if (!max || max <= 0) return { max: 1, ticks: [0, 1] };
+    const rawStep = max / count;
+    const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+    const norm = rawStep / mag;
+    const step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag;
+    const niceMax = Math.ceil(max / step) * step;
+    const ticks = [];
+    for (let v = 0; v <= niceMax + step * 0.001; v += step) ticks.push(Math.round(v * 100) / 100);
+    return { max: niceMax, ticks };
+};
+const axisScale = computed(() => niceScale(tsMax.value, 5));
+const axisTicksDesc = computed(() => [...axisScale.value.ticks].reverse());
+
+const barHeight = (p) => `${Math.max(0, (p[tsMetric.value] / axisScale.value.max) * 100)}%`;
 // Y-axis tick label — money for revenue, plain count for bookings.
 const axisLabel = (v) => tsMetric.value === 'revenue' ? '€' + Math.round(v) : String(Math.round(v));
 
