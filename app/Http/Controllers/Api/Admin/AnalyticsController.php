@@ -139,14 +139,14 @@ class AnalyticsController extends Controller
         // channel (e.g. Google Ads is identified via Google's gclid/gbraid, not
         // a utm_source) so paid/organic traffic isn't lumped into "untagged".
         $bySource = (clone $base())
-            ->selectRaw("COALESCE(NULLIF(utm_source, ''), NULLIF(marketing_source, ''), 'unknown') as utm_source,
+            ->selectRaw("COALESCE(NULLIF(utm_source, ''), NULLIF(marketing_source, ''), 'unknown') as src,
                 COALESCE(NULLIF(utm_medium, ''), '') as utm_medium,
                 COALESCE(NULLIF(utm_campaign, ''), '') as utm_campaign,
                 COUNT(*) as count, $paidSum as revenue")
-            ->groupBy('utm_source', 'utm_medium', 'utm_campaign')
+            ->groupBy('src', 'utm_medium', 'utm_campaign')
             ->get()
             ->map(fn ($r) => [
-                'utm_source'   => $r->utm_source,
+                'utm_source'   => $r->src,
                 'utm_medium'   => $r->utm_medium,
                 'utm_campaign' => $r->utm_campaign,
                 'count'        => (int) $r->count,
