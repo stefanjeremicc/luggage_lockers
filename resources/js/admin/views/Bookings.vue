@@ -301,6 +301,15 @@
                         </dd></div>
                     <div><dt class="booking-label">Total</dt>
                         <dd class="booking-value !text-[#F59E0B] font-semibold">€{{ Number(detailsBooking.total_eur).toFixed(2) }}</dd></div>
+                    <div v-if="detailsBooking.landing_page" class="items-start"><dt class="booking-label">Landing page</dt>
+                        <dd class="booking-value">
+                            <a v-if="detailsBooking.landing_page.startsWith('/')" :href="origin + detailsBooking.landing_page" target="_blank" rel="noopener" class="!text-[#F59E0B] hover:underline break-all">{{ detailsBooking.landing_page }}</a>
+                            <span v-else class="break-all">{{ detailsBooking.landing_page }}</span>
+                        </dd></div>
+                    <div v-if="detailsBooking.referrer" class="items-start"><dt class="booking-label">Referrer</dt>
+                        <dd class="booking-value break-all text-[#A0A0A0]">{{ detailsBooking.referrer }}</dd></div>
+                    <div v-if="detailsBooking.utm_source"><dt class="booking-label">UTM</dt>
+                        <dd class="booking-value">{{ detailsBooking.utm_source }}<span v-if="detailsBooking.utm_medium" class="text-[#A0A0A0]"> / {{ detailsBooking.utm_medium }}</span></dd></div>
                     <div v-if="detailsBooking.cancel_reason" class="items-start"><dt class="booking-label">Cancel reason</dt>
                         <dd class="booking-value text-[#EF4444]">{{ detailsBooking.cancel_reason }}</dd></div>
                 </dl>
@@ -536,10 +545,12 @@ const SOURCE_META = {
     facebook:   { label: 'Facebook / Meta', color: '#1877F2' },
     organic:    { label: 'Organic search', color: '#10B981' },
     referral:   { label: 'Referral', color: '#A78BFA' },
+    qr:         { label: 'QR code', color: '#EC4899' },
     direct:     { label: 'Direct', color: '#F59E0B' },
     other:      { label: 'Other', color: '#6B7280' },
 };
 const sourceMeta = (key) => SOURCE_META[key] || { label: 'Unknown', color: '#3A3A3A' };
+const origin = window.location.origin;
 
 // Mobile: group the (already-sorted) cards under date sub-headers so long lists
 // stay scannable. The grouping date is picked per tab: check-in for active/
