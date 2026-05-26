@@ -23,6 +23,7 @@ const routes = [
         children: [
             { path: 'change-password', component: () => import('../views/ChangePassword.vue'), name: 'change-password' },
             { path: '', component: () => import('../views/Dashboard.vue'), name: 'dashboard' },
+            { path: 'analytics', component: () => import('../views/Analytics.vue'), name: 'analytics' },
             { path: 'bookings', component: () => import('../views/Bookings.vue'), name: 'bookings' },
             { path: 'lockers', component: () => import('../views/Lockers.vue'), name: 'lockers' },
             { path: 'lockers/:id', component: () => import('../views/LockerDetail.vue'), name: 'locker-detail' },

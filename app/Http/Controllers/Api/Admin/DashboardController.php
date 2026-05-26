@@ -25,11 +25,14 @@ class DashboardController extends Controller
         $activeBookings = Booking::active()->count();
         $overdueBookings = Booking::active()->where('check_out', '<', now())->count();
 
-        $revenueToday = Booking::whereDate('created_at', $today)
+        // Revenue is attributed to the booking's CHECK-IN date (the day the
+        // stay starts), not created_at or check_out. A booking made on the 23rd
+        // for arrival on the 23rd counts on the 23rd even if it ends the 24th.
+        $revenueToday = Booking::whereDate('check_in', $today)
             ->where('payment_status', 'paid')->sum('total_eur');
-        $revenueWeek = Booking::where('created_at', '>=', $today->copy()->startOfWeek())
+        $revenueWeek = Booking::where('check_in', '>=', $today->copy()->startOfWeek())
             ->where('payment_status', 'paid')->sum('total_eur');
-        $revenueMonth = Booking::where('created_at', '>=', $today->copy()->startOfMonth())
+        $revenueMonth = Booking::where('check_in', '>=', $today->copy()->startOfMonth())
             ->where('payment_status', 'paid')->sum('total_eur');
 
         // Marketing attribution breakdown (first-touch) over the last 30 days.
@@ -40,7 +43,7 @@ class DashboardController extends Controller
             ->groupBy('src')
             ->pluck('c', 'src');
 
-        $channels = ['google_ads', 'facebook', 'organic', 'referral', 'direct', 'other', 'unknown'];
+        $channels = ['google_ads', 'facebook', 'organic', 'referral', 'qr', 'direct', 'other', 'unknown'];
         $attrTotal = (int) $sourceCounts->sum();
         $attribution = collect($channels)
             ->map(fn($key) => [

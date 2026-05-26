@@ -397,6 +397,14 @@ class BookingService
             return 'facebook';
         }
 
+        // Offline / printed QR-code links. We tag those URLs with utm_source=qr
+        // (or an offline-ish medium) so foot-traffic from posters/stickers shows
+        // as its own channel instead of being lumped into "referral".
+        if (str_contains($source, 'qr') || str_contains($medium, 'qr')
+            || in_array($medium, ['print', 'offline', 'flyer', 'poster', 'sticker'], true)) {
+            return 'qr';
+        }
+
         // UTM source set but not paid → treat as referral/campaign traffic.
         if ($source !== '') {
             if (in_array($source, ['google', 'bing', 'yahoo', 'duckduckgo', 'ecosia'], true) && !$paid) {

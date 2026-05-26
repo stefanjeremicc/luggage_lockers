@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\PricingController;
 use App\Http\Controllers\Api\TtlockCallbackController;
 use App\Http\Controllers\Api\Auth\GuestController;
 use App\Http\Controllers\Api\Auth\LoginController;
+use App\Http\Controllers\Api\Admin\AnalyticsController;
 use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\Admin\BookingManagementController;
 use App\Http\Controllers\Api\Admin\GatewayController;
@@ -54,6 +55,7 @@ Route::post('/auth/change-password', [LoginController::class, 'changePassword'])
 // Admin API
 Route::prefix('admin')->middleware(['auth:sanctum', CheckRole::class . ':admin'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index']);
+    Route::get('/analytics', [AnalyticsController::class, 'index']);
 
     Route::get('/bookings', [BookingManagementController::class, 'index']);
     Route::get('/bookings/export', [BookingManagementController::class, 'export']);
