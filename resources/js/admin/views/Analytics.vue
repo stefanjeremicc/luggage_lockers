@@ -4,25 +4,27 @@
 
         <!-- Filters -->
         <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 mb-6">
-            <!-- Quick date presets — always visible, one-tap, auto-apply -->
-            <div class="flex flex-wrap gap-2">
+            <!-- Quick date presets — single row, equal width, one-tap auto-apply -->
+            <div class="flex gap-1.5">
                 <button v-for="p in presets" :key="p.key" @click="setPreset(p.key)"
-                    class="px-3 py-2 rounded-lg text-xs font-medium transition"
+                    class="flex-1 px-1 py-2 rounded-lg text-[11px] sm:text-xs font-medium whitespace-nowrap transition"
                     :class="activePreset === p.key ? 'bg-[#F59E0B] text-black' : 'bg-[#111] border border-[#2A2A2A] text-[#A0A0A0] hover:text-white'">
                     {{ p.label }}
                 </button>
-                <span v-if="refreshing" class="ml-auto flex items-center gap-1.5 text-xs text-[#A0A0A0]">
-                    <span class="w-3 h-3 border-2 border-[#F59E0B] border-t-transparent rounded-full animate-spin"></span>
-                </span>
             </div>
 
-            <!-- Toggle for the detailed filters (collapsed by default — keeps the
-                 page compact on mobile where presets cover most needs). -->
+            <!-- Filters toggle — single-line button -->
             <button @click="filtersOpen = !filtersOpen"
-                class="mt-3 flex items-center gap-1.5 text-xs font-medium text-[#A0A0A0] hover:text-white transition">
-                <svg class="w-3.5 h-3.5 transition" :class="filtersOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                {{ filtersOpen ? 'Hide filters' : 'Custom range & filters' }}
-                <span v-if="!filtersOpen" class="text-[#6B7280]">· {{ filters.from }} → {{ filters.to }}</span>
+                class="mt-2.5 w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg bg-[#111] border border-[#2A2A2A] text-xs text-[#A0A0A0] hover:text-white transition">
+                <span class="flex items-center gap-2 shrink-0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4h18M6 8h12M9 12h6M11 16h2"/></svg>
+                    Filters
+                </span>
+                <span class="flex items-center gap-2 min-w-0">
+                    <span v-if="refreshing" class="w-3 h-3 border-2 border-[#F59E0B] border-t-transparent rounded-full animate-spin shrink-0"></span>
+                    <span v-else class="text-[#6B7280] truncate tabular-nums">{{ filters.from }} → {{ filters.to }}</span>
+                    <svg class="w-4 h-4 shrink-0 transition" :class="filtersOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                </span>
             </button>
 
             <div v-show="filtersOpen" class="mt-4">
@@ -308,7 +310,7 @@ const gaLoading = ref(true);
 const today = new Date();
 const iso = (d) => d.toISOString().slice(0, 10);
 const filters = reactive({
-    from: iso(new Date(today.getTime() - 29 * 86400000)),
+    from: iso(new Date(today.getFullYear(), today.getMonth(), 1)), // 1st of this month
     to: iso(today),
     group: 'day',
     location_id: '',
@@ -370,11 +372,10 @@ const channelOptions = computed(() => [
 const presets = [
     { key: 'today', label: 'Today' },
     { key: 'yesterday', label: 'Yesterday' },
-    { key: '7', label: 'Last 7 days' },
-    { key: '30', label: 'Last 30 days' },
+    { key: '7', label: '7 days' },
     { key: 'month', label: 'This month' },
 ];
-const activePreset = ref('30');
+const activePreset = ref('month');
 const setPreset = (key) => {
     const t = new Date();
     if (key === 'today') { filters.from = iso(t); filters.to = iso(t); }
@@ -474,13 +475,13 @@ const load = async () => {
 
 const apply = () => load();
 const reset = () => {
-    filters.from = iso(new Date(today.getTime() - 29 * 86400000));
+    filters.from = iso(new Date(today.getFullYear(), today.getMonth(), 1));
     filters.to = iso(today);
     filters.group = 'day';
     filters.location_id = '';
     filters.channel = '';
     filters.payment = 'all';
-    activePreset.value = '30';
+    activePreset.value = 'month';
     load();
 };
 
