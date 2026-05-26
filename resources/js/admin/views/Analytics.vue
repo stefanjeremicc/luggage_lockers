@@ -4,51 +4,61 @@
 
         <!-- Filters -->
         <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 mb-6">
-            <!-- Quick date presets (one-tap, mobile-friendly) -->
-            <div class="flex flex-wrap gap-2 mb-4">
+            <!-- Quick date presets — always visible, one-tap, auto-apply -->
+            <div class="flex flex-wrap gap-2">
                 <button v-for="p in presets" :key="p.key" @click="setPreset(p.key)"
                     class="px-3 py-2 rounded-lg text-xs font-medium transition"
                     :class="activePreset === p.key ? 'bg-[#F59E0B] text-black' : 'bg-[#111] border border-[#2A2A2A] text-[#A0A0A0] hover:text-white'">
                     {{ p.label }}
                 </button>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3">
-                <label class="block">
-                    <span class="block text-xs text-[#A0A0A0] mb-1">From</span>
-                    <DatePicker v-model="filters.from" :max="filters.to" @update:modelValue="activePreset = ''" />
-                </label>
-                <label class="block">
-                    <span class="block text-xs text-[#A0A0A0] mb-1">To</span>
-                    <DatePicker v-model="filters.to" :min="filters.from" @update:modelValue="activePreset = ''" />
-                </label>
-                <label class="block">
-                    <span class="block text-xs text-[#A0A0A0] mb-1">Group by</span>
-                    <Select v-model="filters.group" :options="groupOptions" />
-                </label>
-                <label class="block">
-                    <span class="block text-xs text-[#A0A0A0] mb-1">Location</span>
-                    <Select v-model="filters.location_id" :options="locationOptions" searchable />
-                </label>
-                <label class="block">
-                    <span class="block text-xs text-[#A0A0A0] mb-1">Channel</span>
-                    <Select v-model="filters.channel" :options="channelOptions" />
-                </label>
-                <label class="block">
-                    <span class="block text-xs text-[#A0A0A0] mb-1">Payment</span>
-                    <Select v-model="filters.payment" :options="paymentOptions" />
-                </label>
-            </div>
-
-            <div class="flex items-center gap-2 mt-4">
-                <button @click="apply" class="flex-1 sm:flex-none px-6 py-2.5 rounded-lg bg-[#F59E0B] text-black text-sm font-semibold hover:bg-[#D97706] transition">Apply</button>
-                <button @click="reset" class="flex-1 sm:flex-none px-5 py-2.5 rounded-lg border border-[#2A2A2A] text-[#A0A0A0] text-sm hover:text-white transition">Reset</button>
-                <span v-if="refreshing" class="text-xs text-[#A0A0A0] flex items-center gap-1.5">
+                <span v-if="refreshing" class="ml-auto flex items-center gap-1.5 text-xs text-[#A0A0A0]">
                     <span class="w-3 h-3 border-2 border-[#F59E0B] border-t-transparent rounded-full animate-spin"></span>
-                    Updating…
                 </span>
             </div>
-            <p class="text-xs text-[#6B7280] mt-3">Revenue is attributed to the booking's check-in date.</p>
+
+            <!-- Toggle for the detailed filters (collapsed by default — keeps the
+                 page compact on mobile where presets cover most needs). -->
+            <button @click="filtersOpen = !filtersOpen"
+                class="mt-3 flex items-center gap-1.5 text-xs font-medium text-[#A0A0A0] hover:text-white transition">
+                <svg class="w-3.5 h-3.5 transition" :class="filtersOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                {{ filtersOpen ? 'Hide filters' : 'Custom range & filters' }}
+                <span v-if="!filtersOpen" class="text-[#6B7280]">· {{ filters.from }} → {{ filters.to }}</span>
+            </button>
+
+            <div v-show="filtersOpen" class="mt-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3">
+                    <label class="block">
+                        <span class="block text-xs text-[#A0A0A0] mb-1">From</span>
+                        <DatePicker v-model="filters.from" :max="filters.to" @update:modelValue="activePreset = ''" />
+                    </label>
+                    <label class="block">
+                        <span class="block text-xs text-[#A0A0A0] mb-1">To</span>
+                        <DatePicker v-model="filters.to" :min="filters.from" @update:modelValue="activePreset = ''" />
+                    </label>
+                    <label class="block">
+                        <span class="block text-xs text-[#A0A0A0] mb-1">Group by</span>
+                        <Select v-model="filters.group" :options="groupOptions" />
+                    </label>
+                    <label class="block">
+                        <span class="block text-xs text-[#A0A0A0] mb-1">Location</span>
+                        <Select v-model="filters.location_id" :options="locationOptions" searchable />
+                    </label>
+                    <label class="block">
+                        <span class="block text-xs text-[#A0A0A0] mb-1">Channel</span>
+                        <Select v-model="filters.channel" :options="channelOptions" />
+                    </label>
+                    <label class="block">
+                        <span class="block text-xs text-[#A0A0A0] mb-1">Payment</span>
+                        <Select v-model="filters.payment" :options="paymentOptions" />
+                    </label>
+                </div>
+
+                <div class="flex items-center gap-2 mt-4">
+                    <button @click="apply" class="flex-1 sm:flex-none px-6 py-2.5 rounded-lg bg-[#F59E0B] text-black text-sm font-semibold hover:bg-[#D97706] transition">Apply</button>
+                    <button @click="reset" class="flex-1 sm:flex-none px-5 py-2.5 rounded-lg border border-[#2A2A2A] text-[#A0A0A0] text-sm hover:text-white transition">Reset</button>
+                </div>
+                <p class="text-xs text-[#6B7280] mt-3">Revenue is attributed to the booking's check-in date.</p>
+            </div>
         </div>
 
         <div v-if="loading" class="text-sm text-[#A0A0A0]">Loading…</div>
@@ -175,20 +185,21 @@
 
                 <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
                     <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0] mb-4">By entry page (landing)</h2>
-                    <table class="w-full text-sm">
+                    <table class="w-full text-sm table-fixed">
+                        <colgroup><col /><col style="width:60px" /><col style="width:84px" /></colgroup>
                         <thead>
                             <tr class="text-[#6B7280] text-xs uppercase">
                                 <th class="text-left py-1">Page</th>
-                                <SortTh col="count" :s="sLanding" @sort="sortBy(sLanding,$event)">Bookings</SortTh>
-                                <SortTh col="revenue" :s="sLanding" @sort="sortBy(sLanding,$event)">Revenue</SortTh>
+                                <SortTh col="count" :s="sLanding" @sort="sortBy(sLanding,$event)">Book.</SortTh>
+                                <SortTh col="revenue" :s="sLanding" @sort="sortBy(sLanding,$event)">Rev.</SortTh>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="(c,i) in sorted(data.by_landing, sLanding)" :key="i" class="border-t border-[#2A2A2A]">
-                                <td class="py-2 max-w-[220px] truncate">
+                                <td class="py-2 pr-2 truncate">
                                     <a v-if="isPath(c.landing_page)" :href="origin + c.landing_page" target="_blank"
                                         class="text-[#F59E0B] hover:underline" :title="c.landing_page">{{ c.landing_page }}</a>
-                                    <span v-else class="text-[#A0A0A0]">{{ c.landing_page }}</span>
+                                    <span v-else class="text-[#A0A0A0]" :title="c.landing_page">{{ c.landing_page }}</span>
                                 </td>
                                 <td class="py-2 text-right tabular-nums">{{ c.count }}</td>
                                 <td class="py-2 text-right tabular-nums text-[#10B981]">€{{ money(c.revenue) }}</td>
@@ -232,17 +243,18 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
                     <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0] mb-4">By location</h2>
-                    <table class="w-full text-sm">
+                    <table class="w-full text-sm table-fixed">
+                        <colgroup><col /><col style="width:60px" /><col style="width:84px" /></colgroup>
                         <thead>
                             <tr class="text-[#6B7280] text-xs uppercase">
                                 <th class="text-left py-1">Location</th>
-                                <SortTh col="count" :s="sLoc" @sort="sortBy(sLoc,$event)">Bookings</SortTh>
-                                <SortTh col="revenue" :s="sLoc" @sort="sortBy(sLoc,$event)">Revenue</SortTh>
+                                <SortTh col="count" :s="sLoc" @sort="sortBy(sLoc,$event)">Book.</SortTh>
+                                <SortTh col="revenue" :s="sLoc" @sort="sortBy(sLoc,$event)">Rev.</SortTh>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="c in sorted(data.by_location, sLoc)" :key="c.id" class="border-t border-[#2A2A2A]">
-                                <td class="py-2">{{ c.name }}</td>
+                                <td class="py-2 pr-2 truncate" :title="c.name">{{ c.name }}</td>
                                 <td class="py-2 text-right tabular-nums">{{ c.count }}</td>
                                 <td class="py-2 text-right tabular-nums text-[#10B981]">€{{ money(c.revenue) }}</td>
                             </tr>
@@ -287,6 +299,7 @@ const meta = ref({ locations: [], channels: [], statuses: [] });
 const loading = ref(true);
 const refreshing = ref(false);
 const error = ref(null);
+const filtersOpen = ref(false);
 const tsMetric = ref('revenue');
 const origin = window.location.origin;
 const ga = ref(null);
