@@ -86,8 +86,12 @@ class AnalyticsController extends Controller
         $unpaidSum = "SUM(CASE WHEN payment_status <> 'paid' AND booking_status <> 'cancelled' THEN total_eur ELSE 0 END)";
 
         // ── Summary ──────────────────────────────────────────────────────────
+        $paidCnt = "SUM(CASE WHEN payment_status = 'paid' AND booking_status <> 'cancelled' THEN 1 ELSE 0 END)";
+        $unpaidCnt = "SUM(CASE WHEN payment_status <> 'paid' AND booking_status <> 'cancelled' THEN 1 ELSE 0 END)";
         $summaryRow = (clone $base())
             ->selectRaw("COUNT(*) as bookings, $paidSum as paid_eur, $unpaidSum as unpaid_eur,
+                $paidCnt as paid_count, $unpaidCnt as unpaid_count,
+                SUM(CASE WHEN booking_status <> 'cancelled' THEN 1 ELSE 0 END) as total_count,
                 SUM(CASE WHEN booking_status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_count,
                 SUM(CASE WHEN booking_status = 'cancelled' THEN total_eur ELSE 0 END) as cancelled_eur")
             ->first();
@@ -99,6 +103,9 @@ class AnalyticsController extends Controller
             'paid_eur'        => $paidEur,
             'unpaid_eur'      => $unpaidEur,
             'total_eur'       => round($paidEur + $unpaidEur, 2),
+            'paid_count'      => (int) ($summaryRow->paid_count ?? 0),
+            'unpaid_count'    => (int) ($summaryRow->unpaid_count ?? 0),
+            'total_count'     => (int) ($summaryRow->total_count ?? 0),
             'cancelled_count' => (int) ($summaryRow->cancelled_count ?? 0),
             'cancelled_eur'   => round((float) ($summaryRow->cancelled_eur ?? 0), 2),
         ];

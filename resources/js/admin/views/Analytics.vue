@@ -109,15 +109,15 @@
                 </div>
                 <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
                     <p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Paid</p>
-                    <p class="text-2xl font-bold mt-1 text-[#10B981]">€{{ money(data.summary.paid_eur) }}</p>
+                    <p class="text-2xl font-bold mt-1 text-[#10B981]">{{ data.summary.paid_count }} <span class="text-sm font-normal">/ €{{ money(data.summary.paid_eur) }}</span></p>
                 </div>
                 <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
                     <p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Unpaid</p>
-                    <p class="text-2xl font-bold mt-1 text-[#F59E0B]">€{{ money(data.summary.unpaid_eur) }}</p>
+                    <p class="text-2xl font-bold mt-1 text-[#F59E0B]">{{ data.summary.unpaid_count }} <span class="text-sm font-normal">/ €{{ money(data.summary.unpaid_eur) }}</span></p>
                 </div>
                 <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
                     <p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Total</p>
-                    <p class="text-2xl font-bold mt-1 text-white">€{{ money(data.summary.total_eur) }}</p>
+                    <p class="text-2xl font-bold mt-1 text-white">{{ data.summary.total_count }} <span class="text-sm font-normal">/ €{{ money(data.summary.total_eur) }}</span></p>
                 </div>
                 <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
                     <p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Cancelled</p>
