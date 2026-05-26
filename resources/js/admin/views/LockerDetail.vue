@@ -294,7 +294,10 @@ const loadBookings = async () => {
 
 const formatDateTime = (s) => {
     if (!s) return '';
-    return new Date(s).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const dt = new Date(s);
+    if (Number.isNaN(dt.getTime())) return '';
+    const pad = n => String(n).padStart(2, '0');
+    return `${pad(dt.getDate())}.${pad(dt.getMonth() + 1)}.${dt.getFullYear()} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
 };
 
 const load = async () => {

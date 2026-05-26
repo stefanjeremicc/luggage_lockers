@@ -23,7 +23,7 @@
                     </span>
                     <span class="flex items-center gap-2 min-w-0">
                         <span v-if="refreshing" class="w-3 h-3 border-2 border-[#F59E0B] border-t-transparent rounded-full animate-spin shrink-0"></span>
-                        <span v-else class="text-[#6B7280] truncate tabular-nums text-[11px] sm:text-xs">{{ filters.from }} → {{ filters.to }}</span>
+                        <span v-else class="text-[#6B7280] truncate tabular-nums text-[11px] sm:text-xs">{{ srDate(filters.from) }} → {{ srDate(filters.to) }}</span>
                         <svg class="w-4 h-4 shrink-0 transition" :class="filtersOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     </span>
                 </button>
@@ -78,15 +78,15 @@
                     <p class="text-2xl font-bold mt-1 text-white">{{ data.summary.bookings }}</p>
                 </div>
                 <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
-                    <p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Collected (paid)</p>
+                    <p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Paid</p>
                     <p class="text-2xl font-bold mt-1 text-[#10B981]">€{{ money(data.summary.paid_eur) }}</p>
                 </div>
                 <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
-                    <p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Outstanding (unpaid)</p>
+                    <p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Unpaid</p>
                     <p class="text-2xl font-bold mt-1 text-[#F59E0B]">€{{ money(data.summary.unpaid_eur) }}</p>
                 </div>
                 <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
-                    <p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Total (non-cancelled)</p>
+                    <p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Total</p>
                     <p class="text-2xl font-bold mt-1 text-white">€{{ money(data.summary.total_eur) }}</p>
                 </div>
                 <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
@@ -159,8 +159,8 @@
                     </div>
                 </div>
                 <div v-if="data.timeseries.length" class="flex justify-between text-[10px] text-[#6B7280] mt-2">
-                    <span>{{ data.timeseries[0].period }}</span>
-                    <span>{{ data.timeseries[data.timeseries.length-1].period }}</span>
+                    <span>{{ srDate(data.timeseries[0].period) }}</span>
+                    <span>{{ srDate(data.timeseries[data.timeseries.length-1].period) }}</span>
                 </div>
             </div>
 
@@ -328,6 +328,11 @@ const idleTab = 'px-2 py-1 rounded text-[#A0A0A0] hover:text-white';
 
 const money = (v) => Number(v || 0).toFixed(2);
 const isPath = (p) => typeof p === 'string' && p.startsWith('/');
+// ISO 'YYYY-MM-DD' → Serbian 'DD.MM.YYYY' (leaves week/month keys untouched).
+const srDate = (s) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || '');
+    return m ? `${m[3]}.${m[2]}.${m[1]}` : (s || '');
+};
 
 const CHANNEL_META = {
     google_ads: { label: 'Google Ads', color: '#4285F4' },

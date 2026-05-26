@@ -3,7 +3,7 @@
         :model-value="modelValue"
         model-type="yyyy-MM-dd"
         :enable-time-picker="false"
-        format="dd.MM.yyyy"
+        :format="fmt"
         :dark="true"
         :teleport="true"
         :auto-apply="true"
@@ -33,4 +33,8 @@ const emit = defineEmits(['update:modelValue']);
 
 const minDate = computed(() => props.min ? new Date(props.min + 'T00:00:00') : null);
 const maxDate = computed(() => props.max ? new Date(props.max + 'T00:00:00') : null);
+
+// Force the displayed text to Serbian d.m.Y regardless of locale defaults.
+const pad = (n) => String(n).padStart(2, '0');
+const fmt = (d) => d ? `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}` : '';
 </script>
