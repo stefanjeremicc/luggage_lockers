@@ -265,8 +265,8 @@
 
             <!-- Source links (utm) -->
             <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 mb-6">
-                <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0] mb-1">By link (UTM tags)</h2>
-                <p class="text-xs text-[#6B7280] mb-4">Bookings grouped by the UTM tag on the link they arrived through. <b>“—”</b> = that tag wasn’t set. <b>“Untagged”</b> = arrived via a link with no UTM (typed address, organic, plain referral). Tagged campaigns (QR, Google Ads…) appear here once people use those links.</p>
+                <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0] mb-1">By source & campaign</h2>
+                <p class="text-xs text-[#6B7280] mb-4"><b>Source</b> = the UTM tag if the link had one, otherwise the detected channel (e.g. Google Ads is recognised via Google’s gclid, not a UTM). <b>Medium / Campaign</b> show only for manually-tagged links — <b>“—”</b> means that tag wasn’t set.</p>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm min-w-[560px]">
                         <thead>
@@ -280,7 +280,7 @@
                         </thead>
                         <tbody>
                             <tr v-for="(c,i) in sorted(data.by_source, sSource)" :key="i" class="border-t border-[#2A2A2A]">
-                                <td class="py-2">{{ c.utm_source === '(none)' ? 'Untagged' : c.utm_source }}</td>
+                                <td class="py-2">{{ sourceLabel(c.utm_source) }}</td>
                                 <td class="py-2 text-[#A0A0A0]">{{ c.utm_medium || '—' }}</td>
                                 <td class="py-2 text-[#A0A0A0]">{{ c.utm_campaign || '—' }}</td>
                                 <td class="py-2 text-right tabular-nums">{{ c.count }}</td>
@@ -403,6 +403,10 @@ const CHANNEL_META = {
     unknown:    { label: 'Unknown', color: '#3A3A3A' },
 };
 const channelMeta = (key) => CHANNEL_META[key] || { label: key, color: '#6B7280' };
+// In the source table a value may be a UTM source (e.g. "chatgpt.com") or a
+// detected channel key (e.g. "google_ads") — show the friendly channel label
+// for the latter, otherwise the raw source.
+const sourceLabel = (s) => CHANNEL_META[s] ? CHANNEL_META[s].label : s;
 
 // Booking-status pill styling/labels — identical to the Bookings list so the
 // vocabulary matches the rest of the dashboard (confirmed reads as "upcoming").

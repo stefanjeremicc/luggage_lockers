@@ -135,8 +135,11 @@ class AnalyticsController extends Controller
         $byLanding = $this->breakdown($base(), "COALESCE(NULLIF(landing_page, ''), '(unknown)')", 'landing_page', $paidSum)
             ->sortByDesc('count')->take(30)->values();
 
+        // Source = the explicit UTM tag if present, otherwise the detected
+        // channel (e.g. Google Ads is identified via Google's gclid/gbraid, not
+        // a utm_source) so paid/organic traffic isn't lumped into "untagged".
         $bySource = (clone $base())
-            ->selectRaw("COALESCE(NULLIF(utm_source, ''), '(none)') as utm_source,
+            ->selectRaw("COALESCE(NULLIF(utm_source, ''), NULLIF(marketing_source, ''), 'unknown') as utm_source,
                 COALESCE(NULLIF(utm_medium, ''), '') as utm_medium,
                 COALESCE(NULLIF(utm_campaign, ''), '') as utm_campaign,
                 COUNT(*) as count, $paidSum as revenue")
