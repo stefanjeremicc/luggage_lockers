@@ -60,6 +60,17 @@
                     <div class="flex items-center gap-2 flex-wrap">
                         <span class="booking-pill" :class="statusClass((b.display_status ?? b.booking_status))">{{ statusLabel(b.display_status ?? b.booking_status) }}</span>
                         <span v-if="(b.display_status ?? b.booking_status) !== 'cancelled'" class="booking-pill" :class="b.payment_status === 'paid' ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-[#EF4444]/20 text-[#EF4444]'">{{ b.payment_status === 'paid' ? 'paid' : 'unpaid' }}</span>
+                        <a v-if="b.marketing_source && sourceLink(b)" :href="sourceLink(b)" target="_blank" rel="noopener" @click.stop
+                            class="booking-pill inline-flex items-center gap-1 hover:opacity-80 transition"
+                            :style="{ backgroundColor: sourceMeta(b.marketing_source).color + '22', color: sourceMeta(b.marketing_source).color }"
+                            :title="'Open source link'">
+                            {{ sourceMeta(b.marketing_source).label }}
+                            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                        </a>
+                        <span v-else-if="b.marketing_source" class="booking-pill"
+                            :style="{ backgroundColor: sourceMeta(b.marketing_source).color + '22', color: sourceMeta(b.marketing_source).color }">
+                            {{ sourceMeta(b.marketing_source).label }}
+                        </span>
                     </div>
                     <div v-if="b.pins?.length" class="flex flex-col items-end gap-1 text-xs">
                         <div v-for="p in b.pins" :key="p.locker_number" class="flex items-center gap-1.5">
@@ -302,9 +313,12 @@
                     <div><dt class="booking-label">Total</dt>
                         <dd class="booking-value !text-[#F59E0B] font-semibold">€{{ Number(detailsBooking.total_eur).toFixed(2) }}</dd></div>
                     <div v-if="detailsBooking.landing_page" class="items-start"><dt class="booking-label">Landing page</dt>
-                        <dd class="booking-value">
-                            <a v-if="detailsBooking.landing_page.startsWith('/')" :href="origin + detailsBooking.landing_page" target="_blank" rel="noopener" class="!text-[#F59E0B] hover:underline break-all">{{ detailsBooking.landing_page }}</a>
-                            <span v-else class="break-all">{{ detailsBooking.landing_page }}</span>
+                        <dd class="booking-value min-w-0">
+                            <div :class="showFullLanding ? 'break-all' : 'truncate'">{{ detailsBooking.landing_page }}</div>
+                            <div class="flex gap-3 mt-1 text-xs">
+                                <a v-if="detailsBooking.landing_page.startsWith('/')" :href="origin + detailsBooking.landing_page" target="_blank" rel="noopener" class="!text-[#F59E0B] hover:underline">Open ↗</a>
+                                <button @click="showFullLanding = !showFullLanding" class="text-[#A0A0A0] hover:text-white">{{ showFullLanding ? 'Show less' : 'Show full' }}</button>
+                            </div>
                         </dd></div>
                     <div v-if="detailsBooking.referrer" class="items-start"><dt class="booking-label">Referrer</dt>
                         <dd class="booking-value break-all text-[#A0A0A0]">{{ detailsBooking.referrer }}</dd></div>
@@ -551,6 +565,16 @@ const SOURCE_META = {
 };
 const sourceMeta = (key) => SOURCE_META[key] || { label: 'Unknown', color: '#3A3A3A' };
 const origin = window.location.origin;
+const showFullLanding = ref(false);
+
+// The clickable target behind a booking's source pill: prefer the on-site
+// landing page, fall back to the external referrer. Null = render a plain
+// (non-clickable) pill.
+const sourceLink = (b) => {
+    if (b.landing_page && b.landing_page.startsWith('/')) return origin + b.landing_page;
+    if (b.referrer) return b.referrer;
+    return null;
+};
 
 // Mobile: group the (already-sorted) cards under date sub-headers so long lists
 // stay scannable. The grouping date is picked per tab: check-in for active/
@@ -719,6 +743,7 @@ const deleteBooking = async (id) => {
 };
 
 const openDetails = async (b) => {
+    showFullLanding.value = false;
     detailsBooking.value = b;
     try {
         const res = await apiFetch(`/api/admin/bookings/${b.id}`);
