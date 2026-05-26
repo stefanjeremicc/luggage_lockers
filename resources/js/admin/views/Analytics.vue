@@ -43,6 +43,10 @@
             <div class="flex items-center gap-2 mt-4">
                 <button @click="apply" class="flex-1 sm:flex-none px-6 py-2.5 rounded-lg bg-[#F59E0B] text-black text-sm font-semibold hover:bg-[#D97706] transition">Apply</button>
                 <button @click="reset" class="flex-1 sm:flex-none px-5 py-2.5 rounded-lg border border-[#2A2A2A] text-[#A0A0A0] text-sm hover:text-white transition">Reset</button>
+                <span v-if="refreshing" class="text-xs text-[#A0A0A0] flex items-center gap-1.5">
+                    <span class="w-3 h-3 border-2 border-[#F59E0B] border-t-transparent rounded-full animate-spin"></span>
+                    Updating…
+                </span>
             </div>
             <p class="text-xs text-[#6B7280] mt-3">Revenue is attributed to the booking's check-in date.</p>
         </div>
@@ -280,6 +284,7 @@ const { apiFetch } = useAuth();
 const data = ref(null);
 const meta = ref({ locations: [], channels: [], statuses: [] });
 const loading = ref(true);
+const refreshing = ref(false);
 const error = ref(null);
 const tsMetric = ref('revenue');
 const origin = window.location.origin;
@@ -338,6 +343,7 @@ const channelOptions = computed(() => [
 // One-tap date presets.
 const presets = [
     { key: 'today', label: 'Today' },
+    { key: 'yesterday', label: 'Yesterday' },
     { key: '7', label: 'Last 7 days' },
     { key: '30', label: 'Last 30 days' },
     { key: 'month', label: 'This month' },
@@ -346,6 +352,7 @@ const activePreset = ref('30');
 const setPreset = (key) => {
     const t = new Date();
     if (key === 'today') { filters.from = iso(t); filters.to = iso(t); }
+    else if (key === 'yesterday') { const y = new Date(t.getTime() - 86400000); filters.from = iso(y); filters.to = iso(y); }
     else if (key === '7') { filters.from = iso(new Date(t.getTime() - 6 * 86400000)); filters.to = iso(t); }
     else if (key === '30') { filters.from = iso(new Date(t.getTime() - 29 * 86400000)); filters.to = iso(t); }
     else if (key === 'month') { filters.from = iso(new Date(t.getFullYear(), t.getMonth(), 1)); filters.to = iso(t); }
@@ -419,7 +426,10 @@ const loadGa = async () => {
 };
 
 const load = async () => {
-    loading.value = true;
+    // Full-screen "Loading…" only on the very first load; subsequent filter
+    // changes keep the current data visible and just dim slightly (no flicker).
+    if (!data.value) loading.value = true;
+    else refreshing.value = true;
     error.value = null;
     loadGa(); // async, non-blocking — GA panel fills in when ready
     try {
@@ -432,6 +442,7 @@ const load = async () => {
         error.value = e.message;
     } finally {
         loading.value = false;
+        refreshing.value = false;
     }
 };
 
