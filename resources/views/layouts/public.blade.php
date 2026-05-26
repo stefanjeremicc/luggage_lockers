@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    {{-- Google Analytics 4 (gtag.js) --}}
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-SG2FY87HPF"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-SG2FY87HPF');
+    </script>
+
     @include('public.partials.seo-meta')
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
