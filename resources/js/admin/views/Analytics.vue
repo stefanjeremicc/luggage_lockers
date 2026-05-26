@@ -1,5 +1,12 @@
 <template>
     <div>
+        <!-- Floating chart tooltip (fixed → never clipped by the scroll area) -->
+        <div v-if="activeBar" class="fixed z-50 pointer-events-none px-2.5 py-1.5 rounded-lg bg-[#0A0A0A] border border-[#3A3A3A] shadow-xl text-[11px]"
+            :style="{ left: tipX + 'px', top: (tipY - 12) + 'px', transform: 'translate(-50%, -100%)' }">
+            <div class="text-white font-semibold whitespace-nowrap">{{ srDate(activeBar.period) }}</div>
+            <div class="text-[#A0A0A0] whitespace-nowrap">{{ activeBar.bookings }} bookings · <span class="text-[#10B981]">€{{ money(activeBar.revenue) }}</span></div>
+        </div>
+
         <div class="flex items-center justify-between gap-3 mb-4">
             <h1 class="text-2xl font-bold">Analytics</h1>
             <button @click="showHelp = !showHelp"
@@ -198,8 +205,10 @@
                                     </div>
                                     <div class="relative h-full flex items-end gap-2 px-2">
                                         <div v-for="(p, i) in data.timeseries" :key="p.period"
-                                            @mouseenter="hoverIdx = i" @mouseleave="hoverIdx = null"
-                                            @click="clickIdx = clickIdx === i ? null : i"
+                                            @mouseenter="hoverIdx = i; tipX = $event.clientX; tipY = $event.clientY"
+                                            @mousemove="tipX = $event.clientX; tipY = $event.clientY"
+                                            @mouseleave="hoverIdx = null"
+                                            @click="clickIdx = clickIdx === i ? null : i; tipX = $event.clientX; tipY = $event.clientY"
                                             class="w-7 shrink-0 h-full flex flex-col items-center justify-end relative cursor-pointer">
                                             <div class="w-full rounded-t transition-all"
                                                 :class="(hoverIdx === i || clickIdx === i) ? 'bg-[#F59E0B]' : 'bg-[#F59E0B]/80'"
@@ -381,6 +390,8 @@ const origin = window.location.origin;
 const ga = ref(null);
 const gaLoading = ref(true);
 const chartScroll = ref(null);
+const tipX = ref(0);
+const tipY = ref(0);
 
 const today = new Date();
 const iso = (d) => d.toISOString().slice(0, 10);
@@ -602,15 +613,16 @@ const load = async () => {
         if (!res.ok) throw new Error('HTTP ' + res.status);
         data.value = await res.json();
         meta.value = data.value.filters;
-        // Jump the chart to the most recent dates (today is at the far right).
-        await nextTick();
-        if (chartScroll.value) chartScroll.value.scrollLeft = chartScroll.value.scrollWidth;
     } catch (e) {
         error.value = e.message;
     } finally {
         loading.value = false;
         refreshing.value = false;
     }
+    // After the chart has actually rendered (loading is now false), jump it to
+    // the most recent dates so today is visible immediately.
+    await nextTick();
+    if (chartScroll.value && data.value) chartScroll.value.scrollLeft = chartScroll.value.scrollWidth;
 };
 
 const apply = () => load();
