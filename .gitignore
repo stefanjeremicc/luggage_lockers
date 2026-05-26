@@ -26,3 +26,8 @@ Thumbs.db
 scripts/.deploy.env
 
 .claude/
+
+# Google service-account credentials — NEVER commit (Google auto-disables keys found in repos)
+/luggage-analytics-*.json
+/storage/app/luggage-analytics-*.json
+/storage/app/*.gserviceaccount.json

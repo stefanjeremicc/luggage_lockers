@@ -56,6 +56,7 @@ Route::post('/auth/change-password', [LoginController::class, 'changePassword'])
 Route::prefix('admin')->middleware(['auth:sanctum', CheckRole::class . ':admin'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index']);
     Route::get('/analytics', [AnalyticsController::class, 'index']);
+    Route::get('/analytics/ga', [AnalyticsController::class, 'ga']);
 
     Route::get('/bookings', [BookingManagementController::class, 'index']);
     Route::get('/bookings/export', [BookingManagementController::class, 'export']);

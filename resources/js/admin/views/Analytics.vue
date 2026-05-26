@@ -81,6 +81,48 @@
                 </div>
             </div>
 
+            <!-- Site traffic (Google Analytics) -->
+            <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0]">Site traffic · Google Analytics</h2>
+                    <span class="text-xs text-[#6B7280]">same date range</span>
+                </div>
+                <div v-if="gaLoading" class="text-sm text-[#A0A0A0]">Loading traffic…</div>
+                <div v-else-if="!ga || !ga.ok" class="text-sm text-[#6B7280] italic">{{ gaMessage }}</div>
+                <template v-else>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-5">
+                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Sessions</p><p class="text-xl font-bold mt-1 text-white">{{ ga.headline.sessions }}</p></div>
+                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Users</p><p class="text-xl font-bold mt-1 text-white">{{ ga.headline.users }}</p></div>
+                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0]">New users</p><p class="text-xl font-bold mt-1 text-white">{{ ga.headline.new_users }}</p></div>
+                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Pageviews</p><p class="text-xl font-bold mt-1 text-white">{{ ga.headline.pageviews }}</p></div>
+                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Conversion</p><p class="text-xl font-bold mt-1 text-[#10B981]">{{ conversionRate }}%</p></div>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2">Traffic by channel</h3>
+                            <table class="w-full text-sm">
+                                <tr v-for="(c,i) in ga.channels" :key="i" class="border-t border-[#2A2A2A]">
+                                    <td class="py-1.5">{{ c.channel }}</td>
+                                    <td class="py-1.5 text-right tabular-nums">{{ c.sessions }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div>
+                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2">Top landing pages</h3>
+                            <table class="w-full text-sm">
+                                <tr v-for="(c,i) in ga.landing" :key="i" class="border-t border-[#2A2A2A]">
+                                    <td class="py-1.5 max-w-[240px] truncate">
+                                        <a v-if="isPath(c.page)" :href="origin + c.page" target="_blank" class="text-[#F59E0B] hover:underline" :title="c.page">{{ c.page }}</a>
+                                        <span v-else class="text-[#A0A0A0]">{{ c.page }}</span>
+                                    </td>
+                                    <td class="py-1.5 text-right tabular-nums">{{ c.sessions }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
             <!-- Time series -->
             <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 mb-8">
                 <div class="flex items-center justify-between mb-4">
@@ -244,6 +286,8 @@ const loading = ref(true);
 const error = ref(null);
 const tsMetric = ref('revenue');
 const origin = window.location.origin;
+const ga = ref(null);
+const gaLoading = ref(true);
 
 const today = new Date();
 const iso = (d) => d.toISOString().slice(0, 10);
@@ -313,9 +357,36 @@ const SortTh = {
     },
 };
 
+// Conversion = booking count (our DB) / GA sessions, for the same range.
+const conversionRate = computed(() => {
+    const s = ga.value?.headline?.sessions || 0;
+    const b = data.value?.summary?.bookings || 0;
+    return s > 0 ? ((b / s) * 100).toFixed(1) : '0.0';
+});
+const gaMessage = computed(() => {
+    if (!ga.value) return 'No traffic data.';
+    if (ga.value.reason === 'not_configured') return 'Google Analytics credentials not installed on the server yet.';
+    if (ga.value.reason === 'api_error') return 'GA access not authorized yet — add the ga-reader service account as Viewer on the GA property (it may take up to ~1h to propagate).';
+    return 'No traffic data for this range.';
+});
+
+const loadGa = async () => {
+    gaLoading.value = true;
+    try {
+        const qs = new URLSearchParams({ from: filters.from, to: filters.to }).toString();
+        const res = await apiFetch('/api/admin/analytics/ga?' + qs);
+        ga.value = res.ok ? await res.json() : { ok: false, reason: 'api_error' };
+    } catch {
+        ga.value = { ok: false, reason: 'api_error' };
+    } finally {
+        gaLoading.value = false;
+    }
+};
+
 const load = async () => {
     loading.value = true;
     error.value = null;
+    loadGa(); // async, non-blocking — GA panel fills in when ready
     try {
         const qs = new URLSearchParams({ ...filters }).toString();
         const res = await apiFetch('/api/admin/analytics?' + qs);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Location;
+use App\Services\Analytics\GoogleAnalyticsService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,6 +26,22 @@ class AnalyticsController extends Controller
 {
     private const CHANNELS = ['google_ads', 'facebook', 'organic', 'referral', 'qr', 'direct', 'other', 'unknown'];
     private const STATUSES = ['pending', 'confirmed', 'active', 'completed', 'cancelled', 'expired'];
+
+    /**
+     * Google Analytics traffic snapshot for the given date range (separate
+     * endpoint so the heavier external API call doesn't slow the booking
+     * analytics page; the frontend fetches it asynchronously).
+     */
+    public function ga(Request $request, GoogleAnalyticsService $ga): JsonResponse
+    {
+        $today = Carbon::today();
+        $from = $this->parseDate($request->query('from'), $today->copy()->subDays(29));
+        $to   = $this->parseDate($request->query('to'), $today);
+        if ($from->gt($to)) {
+            [$from, $to] = [$to, $from];
+        }
+        return response()->json($ga->traffic($from->toDateString(), $to->toDateString()));
+    }
 
     public function index(Request $request): JsonResponse
     {
