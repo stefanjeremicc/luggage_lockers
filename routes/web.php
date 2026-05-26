@@ -93,14 +93,40 @@ Route::prefix('sr')->middleware(SetLocale::class)->name('sr.')->group(function (
 
 /*
 |--------------------------------------------------------------------------
-| Legacy Shopify URL redirects → homepage (301)
+| Legacy Shopify URL redirects (301)
 |--------------------------------------------------------------------------
 | The previous site was a Shopify shop with /pages, /products, /collections,
-| /blogs paths. Old links/backlinks/Google index still point at them. We send
-| every legacy path to the new homepage so we don't lose the inbound traffic
-| or accumulate 404s. Permanent (301) so search engines transfer link equity.
+| /blogs paths. Old backlinks + Google's index still point at them. Rather
+| than blanket-redirecting everything to the homepage (which Google treats as
+| a "soft 404" and won't pass full link equity), we map each legacy path to
+| the most topically-relevant new page, falling back to the homepage only for
+| genuinely unknown URLs. Permanent (301) so search engines transfer equity.
 */
-Route::redirect('/pages/{any}', '/', 301)->where('any', '.*');
-Route::redirect('/products/{any}', '/', 301)->where('any', '.*');
-Route::redirect('/collections/{any}', '/', 301)->where('any', '.*');
-Route::redirect('/blogs/{any}', '/', 301)->where('any', '.*');
+// Old Shopify "pages" → closest new content page (known slugs), else homepage.
+Route::get('/pages/{slug}', function (string $slug) {
+    $map = [
+        'what-to-visit'        => '/blog',
+        'about-us'             => '/about',
+        'about'                => '/about',
+        'contact'              => '/contact',
+        'contact-us'           => '/contact',
+        'faq'                  => '/faq',
+        'faqs'                 => '/faq',
+        'pricing'              => '/pricing',
+        'prices'               => '/pricing',
+        'terms'                => '/terms',
+        'terms-of-service'     => '/terms',
+        'terms-and-conditions' => '/terms',
+        'privacy'              => '/privacy',
+        'privacy-policy'       => '/privacy',
+    ];
+    return redirect($map[strtolower($slug)] ?? '/', 301);
+})->where('slug', '.*');
+
+// Per-locker "products" had no 1:1 equivalent → send to the locations browser
+// (real content page that leads into the booking flow).
+Route::redirect('/products/{any}', '/locations', 301)->where('any', '.*');
+// Shopify collections → locations listing.
+Route::redirect('/collections/{any}', '/locations', 301)->where('any', '.*');
+// Shopify blog → new blog index.
+Route::redirect('/blogs/{any}', '/blog', 301)->where('any', '.*');
