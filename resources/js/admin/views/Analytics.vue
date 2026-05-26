@@ -109,19 +109,19 @@
                 </div>
                 <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
                     <p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Paid</p>
-                    <p class="text-2xl font-bold mt-1 text-[#10B981]">€{{ money(data.summary.paid_eur) }} <span class="text-sm font-normal text-[#A0A0A0]">/ {{ data.summary.paid_count }}</span></p>
+                    <p class="text-lg sm:text-2xl font-bold mt-1 whitespace-nowrap text-[#10B981]">€{{ money(data.summary.paid_eur) }} <span class="text-xs sm:text-sm font-normal text-[#A0A0A0]">/ {{ data.summary.paid_count }}</span></p>
                 </div>
                 <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
                     <p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Unpaid</p>
-                    <p class="text-2xl font-bold mt-1 text-[#F59E0B]">€{{ money(data.summary.unpaid_eur) }} <span class="text-sm font-normal text-[#A0A0A0]">/ {{ data.summary.unpaid_count }}</span></p>
+                    <p class="text-lg sm:text-2xl font-bold mt-1 whitespace-nowrap text-[#F59E0B]">€{{ money(data.summary.unpaid_eur) }} <span class="text-xs sm:text-sm font-normal text-[#A0A0A0]">/ {{ data.summary.unpaid_count }}</span></p>
                 </div>
                 <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
                     <p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Total</p>
-                    <p class="text-2xl font-bold mt-1 text-white">€{{ money(data.summary.total_eur) }} <span class="text-sm font-normal text-[#A0A0A0]">/ {{ data.summary.total_count }}</span></p>
+                    <p class="text-lg sm:text-2xl font-bold mt-1 whitespace-nowrap text-white">€{{ money(data.summary.total_eur) }} <span class="text-xs sm:text-sm font-normal text-[#A0A0A0]">/ {{ data.summary.total_count }}</span></p>
                 </div>
                 <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
                     <p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Cancelled</p>
-                    <p class="text-2xl font-bold mt-1 text-[#EF4444]">€{{ money(data.summary.cancelled_eur) }} <span class="text-sm font-normal text-[#A0A0A0]">/ {{ data.summary.cancelled_count }}</span></p>
+                    <p class="text-lg sm:text-2xl font-bold mt-1 whitespace-nowrap text-[#EF4444]">€{{ money(data.summary.cancelled_eur) }} <span class="text-xs sm:text-sm font-normal text-[#A0A0A0]">/ {{ data.summary.cancelled_count }}</span></p>
                 </div>
             </div>
 
