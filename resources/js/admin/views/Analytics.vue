@@ -187,7 +187,7 @@
                             <span v-for="t in axisTicksDesc" :key="t">{{ axisLabel(t) }}</span>
                         </div>
                         <!-- Scrollable plot: fixed-width bars + dates scroll together -->
-                        <div class="flex-1 overflow-x-auto">
+                        <div ref="chartScroll" class="flex-1 overflow-x-auto">
                             <div class="w-max min-w-full">
                                 <div class="relative h-44 border-l border-b border-[#2A2A2A]">
                                     <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
@@ -352,7 +352,7 @@
     </div>
 </template>
 <script setup>
-import { ref, reactive, computed, onMounted, h } from 'vue';
+import { ref, reactive, computed, onMounted, nextTick, h } from 'vue';
 import { useAuth } from '../composables/useAuth';
 import Select from '../components/Select.vue';
 import DatePicker from '../components/DatePicker.vue';
@@ -382,6 +382,7 @@ const clickIdx = ref(null);
 const origin = window.location.origin;
 const ga = ref(null);
 const gaLoading = ref(true);
+const chartScroll = ref(null);
 
 const today = new Date();
 const iso = (d) => d.toISOString().slice(0, 10);
@@ -597,6 +598,9 @@ const load = async () => {
         if (!res.ok) throw new Error('HTTP ' + res.status);
         data.value = await res.json();
         meta.value = data.value.filters;
+        // Jump the chart to the most recent dates (today is at the far right).
+        await nextTick();
+        if (chartScroll.value) chartScroll.value.scrollLeft = chartScroll.value.scrollWidth;
     } catch (e) {
         error.value = e.message;
     } finally {
