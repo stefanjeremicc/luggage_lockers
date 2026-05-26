@@ -16,11 +16,11 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3">
                 <label class="block">
                     <span class="block text-xs text-[#A0A0A0] mb-1">From</span>
-                    <input type="date" v-model="filters.from" @change="activePreset = ''" class="filt" />
+                    <DatePicker v-model="filters.from" :max="filters.to" @update:modelValue="activePreset = ''" />
                 </label>
                 <label class="block">
                     <span class="block text-xs text-[#A0A0A0] mb-1">To</span>
-                    <input type="date" v-model="filters.to" @change="activePreset = ''" class="filt" />
+                    <DatePicker v-model="filters.to" :min="filters.from" @update:modelValue="activePreset = ''" />
                 </label>
                 <label class="block">
                     <span class="block text-xs text-[#A0A0A0] mb-1">Group by</span>
@@ -135,7 +135,7 @@
                 <div v-if="!data.timeseries.length" class="text-sm text-[#6B7280] italic">No data in range.</div>
                 <div v-else class="flex items-end gap-1 h-44 overflow-x-auto pb-1">
                     <div v-for="p in data.timeseries" :key="p.period"
-                        class="flex-1 min-w-[10px] flex flex-col items-center justify-end group relative">
+                        class="flex-1 min-w-[10px] h-full flex flex-col items-stretch justify-end group relative">
                         <div class="w-full rounded-t bg-[#F59E0B]/80 hover:bg-[#F59E0B] transition-all"
                             :style="{ height: barHeight(p) }"
                             :title="`${p.period} · ${p.bookings} bookings · €${money(p.revenue)}`"></div>
@@ -263,7 +263,7 @@
                         </thead>
                         <tbody>
                             <tr v-for="c in sorted(data.by_status, sStatus)" :key="c.status" class="border-t border-[#2A2A2A]">
-                                <td class="py-2 capitalize">{{ c.status }}</td>
+                                <td class="py-2"><span class="px-2 py-0.5 rounded-full text-xs" :class="statusClass(c.status)">{{ statusLabel(c.status) }}</span></td>
                                 <td class="py-2 text-right tabular-nums">{{ c.count }}</td>
                                 <td class="py-2 text-right tabular-nums text-[#10B981]">€{{ money(c.revenue) }}</td>
                             </tr>
@@ -279,6 +279,7 @@
 import { ref, reactive, computed, onMounted, h } from 'vue';
 import { useAuth } from '../composables/useAuth';
 import Select from '../components/Select.vue';
+import DatePicker from '../components/DatePicker.vue';
 
 const { apiFetch } = useAuth();
 const data = ref(null);
@@ -319,6 +320,18 @@ const CHANNEL_META = {
     unknown:    { label: 'Unknown', color: '#3A3A3A' },
 };
 const channelMeta = (key) => CHANNEL_META[key] || { label: key, color: '#6B7280' };
+
+// Booking-status pill styling/labels — identical to the Bookings list so the
+// vocabulary matches the rest of the dashboard (confirmed reads as "upcoming").
+const statusClass = (s) => ({
+    confirmed: 'bg-blue-500/20 text-blue-400',
+    active: 'bg-[#10B981]/20 text-[#10B981]',
+    pending: 'bg-[#F59E0B]/20 text-[#F59E0B]',
+    completed: 'bg-[#A0A0A0]/20 text-[#A0A0A0]',
+    cancelled: 'bg-[#EF4444]/20 text-[#EF4444]',
+    expired: 'bg-[#6B7280]/20 text-[#6B7280]',
+}[s] || 'bg-[#2A2A2A] text-[#A0A0A0]');
+const statusLabel = (s) => (s === 'confirmed' ? 'upcoming' : s);
 
 // Custom-select option lists.
 const groupOptions = [
