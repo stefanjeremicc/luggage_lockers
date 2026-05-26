@@ -4,51 +4,47 @@
 
         <!-- Filters -->
         <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 mb-6">
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <!-- Quick date presets (one-tap, mobile-friendly) -->
+            <div class="flex flex-wrap gap-2 mb-4">
+                <button v-for="p in presets" :key="p.key" @click="setPreset(p.key)"
+                    class="px-3 py-2 rounded-lg text-xs font-medium transition"
+                    :class="activePreset === p.key ? 'bg-[#F59E0B] text-black' : 'bg-[#111] border border-[#2A2A2A] text-[#A0A0A0] hover:text-white'">
+                    {{ p.label }}
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3">
                 <label class="block">
-                    <span class="text-xs text-[#A0A0A0]">From</span>
-                    <input type="date" v-model="filters.from" class="filt" />
+                    <span class="block text-xs text-[#A0A0A0] mb-1">From</span>
+                    <input type="date" v-model="filters.from" @change="activePreset = ''" class="filt" />
                 </label>
                 <label class="block">
-                    <span class="text-xs text-[#A0A0A0]">To</span>
-                    <input type="date" v-model="filters.to" class="filt" />
+                    <span class="block text-xs text-[#A0A0A0] mb-1">To</span>
+                    <input type="date" v-model="filters.to" @change="activePreset = ''" class="filt" />
                 </label>
                 <label class="block">
-                    <span class="text-xs text-[#A0A0A0]">Group by</span>
-                    <select v-model="filters.group" class="filt">
-                        <option value="day">Day</option>
-                        <option value="week">Week</option>
-                        <option value="month">Month</option>
-                    </select>
+                    <span class="block text-xs text-[#A0A0A0] mb-1">Group by</span>
+                    <Select v-model="filters.group" :options="groupOptions" />
                 </label>
                 <label class="block">
-                    <span class="text-xs text-[#A0A0A0]">Location</span>
-                    <select v-model="filters.location_id" class="filt">
-                        <option value="">All</option>
-                        <option v-for="l in meta.locations" :key="l.id" :value="l.id">{{ l.name }}</option>
-                    </select>
+                    <span class="block text-xs text-[#A0A0A0] mb-1">Location</span>
+                    <Select v-model="filters.location_id" :options="locationOptions" searchable />
                 </label>
                 <label class="block">
-                    <span class="text-xs text-[#A0A0A0]">Channel</span>
-                    <select v-model="filters.channel" class="filt">
-                        <option value="">All</option>
-                        <option v-for="c in meta.channels" :key="c" :value="c">{{ channelMeta(c).label }}</option>
-                    </select>
+                    <span class="block text-xs text-[#A0A0A0] mb-1">Channel</span>
+                    <Select v-model="filters.channel" :options="channelOptions" />
                 </label>
                 <label class="block">
-                    <span class="text-xs text-[#A0A0A0]">Payment</span>
-                    <select v-model="filters.payment" class="filt">
-                        <option value="all">All</option>
-                        <option value="paid">Paid</option>
-                        <option value="unpaid">Unpaid</option>
-                    </select>
+                    <span class="block text-xs text-[#A0A0A0] mb-1">Payment</span>
+                    <Select v-model="filters.payment" :options="paymentOptions" />
                 </label>
             </div>
-            <div class="flex flex-wrap items-center gap-2 mt-3">
-                <button @click="apply" class="px-4 py-1.5 rounded-lg bg-[#F59E0B] text-black text-sm font-medium hover:bg-[#D97706]">Apply</button>
-                <button @click="reset" class="px-3 py-1.5 rounded-lg border border-[#2A2A2A] text-[#A0A0A0] text-sm hover:text-white">Reset</button>
-                <span class="text-xs text-[#6B7280] ml-auto">Revenue is attributed to the booking's check-in date.</span>
+
+            <div class="flex items-center gap-2 mt-4">
+                <button @click="apply" class="flex-1 sm:flex-none px-6 py-2.5 rounded-lg bg-[#F59E0B] text-black text-sm font-semibold hover:bg-[#D97706] transition">Apply</button>
+                <button @click="reset" class="flex-1 sm:flex-none px-5 py-2.5 rounded-lg border border-[#2A2A2A] text-[#A0A0A0] text-sm hover:text-white transition">Reset</button>
             </div>
+            <p class="text-xs text-[#6B7280] mt-3">Revenue is attributed to the booking's check-in date.</p>
         </div>
 
         <div v-if="loading" class="text-sm text-[#A0A0A0]">Loading…</div>
@@ -278,6 +274,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, h } from 'vue';
 import { useAuth } from '../composables/useAuth';
+import Select from '../components/Select.vue';
 
 const { apiFetch } = useAuth();
 const data = ref(null);
@@ -317,6 +314,44 @@ const CHANNEL_META = {
     unknown:    { label: 'Unknown', color: '#3A3A3A' },
 };
 const channelMeta = (key) => CHANNEL_META[key] || { label: key, color: '#6B7280' };
+
+// Custom-select option lists.
+const groupOptions = [
+    { value: 'day', label: 'Day' },
+    { value: 'week', label: 'Week' },
+    { value: 'month', label: 'Month' },
+];
+const paymentOptions = [
+    { value: 'all', label: 'All payments' },
+    { value: 'paid', label: 'Paid' },
+    { value: 'unpaid', label: 'Unpaid' },
+];
+const locationOptions = computed(() => [
+    { value: '', label: 'All locations' },
+    ...((meta.value.locations) || []).map(l => ({ value: l.id, label: l.name })),
+]);
+const channelOptions = computed(() => [
+    { value: '', label: 'All channels' },
+    ...((meta.value.channels) || []).map(c => ({ value: c, label: channelMeta(c).label })),
+]);
+
+// One-tap date presets.
+const presets = [
+    { key: 'today', label: 'Today' },
+    { key: '7', label: 'Last 7 days' },
+    { key: '30', label: 'Last 30 days' },
+    { key: 'month', label: 'This month' },
+];
+const activePreset = ref('30');
+const setPreset = (key) => {
+    const t = new Date();
+    if (key === 'today') { filters.from = iso(t); filters.to = iso(t); }
+    else if (key === '7') { filters.from = iso(new Date(t.getTime() - 6 * 86400000)); filters.to = iso(t); }
+    else if (key === '30') { filters.from = iso(new Date(t.getTime() - 29 * 86400000)); filters.to = iso(t); }
+    else if (key === 'month') { filters.from = iso(new Date(t.getFullYear(), t.getMonth(), 1)); filters.to = iso(t); }
+    activePreset.value = key;
+    load();
+};
 
 // Time-series bar height relative to the max value of the chosen metric.
 const tsMax = computed(() => {
@@ -408,6 +443,7 @@ const reset = () => {
     filters.location_id = '';
     filters.channel = '';
     filters.payment = 'all';
+    activePreset.value = '30';
     load();
 };
 
@@ -416,13 +452,21 @@ onMounted(load);
 <style scoped>
 .filt {
     width: 100%;
-    margin-top: 2px;
-    background: #0A0A0A;
+    height: 42px;
+    background: #111;
     border: 1px solid #2A2A2A;
     border-radius: 0.5rem;
-    padding: 0.4rem 0.6rem;
-    font-size: 0.85rem;
+    padding: 0 0.7rem;
+    font-size: 0.875rem;
     color: #fff;
+    /* Render the native date picker in dark mode so the calendar icon + popup
+       are visible on the dark theme (was invisible black-on-black = "broken"). */
+    color-scheme: dark;
 }
 .filt:focus { outline: none; border-color: #F59E0B; }
+.filt::-webkit-calendar-picker-indicator {
+    filter: invert(0.7);
+    cursor: pointer;
+    opacity: 0.9;
+}
 </style>
