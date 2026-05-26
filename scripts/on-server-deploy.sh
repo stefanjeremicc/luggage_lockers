@@ -9,15 +9,20 @@ PHP=/opt/alt/php82/usr/bin/php
 
 cd /home/webbyrs/luggage_lockers || exit 1
 
-# 0. Discard server-side local edits — origin/master is the source of truth.
-/usr/bin/git checkout -- . 2>&1 || true
+# 0-1. Force-align to origin/master (origin is the single source of truth).
+#      reset --hard (not pull --ff-only) so a diverged server self-heals.
+#      clean -fd drops untracked junk but, without -x, leaves gitignored files
+#      (vendor/, public/build/, .env, storage/) intact.
+/usr/bin/git fetch origin master 2>&1 || true
+/usr/bin/git reset --hard origin/master 2>&1 || true
 /usr/bin/git clean -fd 2>&1 || true
 
-# 1. Pull latest source
-/usr/bin/git pull --ff-only origin master 2>&1 || true
-
-# 2. Extract vendor + public/build from the uploaded tarball
-[ -f /home/webbyrs/deploy.tar.gz ] && tar xzf /home/webbyrs/deploy.tar.gz 2>&1
+# 2. Extract vendor + public/build from the uploaded tarball, then remove it so
+#    a stale tarball can never be re-extracted on a later (tarball-less) run.
+if [ -f /home/webbyrs/deploy.tar.gz ]; then
+  tar xzf /home/webbyrs/deploy.tar.gz 2>&1
+  rm -f /home/webbyrs/deploy.tar.gz
+fi
 
 # 2a. Neutralise platform_check.php. vendor/ was built locally on PHP 8.4 so
 #     Composer's auto-generated platform check refuses to load on 8.2. Overwrite
