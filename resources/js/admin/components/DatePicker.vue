@@ -8,6 +8,7 @@
         :teleport="true"
         :auto-apply="true"
         :clearable="false"
+        :hide-input-icon="true"
         :month-change-on-scroll="false"
         :min-date="minDate"
         :max-date="maxDate"
