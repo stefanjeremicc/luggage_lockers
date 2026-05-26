@@ -121,7 +121,7 @@
                 </div>
                 <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
                     <p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Cancelled</p>
-                    <p class="text-2xl font-bold mt-1 text-[#6B7280]">{{ data.summary.cancelled_count }} <span class="text-sm font-normal">/ €{{ money(data.summary.cancelled_eur) }}</span></p>
+                    <p class="text-2xl font-bold mt-1 text-[#EF4444]">{{ data.summary.cancelled_count }} <span class="text-sm font-normal">/ €{{ money(data.summary.cancelled_eur) }}</span></p>
                 </div>
             </div>
 
