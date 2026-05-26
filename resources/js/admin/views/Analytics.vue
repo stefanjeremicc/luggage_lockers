@@ -429,8 +429,6 @@ const shortDate = (s) => {
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || '');
     return m ? `${m[3]}.${m[2]}` : (s || '');
 };
-// Show ~8 x-axis labels max so they don't overlap.
-const labelStep = computed(() => Math.max(1, Math.ceil((data.value?.timeseries?.length || 1) / 8)));
 // The bar the user is hovering/tapping — shown in the chart header (never
 // clipped by the horizontal-scroll container, unlike an above-bar tooltip).
 const activeBar = computed(() => {

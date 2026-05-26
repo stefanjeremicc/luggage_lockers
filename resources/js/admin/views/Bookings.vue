@@ -562,7 +562,6 @@ const SOURCE_META = {
 };
 const sourceMeta = (key) => SOURCE_META[key] || { label: 'Unknown', color: '#3A3A3A' };
 const origin = window.location.origin;
-const showFullLanding = ref(false);
 
 // The clickable target behind a booking's source pill: prefer the on-site
 // landing page, fall back to the external referrer. Null = render a plain
@@ -740,7 +739,6 @@ const deleteBooking = async (id) => {
 };
 
 const openDetails = async (b) => {
-    showFullLanding.value = false;
     detailsBooking.value = b;
     try {
         const res = await apiFetch(`/api/admin/bookings/${b.id}`);
