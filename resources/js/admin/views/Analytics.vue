@@ -7,6 +7,15 @@
             <div class="text-[#A0A0A0] whitespace-nowrap">{{ activeBar.bookings }} bookings · <span class="text-[#10B981]">€{{ money(activeBar.revenue) }}</span></div>
         </div>
 
+        <!-- Landing-page reveal toast (full URL + open link); backdrop closes it -->
+        <div v-if="pageTip" class="fixed inset-0 z-40" @click="pageTip = null"></div>
+        <div v-if="pageTip" class="fixed z-50 px-3 py-2 rounded-lg bg-[#0A0A0A] border border-[#3A3A3A] shadow-xl text-[11px] max-w-[280px]"
+            :style="{ left: tipX + 'px', top: (tipY - 12) + 'px', transform: 'translate(-50%, -100%)' }">
+            <div class="text-white break-all">{{ pageTip.landing_page }}</div>
+            <div class="text-[#A0A0A0] mt-1">{{ pageTip.count }} bookings · <span class="text-[#10B981]">€{{ money(pageTip.revenue) }}</span></div>
+            <a v-if="isPath(pageTip.landing_page)" :href="origin + pageTip.landing_page" target="_blank" rel="noopener" class="inline-block mt-1.5 text-[#F59E0B] hover:underline">Open ↗</a>
+        </div>
+
         <div class="flex items-center justify-between gap-3 mb-4">
             <h1 class="text-2xl font-bold">Analytics</h1>
             <button @click="showHelp = !showHelp"
@@ -266,10 +275,11 @@
                         </thead>
                         <tbody>
                             <tr v-for="(c,i) in sorted(data.by_landing, sLanding)" :key="i" class="border-t border-[#2A2A2A]">
-                                <td class="py-2 pr-2 truncate">
-                                    <a v-if="isPath(c.landing_page)" :href="origin + c.landing_page" target="_blank"
-                                        class="text-[#F59E0B] hover:underline" :title="c.landing_page">{{ c.landing_page }}</a>
-                                    <span v-else class="text-[#A0A0A0]" :title="c.landing_page">{{ c.landing_page }}</span>
+                                <td class="py-2 pr-2">
+                                    <button @click="openPageTip($event, c)" class="flex items-center gap-1.5 w-full text-left">
+                                        <span class="truncate" :class="isPath(c.landing_page) ? 'text-[#F59E0B]' : 'text-[#A0A0A0]'">{{ c.landing_page }}</span>
+                                        <svg class="w-3.5 h-3.5 shrink-0 text-[#6B7280]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    </button>
                                 </td>
                                 <td class="py-2 text-right tabular-nums">{{ c.count }}</td>
                                 <td class="py-2 text-right tabular-nums text-[#10B981]">€{{ money(c.revenue) }}</td>
@@ -312,7 +322,7 @@
 
             <!-- Location + Status -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
+                <div v-if="hasMultipleLocations" class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
                     <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0] mb-4">By location</h2>
                     <table class="w-full text-sm table-fixed">
                         <colgroup><col /><col style="width:60px" /><col style="width:84px" /></colgroup>
@@ -430,6 +440,16 @@ const activeBar = computed(() => {
 // Show the source/campaign table only once at least one booking carries a
 // utm_medium or utm_campaign — until then it just mirrors "By channel".
 const hasTaggedCampaigns = computed(() => (data.value?.by_source ?? []).some(r => r.utm_medium || r.utm_campaign));
+// Hide the By-location table while there's only one location (nothing to compare).
+const hasMultipleLocations = computed(() => (data.value?.by_location?.length ?? 0) > 1);
+
+// Tap-to-reveal full landing page (long auto-tagged URLs truncate in the table).
+const pageTip = ref(null);
+const openPageTip = (e, row) => {
+    pageTip.value = pageTip.value === row ? null : row;
+    tipX.value = e.clientX;
+    tipY.value = e.clientY;
+};
 
 const CHANNEL_META = {
     google_ads: { label: 'Google Ads', color: '#4285F4' },
