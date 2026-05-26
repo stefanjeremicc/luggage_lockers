@@ -4,28 +4,30 @@
 
         <!-- Filters -->
         <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 mb-6">
-            <!-- Quick date presets — single row, equal width, one-tap auto-apply -->
-            <div class="flex gap-1.5">
-                <button v-for="p in presets" :key="p.key" @click="setPreset(p.key)"
-                    class="flex-1 px-1 py-2 rounded-lg text-[11px] sm:text-xs font-medium whitespace-nowrap transition"
-                    :class="activePreset === p.key ? 'bg-[#F59E0B] text-black' : 'bg-[#111] border border-[#2A2A2A] text-[#A0A0A0] hover:text-white'">
-                    {{ p.label }}
+            <!-- Presets (left) + Filters toggle (right). Stacks on mobile;
+                 natural-width + spread on larger screens. -->
+            <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                <div class="flex gap-1.5 sm:gap-2">
+                    <button v-for="p in presets" :key="p.key" @click="setPreset(p.key)"
+                        class="flex-1 sm:flex-none px-1 sm:px-4 py-2 rounded-lg text-[11px] sm:text-sm font-medium whitespace-nowrap transition"
+                        :class="activePreset === p.key ? 'bg-[#F59E0B] text-black' : 'bg-[#111] border border-[#2A2A2A] text-[#A0A0A0] hover:text-white'">
+                        {{ p.label }}
+                    </button>
+                </div>
+
+                <button @click="filtersOpen = !filtersOpen"
+                    class="w-full sm:w-auto sm:ml-auto flex items-center justify-between sm:justify-start gap-2 px-3 py-2.5 sm:py-2 rounded-lg bg-[#111] border border-[#2A2A2A] text-xs sm:text-sm text-[#A0A0A0] hover:text-white transition">
+                    <span class="flex items-center gap-2 shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4h18M6 8h12M9 12h6M11 16h2"/></svg>
+                        Filters
+                    </span>
+                    <span class="flex items-center gap-2 min-w-0">
+                        <span v-if="refreshing" class="w-3 h-3 border-2 border-[#F59E0B] border-t-transparent rounded-full animate-spin shrink-0"></span>
+                        <span v-else class="text-[#6B7280] truncate tabular-nums text-[11px] sm:text-xs">{{ filters.from }} → {{ filters.to }}</span>
+                        <svg class="w-4 h-4 shrink-0 transition" :class="filtersOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </span>
                 </button>
             </div>
-
-            <!-- Filters toggle — single-line button -->
-            <button @click="filtersOpen = !filtersOpen"
-                class="mt-2.5 w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg bg-[#111] border border-[#2A2A2A] text-xs text-[#A0A0A0] hover:text-white transition">
-                <span class="flex items-center gap-2 shrink-0">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4h18M6 8h12M9 12h6M11 16h2"/></svg>
-                    Filters
-                </span>
-                <span class="flex items-center gap-2 min-w-0">
-                    <span v-if="refreshing" class="w-3 h-3 border-2 border-[#F59E0B] border-t-transparent rounded-full animate-spin shrink-0"></span>
-                    <span v-else class="text-[#6B7280] truncate tabular-nums">{{ filters.from }} → {{ filters.to }}</span>
-                    <svg class="w-4 h-4 shrink-0 transition" :class="filtersOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                </span>
-            </button>
 
             <div v-show="filtersOpen" class="mt-4">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3">
@@ -138,8 +140,11 @@
             <!-- Time series -->
             <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 mb-8">
                 <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0]">Over time ({{ filters.group }})</h2>
-                    <div class="flex gap-1 text-xs">
+                    <div>
+                        <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0]">Over time ({{ filters.group }})</h2>
+                        <p class="text-[11px] text-[#6B7280] mt-0.5">{{ tsMetric === 'revenue' ? '€ collected per ' + filters.group : 'bookings per ' + filters.group }}</p>
+                    </div>
+                    <div class="flex gap-1 text-xs shrink-0">
                         <button @click="tsMetric = 'revenue'" :class="tsMetric==='revenue' ? activeTab : idleTab">Revenue</button>
                         <button @click="tsMetric = 'bookings'" :class="tsMetric==='bookings' ? activeTab : idleTab">Bookings</button>
                     </div>
@@ -147,8 +152,8 @@
                 <div v-if="!data.timeseries.length" class="text-sm text-[#6B7280] italic">No data in range.</div>
                 <div v-else class="flex items-end gap-1 h-44 overflow-x-auto pb-1">
                     <div v-for="p in data.timeseries" :key="p.period"
-                        class="flex-1 min-w-[10px] h-full flex flex-col items-stretch justify-end group relative">
-                        <div class="w-full rounded-t bg-[#F59E0B]/80 hover:bg-[#F59E0B] transition-all"
+                        class="flex-1 min-w-[8px] h-full flex flex-col items-center justify-end group relative">
+                        <div class="w-full max-w-[40px] rounded-t bg-[#F59E0B]/80 hover:bg-[#F59E0B] transition-all"
                             :style="{ height: barHeight(p) }"
                             :title="`${p.period} · ${p.bookings} bookings · €${money(p.revenue)}`"></div>
                     </div>
