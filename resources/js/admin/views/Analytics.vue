@@ -181,41 +181,39 @@
                 </div>
                 <div v-if="!data.timeseries.length" class="text-sm text-[#6B7280] italic">No data in range.</div>
                 <template v-else>
-                    <div class="flex gap-2">
-                        <!-- Y axis ticks -->
-                        <div class="flex flex-col justify-between text-[10px] text-[#6B7280] text-right w-12 shrink-0 h-44 py-0.5">
+                    <div class="flex">
+                        <!-- Fixed Y axis (narrow, stays put while bars scroll) -->
+                        <div class="flex flex-col justify-between text-[9px] text-[#6B7280] text-right w-8 shrink-0 h-44 pr-1 py-0.5">
                             <span v-for="t in axisTicksDesc" :key="t">{{ axisLabel(t) }}</span>
                         </div>
-                        <!-- Plot area with horizontal gridlines -->
-                        <div class="relative flex-1 h-44 border-l border-b border-[#2A2A2A]">
-                            <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
-                                <div v-for="(t, i) in axisTicksDesc" :key="i" class="border-t border-[#2A2A2A]/50"></div>
-                            </div>
-                            <div class="absolute inset-0 flex items-end gap-0.5 px-1">
-                                <div v-for="(p, i) in data.timeseries" :key="p.period"
-                                    @mouseenter="hoverIdx = i" @mouseleave="hoverIdx = null"
-                                    @click="clickIdx = clickIdx === i ? null : i"
-                                    class="flex-1 min-w-0 h-full flex flex-col items-center justify-end relative cursor-pointer">
-                                    <!-- custom tooltip (hover on desktop, tap on mobile) -->
-                                    <div v-if="hoverIdx === i || clickIdx === i"
-                                        class="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 z-20 whitespace-nowrap px-2.5 py-1.5 rounded-lg bg-[#0A0A0A] border border-[#3A3A3A] shadow-xl text-[11px] pointer-events-none">
-                                        <div class="text-white font-semibold">{{ srDate(p.period) }}</div>
-                                        <div class="text-[#A0A0A0]">{{ p.bookings }} bookings · <span class="text-[#10B981]">€{{ money(p.revenue) }}</span></div>
+                        <!-- Scrollable plot: fixed-width bars + dates scroll together -->
+                        <div class="flex-1 overflow-x-auto">
+                            <div class="w-max min-w-full">
+                                <div class="relative h-44 border-l border-b border-[#2A2A2A]">
+                                    <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                                        <div v-for="(t, i) in axisTicksDesc" :key="i" class="border-t border-[#2A2A2A]/50"></div>
                                     </div>
-                                    <div class="w-full max-w-[40px] rounded-t transition-all"
-                                        :class="(hoverIdx === i || clickIdx === i) ? 'bg-[#F59E0B]' : 'bg-[#F59E0B]/80'"
-                                        :style="{ height: barHeight(p) }"></div>
+                                    <div class="relative h-full flex items-end gap-2 px-2">
+                                        <div v-for="(p, i) in data.timeseries" :key="p.period"
+                                            @mouseenter="hoverIdx = i" @mouseleave="hoverIdx = null"
+                                            @click="clickIdx = clickIdx === i ? null : i"
+                                            class="w-7 shrink-0 h-full flex flex-col items-center justify-end relative cursor-pointer">
+                                            <div v-if="hoverIdx === i || clickIdx === i"
+                                                class="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 z-20 whitespace-nowrap px-2.5 py-1.5 rounded-lg bg-[#0A0A0A] border border-[#3A3A3A] shadow-xl text-[11px] pointer-events-none">
+                                                <div class="text-white font-semibold">{{ srDate(p.period) }}</div>
+                                                <div class="text-[#A0A0A0]">{{ p.bookings }} bookings · <span class="text-[#10B981]">€{{ money(p.revenue) }}</span></div>
+                                            </div>
+                                            <div class="w-full rounded-t transition-all"
+                                                :class="(hoverIdx === i || clickIdx === i) ? 'bg-[#F59E0B]' : 'bg-[#F59E0B]/80'"
+                                                :style="{ height: barHeight(p) }"></div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- X-axis date labels, aligned under the bars -->
-                    <div class="flex gap-2 mt-1">
-                        <div class="w-12 shrink-0"></div>
-                        <div class="flex-1 flex gap-0.5 px-1">
-                            <div v-for="(p, i) in data.timeseries" :key="i"
-                                class="flex-1 min-w-0 text-center text-[9px] text-[#6B7280] whitespace-nowrap overflow-hidden">
-                                <span v-if="i % labelStep === 0">{{ shortDate(p.period) }}</span>
+                                <!-- Date labels under each bar (same widths → aligned, scroll together) -->
+                                <div class="flex gap-2 px-2 mt-1">
+                                    <div v-for="(p, i) in data.timeseries" :key="i"
+                                        class="w-7 shrink-0 text-center text-[9px] text-[#6B7280] whitespace-nowrap">{{ shortDate(p.period) }}</div>
+                                </div>
                             </div>
                         </div>
                     </div>
