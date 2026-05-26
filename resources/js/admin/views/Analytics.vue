@@ -275,8 +275,9 @@
                 </div>
             </div>
 
-            <!-- Source links (utm) -->
-            <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 mb-6">
+            <!-- Source links (utm) — only shown once there are tagged campaigns
+                 (otherwise it just duplicates "By channel"). -->
+            <div v-if="hasTaggedCampaigns" class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 mb-6">
                 <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0] mb-1">By source & campaign</h2>
                 <p class="text-xs text-[#6B7280] mb-4"><b>Source</b> = the UTM tag if the link had one, otherwise the detected channel (e.g. Google Ads is recognised via Google’s gclid, not a UTM). <b>Medium / Campaign</b> show only for manually-tagged links — <b>“—”</b> means that tag wasn’t set.</p>
                 <div class="overflow-x-auto">
@@ -412,6 +413,9 @@ const shortDate = (s) => {
 };
 // Show ~8 x-axis labels max so they don't overlap.
 const labelStep = computed(() => Math.max(1, Math.ceil((data.value?.timeseries?.length || 1) / 8)));
+// Show the source/campaign table only once at least one booking carries a
+// utm_medium or utm_campaign — until then it just mirrors "By channel".
+const hasTaggedCampaigns = computed(() => (data.value?.by_source ?? []).some(r => r.utm_medium || r.utm_campaign));
 
 const CHANNEL_META = {
     google_ads: { label: 'Google Ads', color: '#4285F4' },

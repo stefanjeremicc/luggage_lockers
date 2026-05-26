@@ -314,11 +314,8 @@
                         <dd class="booking-value !text-[#F59E0B] font-semibold">€{{ Number(detailsBooking.total_eur).toFixed(2) }}</dd></div>
                     <div v-if="detailsBooking.landing_page" class="items-start"><dt class="booking-label">Landing page</dt>
                         <dd class="booking-value min-w-0">
-                            <div :class="showFullLanding ? 'break-all' : 'truncate'">{{ detailsBooking.landing_page }}</div>
-                            <div class="flex gap-3 mt-1 text-xs">
-                                <a v-if="detailsBooking.landing_page.startsWith('/')" :href="origin + detailsBooking.landing_page" target="_blank" rel="noopener" class="!text-[#F59E0B] hover:underline">Open ↗</a>
-                                <button @click="showFullLanding = !showFullLanding" class="text-[#A0A0A0] hover:text-white">{{ showFullLanding ? 'Show less' : 'Show full' }}</button>
-                            </div>
+                            <a v-if="detailsBooking.landing_page.startsWith('/')" :href="origin + detailsBooking.landing_page" target="_blank" rel="noopener" class="!text-[#F59E0B] hover:underline block truncate" :title="detailsBooking.landing_page">{{ detailsBooking.landing_page }}</a>
+                            <span v-else class="block truncate" :title="detailsBooking.landing_page">{{ detailsBooking.landing_page }}</span>
                         </dd></div>
                     <div v-if="detailsBooking.referrer" class="items-start"><dt class="booking-label">Referrer</dt>
                         <dd class="booking-value break-all text-[#A0A0A0]">{{ detailsBooking.referrer }}</dd></div>
