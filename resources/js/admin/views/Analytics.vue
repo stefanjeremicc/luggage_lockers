@@ -191,11 +191,11 @@
                             <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
                                 <div v-for="(t, i) in axisTicksDesc" :key="i" class="border-t border-[#2A2A2A]/50"></div>
                             </div>
-                            <div class="absolute inset-0 flex items-end gap-1 px-1">
+                            <div class="absolute inset-0 flex items-end gap-0.5 px-1">
                                 <div v-for="(p, i) in data.timeseries" :key="p.period"
                                     @mouseenter="hoverIdx = i" @mouseleave="hoverIdx = null"
                                     @click="clickIdx = clickIdx === i ? null : i"
-                                    class="flex-1 min-w-[8px] h-full flex flex-col items-center justify-end relative cursor-pointer">
+                                    class="flex-1 min-w-0 h-full flex flex-col items-center justify-end relative cursor-pointer">
                                     <!-- custom tooltip (hover on desktop, tap on mobile) -->
                                     <div v-if="hoverIdx === i || clickIdx === i"
                                         class="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 z-20 whitespace-nowrap px-2.5 py-1.5 rounded-lg bg-[#0A0A0A] border border-[#3A3A3A] shadow-xl text-[11px] pointer-events-none">
@@ -212,9 +212,9 @@
                     <!-- X-axis date labels, aligned under the bars -->
                     <div class="flex gap-2 mt-1">
                         <div class="w-12 shrink-0"></div>
-                        <div class="flex-1 flex gap-1 px-1">
+                        <div class="flex-1 flex gap-0.5 px-1">
                             <div v-for="(p, i) in data.timeseries" :key="i"
-                                class="flex-1 min-w-[8px] text-center text-[9px] text-[#6B7280] whitespace-nowrap overflow-hidden">
+                                class="flex-1 min-w-0 text-center text-[9px] text-[#6B7280] whitespace-nowrap overflow-hidden">
                                 <span v-if="i % labelStep === 0">{{ shortDate(p.period) }}</span>
                             </div>
                         </div>
