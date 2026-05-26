@@ -172,7 +172,10 @@
                 <div class="flex items-center justify-between mb-4">
                     <div>
                         <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0]">Over time ({{ filters.group }})</h2>
-                        <p class="text-[11px] text-[#6B7280] mt-0.5">{{ tsMetric === 'revenue' ? '€ collected per ' + filters.group : 'bookings per ' + filters.group }}</p>
+                        <p class="text-[11px] mt-0.5" :class="activeBar ? 'text-white' : 'text-[#6B7280]'">
+                            <template v-if="activeBar">{{ srDate(activeBar.period) }} · {{ activeBar.bookings }} bookings · <span class="text-[#10B981]">€{{ money(activeBar.revenue) }}</span></template>
+                            <template v-else>{{ tsMetric === 'revenue' ? '€ collected per ' + filters.group : 'bookings per ' + filters.group }}</template>
+                        </p>
                     </div>
                     <div class="flex gap-1 text-xs shrink-0">
                         <button @click="tsMetric = 'revenue'" :class="tsMetric==='revenue' ? activeTab : idleTab">Revenue</button>
@@ -198,11 +201,6 @@
                                             @mouseenter="hoverIdx = i" @mouseleave="hoverIdx = null"
                                             @click="clickIdx = clickIdx === i ? null : i"
                                             class="w-7 shrink-0 h-full flex flex-col items-center justify-end relative cursor-pointer">
-                                            <div v-if="hoverIdx === i || clickIdx === i"
-                                                class="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 z-20 whitespace-nowrap px-2.5 py-1.5 rounded-lg bg-[#0A0A0A] border border-[#3A3A3A] shadow-xl text-[11px] pointer-events-none">
-                                                <div class="text-white font-semibold">{{ srDate(p.period) }}</div>
-                                                <div class="text-[#A0A0A0]">{{ p.bookings }} bookings · <span class="text-[#10B981]">€{{ money(p.revenue) }}</span></div>
-                                            </div>
                                             <div class="w-full rounded-t transition-all"
                                                 :class="(hoverIdx === i || clickIdx === i) ? 'bg-[#F59E0B]' : 'bg-[#F59E0B]/80'"
                                                 :style="{ height: barHeight(p) }"></div>
@@ -412,6 +410,12 @@ const shortDate = (s) => {
 };
 // Show ~8 x-axis labels max so they don't overlap.
 const labelStep = computed(() => Math.max(1, Math.ceil((data.value?.timeseries?.length || 1) / 8)));
+// The bar the user is hovering/tapping — shown in the chart header (never
+// clipped by the horizontal-scroll container, unlike an above-bar tooltip).
+const activeBar = computed(() => {
+    const idx = clickIdx.value !== null ? clickIdx.value : hoverIdx.value;
+    return idx !== null ? (data.value?.timeseries?.[idx] ?? null) : null;
+});
 // Show the source/campaign table only once at least one booking carries a
 // utm_medium or utm_campaign — until then it just mirrors "By channel".
 const hasTaggedCampaigns = computed(() => (data.value?.by_source ?? []).some(r => r.utm_medium || r.utm_campaign));
