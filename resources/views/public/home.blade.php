@@ -27,7 +27,7 @@
 <section class="hero-section relative flex items-center justify-center overflow-hidden -mt-20">
     {{-- Background image --}}
     <div class="absolute inset-0">
-        <img src="{{ $heroImage }}" alt="{{ __('Secure 24/7 luggage storage lockers in Belgrade') }}" class="w-full h-full object-cover" loading="eager" fetchpriority="high">
+        <img src="{{ $heroImage }}" alt="{{ __('Secure 24/7 luggage storage lockers in Belgrade') }}" width="1920" height="1080" class="w-full h-full object-cover" loading="eager" fetchpriority="high">
         <div class="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-[#0A0A0A]"></div>
     </div>
 

@@ -41,9 +41,13 @@
 # never touches /sw.js (must stay fresh) or non-hashed images in /images/.
 <IfModule mod_setenvif.c>
     SetEnvIf Request_URI "^/build/" LL_IMMUTABLE_ASSET
+    # Non-hashed static images: 30-day cache (was 7d) for a better
+    # "efficient cache lifetimes" score, but not immutable so we can update them.
+    SetEnvIf Request_URI "^/images/" LL_IMG_CACHE
 </IfModule>
 <IfModule mod_headers.c>
     Header set Cache-Control "public, max-age=31536000, immutable" env=LL_IMMUTABLE_ASSET
+    Header set Cache-Control "public, max-age=2592000" env=LL_IMG_CACHE
 
     # --- Security headers (target securityheaders.com grade A) ---
     # HSTS: force HTTPS for a year incl. subdomains. (No "preload" token on
