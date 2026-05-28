@@ -107,7 +107,19 @@ class SearchConsoleService
         if (!$this->isConfigured()) {
             return ['ok' => false, 'reason' => 'not_configured'];
         }
-        return Cache::remember("sc:perf:{$from}:{$to}", 3600, fn () => $this->build($from, $to));
+        $key = "sc:perf:{$from}:{$to}";
+        $cached = Cache::get($key);
+        if (is_array($cached)) {
+            return $cached;
+        }
+        $result = $this->build($from, $to);
+        // Only cache successful responses — so a transient error or a
+        // not-yet-granted (forbidden) state doesn't stick for an hour. Once you
+        // grant access the panel fills in on the next load.
+        if ($result['ok'] ?? false) {
+            Cache::put($key, $result, 3600);
+        }
+        return $result;
     }
 
     private function build(string $from, string $to): array
