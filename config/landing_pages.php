@@ -118,4 +118,19 @@ return [
         'meta_description_sr' => "Ormarići za prtljag u Beogradu, otvoreni 0–24. Pametni samouslužni ormarići sa jednokratnim PIN-om u centru grada. Rezerviši za 60 sekundi, plati na licu mesta.",
     ],
 
+    'locker-room' => [
+        'h1'               => "Locker Room for Luggage in Belgrade",
+        'subtitle'         => "Need a locker room to stash your bags in Belgrade? Our smart self-service lockers in the city centre keep your luggage safe 24/7 — pick your size, get a one-time PIN, and go. Book online in 60 seconds, pay cash on arrival.",
+        'meta_title'       => "Luggage Locker Room Belgrade — Secure Storage Lockers 24/7",
+        'meta_description' => "A secure locker room for your luggage in central Belgrade. Smart self-service storage lockers, open 24/7, one-time PIN access. Book in 60 seconds, pay on arrival.",
+        'hero_image'       => '/images/landing/locker-room.webp',
+        'hero_alt'         => "Self-service luggage locker room in central Belgrade",
+
+        'slug_sr'             => 'garderoba-ormarici-beograd',
+        'h1_sr'               => "Garderoba sa ormarićima u Beogradu",
+        'subtitle_sr'         => "Treba ti garderoba za torbe u Beogradu? Naši pametni samouslužni ormarići u centru grada čuvaju prtljag bezbedno 0–24 — izaberi veličinu, dobij jednokratni PIN i kreni. Rezerviši online za 60 sekundi, plati gotovinom na licu mesta.",
+        'meta_title_sr'       => "Garderoba sa ormarićima Beograd — sigurni ormarići 0–24",
+        'meta_description_sr' => "Sigurna garderoba sa ormarićima za prtljag u centru Beograda. Pametni samouslužni ormarići, otvoreni 0–24, pristup jednokratnim PIN-om. Rezerviši za 60 sekundi, plati na licu mesta.",
+    ],
+
 ];
