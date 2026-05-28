@@ -30,6 +30,14 @@ class ForceCanonicalHost
             return $next($request);
         }
 
+        // Webhooks/callbacks must keep working on ANY host they were registered
+        // with (e.g. TTLock's Callback URL may still point at the old host).
+        // External senders don't follow 301s and wouldn't re-POST the body, so
+        // never redirect these — let them through verbatim.
+        if ($request->is('api/ttlock/callback')) {
+            return $next($request);
+        }
+
         $host = $request->getHost();
         if ($host !== self::CANONICAL) {
             return redirect()->away(
