@@ -83,6 +83,20 @@
         </div>
         @endif
 
+        @php $landingPages = config('landing_pages', []); @endphp
+        @if(count($landingPages))
+        <div class="mt-10 pt-6 border-t border-[#2A2A2A]">
+            <h4 class="text-sm font-semibold text-white mb-3">{{ $isSrFooter ? 'Popularne pretrage' : 'Popular searches' }}</h4>
+            <ul class="flex flex-wrap gap-x-4 gap-y-2 text-sm text-[#A0A0A0]">
+                @foreach($landingPages as $enKey => $lp)
+                    @php $lpSlug = $isSrFooter ? ($lp['slug_sr'] ?? null) : $enKey; @endphp
+                    @continue(!$lpSlug)
+                    <li><a href="{{ $isSrFooter ? url('/sr/'.$lpSlug) : url('/'.$lpSlug) }}" class="hover:text-white transition">{{ $isSrFooter ? ($lp['h1_sr'] ?? $lp['h1']) : $lp['h1'] }}</a></li>
+                @endforeach
+            </ul>
+        </div>
+        @endif
+
         <div class="mt-12 pt-6 border-t border-[#2A2A2A] text-center text-xs text-[#A0A0A0] space-y-1">
             <p>&copy; {{ date('Y') }} {{ \App\Helpers\SiteSettings::legalCompany() }}. {{ __('All rights reserved.') }}</p>
             @php

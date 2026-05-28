@@ -62,6 +62,21 @@
     </div>
 </article>
 
+{{-- Related landing pages — contextual internal links (SEO + discovery). --}}
+@php $relSr = app()->getLocale() === 'sr'; $relPages = config('landing_pages', []); @endphp
+@if(count($relPages))
+<section class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-4">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0] mb-3">{{ $relSr ? 'Pogledaj i' : 'See also' }}</h2>
+    <ul class="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+        @foreach(array_slice($relPages, 0, 5, true) as $relKey => $relLp)
+            @php $relSlug = $relSr ? ($relLp['slug_sr'] ?? null) : $relKey; @endphp
+            @continue(!$relSlug)
+            <li><a href="{{ $relSr ? url('/sr/'.$relSlug) : url('/'.$relSlug) }}" class="text-[#F59E0B] hover:underline">{{ $relSr ? ($relLp['h1_sr'] ?? $relLp['h1']) : $relLp['h1'] }}</a></li>
+        @endforeach
+    </ul>
+</section>
+@endif
+
 {{-- CTA --}}
 <section class="bg-[#111111] py-16 lg:py-24 relative overflow-hidden">
     <div class="absolute inset-0 opacity-5">
