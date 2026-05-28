@@ -29,6 +29,11 @@
         <changefreq>{{ $page['cf'] }}</changefreq><priority>{{ $page['priority'] }}</priority></url>
     @endforeach
 
+    @foreach(array_keys(config('landing_pages', [])) as $landingSlug)
+    <url><loc>{{ url("/{$landingSlug}") }}</loc>
+        <changefreq>weekly</changefreq><priority>0.9</priority></url>
+    @endforeach
+
     @foreach($locations as $location)
     @php $locMod = optional($location->updated_at)->toAtomString(); @endphp
     <url><loc>{{ url("/locations/{$location->slug}") }}</loc>
