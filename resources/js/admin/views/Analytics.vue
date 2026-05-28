@@ -160,6 +160,7 @@
                         <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0] flex items-center gap-1">Engagement <InfoTip text="Share of visits that were engaged: lasted 10s+, converted, or viewed 2+ pages." /></p><p class="text-xl font-bold mt-1 text-white">{{ Math.round((ga.headline.engagement_rate || 0) * 100) }}%</p></div>
                         <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0] flex items-center gap-1">Conversion <InfoTip text="Bookings ÷ sessions — how many visits turned into a booking." /></p><p class="text-xl font-bold mt-1 text-[#10B981]">{{ conversionRate }}%</p></div>
                     </div>
+                    <!-- Channel + new vs returning -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div>
                             <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">Traffic by channel <InfoTip text="Where visitors came from, grouped into Google's channels (Direct, Organic Search, Paid Search…)." /></h3>
@@ -171,34 +172,19 @@
                             </table>
                         </div>
                         <div>
-                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">Top landing pages <InfoTip text="The FIRST page each visit started on — how people enter the site (counted by sessions)." /></h3>
+                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">New vs returning <InfoTip text="First-time visitors vs people coming back again." /></h3>
                             <table class="w-full text-sm">
-                                <tr v-for="(c,i) in ga.landing" :key="i" class="border-t border-[#2A2A2A]">
-                                    <td class="py-1.5 max-w-[240px] truncate">
-                                        <a v-if="isPath(c.page)" :href="origin + c.page" target="_blank" class="text-[#F59E0B] hover:underline" :title="c.page">{{ c.page }}</a>
-                                        <span v-else class="text-[#A0A0A0]">{{ c.page }}</span>
-                                    </td>
+                                <tr v-for="(c,i) in ga.new_returning" :key="i" class="border-t border-[#2A2A2A]">
+                                    <td class="py-1.5 capitalize">{{ c.type || '(unknown)' }}</td>
                                     <td class="py-1.5 text-right tabular-nums">{{ c.sessions }}</td>
                                 </tr>
+                                <tr v-if="!ga.new_returning || !ga.new_returning.length"><td colspan="2" class="py-2 text-[#6B7280] italic">No data.</td></tr>
                             </table>
                         </div>
                     </div>
 
-                    <!-- What visitors viewed + when they come -->
+                    <!-- When (by hour) + by day of week -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                        <div>
-                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">Most viewed pages <InfoTip text="Pages opened most often across ALL visits (counted by views, not just entry pages)." /></h3>
-                            <table class="w-full text-sm">
-                                <tr v-for="(c,i) in ga.pages" :key="i" class="border-t border-[#2A2A2A]">
-                                    <td class="py-1.5 max-w-[240px] truncate">
-                                        <a v-if="isPath(c.page)" :href="origin + c.page" target="_blank" class="text-[#F59E0B] hover:underline" :title="c.page">{{ c.page }}</a>
-                                        <span v-else class="text-[#A0A0A0]" :title="c.page">{{ c.page || '(other)' }}</span>
-                                    </td>
-                                    <td class="py-1.5 text-right tabular-nums">{{ c.views }}</td>
-                                </tr>
-                                <tr v-if="!ga.pages || !ga.pages.length"><td colspan="2" class="py-2 text-[#6B7280] italic">No data.</td></tr>
-                            </table>
-                        </div>
                         <div>
                             <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">When visitors come (by hour) <InfoTip text="Sessions by hour of day — taller bars = busier hours." /></h3>
                             <div class="flex items-end gap-0.5 h-28 border-b border-[#2A2A2A]">
@@ -208,6 +194,16 @@
                                     :title="h + ':00 — ' + s + ' sessions'"></div>
                             </div>
                             <div class="flex justify-between text-[10px] text-[#6B7280] mt-1"><span>00</span><span>03</span><span>06</span><span>09</span><span>12</span><span>15</span><span>18</span><span>21</span><span>23</span></div>
+                        </div>
+                        <div>
+                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">By day of week <InfoTip text="Sessions per weekday — which days are busiest." /></h3>
+                            <div class="flex items-end gap-1.5 h-28 border-b border-[#2A2A2A]">
+                                <div v-for="(s,d) in (ga.by_dow || [])" :key="d"
+                                    class="flex-1 bg-[#F59E0B]/80 rounded-t hover:bg-[#F59E0B]"
+                                    :style="{ height: Math.max(2, (s / gaDowMax) * 100) + '%' }"
+                                    :title="dowNames[d] + ' — ' + s + ' sessions'"></div>
+                            </div>
+                            <div class="flex justify-between text-[10px] text-[#6B7280] mt-1"><span v-for="(n,d) in dowNames" :key="d">{{ n }}</span></div>
                         </div>
                     </div>
 
@@ -233,27 +229,32 @@
                         </div>
                     </div>
 
-                    <!-- New vs returning + day of week -->
+                    <!-- Pages (bottom): landing + most viewed side by side -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
                         <div>
-                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">New vs returning <InfoTip text="First-time visitors vs people coming back again." /></h3>
+                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">Top landing pages <InfoTip text="The FIRST page each visit started on — how people enter the site (counted by sessions)." /></h3>
                             <table class="w-full text-sm">
-                                <tr v-for="(c,i) in ga.new_returning" :key="i" class="border-t border-[#2A2A2A]">
-                                    <td class="py-1.5 capitalize">{{ c.type || '(unknown)' }}</td>
+                                <tr v-for="(c,i) in ga.landing" :key="i" class="border-t border-[#2A2A2A]">
+                                    <td class="py-1.5 max-w-[240px] truncate">
+                                        <a v-if="isPath(c.page)" :href="origin + c.page" target="_blank" class="text-[#F59E0B] hover:underline" :title="c.page">{{ c.page }}</a>
+                                        <span v-else class="text-[#A0A0A0]">{{ c.page }}</span>
+                                    </td>
                                     <td class="py-1.5 text-right tabular-nums">{{ c.sessions }}</td>
                                 </tr>
-                                <tr v-if="!ga.new_returning || !ga.new_returning.length"><td colspan="2" class="py-2 text-[#6B7280] italic">No data.</td></tr>
                             </table>
                         </div>
                         <div>
-                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">By day of week <InfoTip text="Sessions per weekday — which days are busiest." /></h3>
-                            <div class="flex items-end gap-1.5 h-28 border-b border-[#2A2A2A]">
-                                <div v-for="(s,d) in (ga.by_dow || [])" :key="d"
-                                    class="flex-1 bg-[#F59E0B]/80 rounded-t hover:bg-[#F59E0B]"
-                                    :style="{ height: Math.max(2, (s / gaDowMax) * 100) + '%' }"
-                                    :title="dowNames[d] + ' — ' + s + ' sessions'"></div>
-                            </div>
-                            <div class="flex justify-between text-[10px] text-[#6B7280] mt-1"><span v-for="(n,d) in dowNames" :key="d">{{ n }}</span></div>
+                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">Most viewed pages <InfoTip text="Pages opened most often across ALL visits (counted by views, not just entry pages)." /></h3>
+                            <table class="w-full text-sm">
+                                <tr v-for="(c,i) in ga.pages" :key="i" class="border-t border-[#2A2A2A]">
+                                    <td class="py-1.5 max-w-[240px] truncate">
+                                        <a v-if="isPath(c.page)" :href="origin + c.page" target="_blank" class="text-[#F59E0B] hover:underline" :title="c.page">{{ c.page }}</a>
+                                        <span v-else class="text-[#A0A0A0]" :title="c.page">{{ c.page || '(other)' }}</span>
+                                    </td>
+                                    <td class="py-1.5 text-right tabular-nums">{{ c.views }}</td>
+                                </tr>
+                                <tr v-if="!ga.pages || !ga.pages.length"><td colspan="2" class="py-2 text-[#6B7280] italic">No data.</td></tr>
+                            </table>
                         </div>
                     </div>
                 </template>
