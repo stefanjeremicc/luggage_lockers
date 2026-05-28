@@ -427,20 +427,20 @@
                 </div>
 
                 <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
-                    <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0] mb-4 flex items-center gap-1">By status <InfoTip text="Bookings grouped into Completed / Active / Upcoming / Cancelled." /></h2>
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0] mb-4 flex items-center gap-1">By status <InfoTip text="Bookings grouped into Completed / Active / Upcoming / Cancelled. Value = total € of all bookings in that status (paid + unpaid), shown in the status colour." /></h2>
                     <table class="w-full text-sm">
                         <thead>
                             <tr class="text-[#6B7280] text-xs uppercase">
                                 <th class="text-left py-1">Status</th>
                                 <SortTh col="count" :s="sStatus" @sort="sortBy(sStatus,$event)">Bookings</SortTh>
-                                <SortTh col="revenue" :s="sStatus" @sort="sortBy(sStatus,$event)">Revenue</SortTh>
+                                <SortTh col="value" :s="sStatus" @sort="sortBy(sStatus,$event)">Value</SortTh>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="c in sorted(statusBuckets, sStatus)" :key="c.key" class="border-t border-[#2A2A2A]">
                                 <td class="py-2"><span class="inline-flex items-center gap-1"><span class="px-2 py-0.5 rounded-full text-xs" :class="c.cls">{{ c.label }}</span> <InfoTip :text="statusInfo(c.key)" /></span></td>
                                 <td class="py-2 text-right tabular-nums">{{ c.count }}</td>
-                                <td class="py-2 text-right tabular-nums text-[#10B981]">€{{ money(c.revenue) }}</td>
+                                <td class="py-2 text-right tabular-nums font-medium" :class="c.txt">€{{ money(c.value) }}</td>
                             </tr>
                             <tr v-if="!data.by_status.length"><td colspan="3" class="py-3 text-[#6B7280] italic">No data.</td></tr>
                         </tbody>
@@ -600,7 +600,7 @@ const STATUS_INFO = {
     completed: 'Stay finished (completed + expired bookings).',
     active: 'Currently in use — checked in, not yet checked out.',
     upcoming: 'Confirmed / pending bookings starting in the future.',
-    cancelled: 'Cancelled bookings (not counted as revenue).',
+    cancelled: 'Cancelled bookings. Value shown is the lost booking amount (not counted as earned revenue).',
 };
 const statusInfo = (k) => STATUS_INFO[k] || '';
 // In the source table a value may be a UTM source (e.g. "chatgpt.com") or a
@@ -622,19 +622,21 @@ const statusLabel = (s) => (s === 'confirmed' ? 'upcoming' : s);
 
 // Roll the raw DB statuses up into the 4 business buckets the dashboard uses.
 const STATUS_BUCKETS = [
-    { key: 'completed', label: 'Completed', cls: 'bg-[#A0A0A0]/20 text-[#A0A0A0]', raw: ['completed', 'expired'] },
-    { key: 'active',    label: 'Active',    cls: 'bg-[#10B981]/20 text-[#10B981]', raw: ['active'] },
-    { key: 'upcoming',  label: 'Upcoming',  cls: 'bg-blue-500/20 text-blue-400',   raw: ['confirmed', 'pending'] },
-    { key: 'cancelled', label: 'Cancelled', cls: 'bg-[#EF4444]/20 text-[#EF4444]', raw: ['cancelled'] },
+    { key: 'completed', label: 'Completed', cls: 'bg-[#A0A0A0]/20 text-[#A0A0A0]', txt: 'text-[#10B981]',  raw: ['completed', 'expired'] },
+    { key: 'active',    label: 'Active',    cls: 'bg-[#10B981]/20 text-[#10B981]', txt: 'text-[#10B981]', raw: ['active'] },
+    { key: 'upcoming',  label: 'Upcoming',  cls: 'bg-blue-500/20 text-blue-400',   txt: 'text-blue-400',  raw: ['confirmed', 'pending'] },
+    { key: 'cancelled', label: 'Cancelled', cls: 'bg-[#EF4444]/20 text-[#EF4444]', txt: 'text-[#EF4444]', raw: ['cancelled'] },
 ];
 const statusBuckets = computed(() => {
     const rows = data.value?.by_status ?? [];
     return STATUS_BUCKETS.map(b => {
         const hits = rows.filter(r => b.raw.includes(r.status));
         return {
-            key: b.key, label: b.label, cls: b.cls,
+            key: b.key, label: b.label, cls: b.cls, txt: b.txt,
             count: hits.reduce((s, r) => s + (r.count || 0), 0),
-            revenue: Math.round(hits.reduce((s, r) => s + (r.revenue || 0), 0) * 100) / 100,
+            // `value` = gross booking value for the status (paid + unpaid),
+            // so cancelled/upcoming/active show their real € amount, not €0.
+            value: Math.round(hits.reduce((s, r) => s + (r.value || 0), 0) * 100) / 100,
         };
     });
 });

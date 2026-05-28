@@ -161,7 +161,20 @@ class AnalyticsController extends Controller
             ])
             ->sortByDesc('count')->take(30)->values();
 
-        $byStatus = $this->breakdown($base(), 'booking_status', 'status', $paidSum)
+        // by_status also exposes `value` = gross total_eur of every booking in
+        // that status (regardless of payment), so the panel can show the real
+        // monetary value of cancelled/upcoming/active buckets — not just paid
+        // revenue (which is €0 for anything not yet paid or cancelled).
+        $byStatus = (clone $base())
+            ->selectRaw("booking_status as status, COUNT(*) as count, $paidSum as revenue, SUM(total_eur) as value")
+            ->groupBy('booking_status')
+            ->get()
+            ->map(fn ($r) => [
+                'status'  => $r->status,
+                'count'   => (int) $r->count,
+                'revenue' => round((float) $r->revenue, 2),
+                'value'   => round((float) $r->value, 2),
+            ])
             ->sortByDesc('count')->values();
 
         $byLocationRows = (clone $base())
