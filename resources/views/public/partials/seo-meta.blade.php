@@ -58,6 +58,23 @@
             } catch (\Throwable $e) {
                 $altUrls = null;
             }
+        } elseif (in_array($baseName, ['blog.show', 'locations.show'], true) && isset($params['slug'])) {
+            // Blog posts and locations also have a different slug per language
+            // (slug vs slug_sr); resolve the model so each alternate uses the
+            // correct slug instead of reusing the current one for both.
+            $model = $baseName === 'blog.show'
+                ? \App\Models\BlogPost::where('slug', $params['slug'])->orWhere('slug_sr', $params['slug'])->first()
+                : \App\Models\Location::where('slug', $params['slug'])->orWhere('slug_sr', $params['slug'])->first();
+            if ($model) {
+                try {
+                    $altUrls = [
+                        'en' => route($baseName, ['slug' => $model->slug]),
+                        'sr' => route('sr.' . $baseName, ['slug' => $model->slug_sr ?: $model->slug]),
+                    ];
+                } catch (\Throwable $e) {
+                    $altUrls = null;
+                }
+            }
         } else {
             try {
                 $altUrls = [
