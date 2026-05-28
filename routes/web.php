@@ -63,6 +63,11 @@ Route::middleware(SetLocale::class)->group(function () {
 
     // SEO landing pages targeting points of interest
     Route::get('/near/{slug}', [PageController::class, 'near'])->name('near');
+
+    // Query-targeted SEO landing pages (homepage clone w/ unique meta). Slug is
+    // constrained to the configured keys so it never shadows other routes.
+    Route::get('/{slug}', [HomeController::class, 'landing'])->name('landing')
+        ->where('slug', implode('|', array_keys(config('landing_pages', []))) ?: 'a\bnomatch');
 });
 
 // Serbian routes with /sr prefix and Serbian slugs

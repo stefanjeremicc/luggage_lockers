@@ -2,6 +2,9 @@
 
 @php
     $locale = app()->getLocale();
+    // $landing is passed only on SEO landing pages (HomeController@landing); on
+    // the real homepage it's null and everything falls back to the CMS/settings.
+    $landing = $landing ?? null;
     $metaTitleKey = $locale === 'sr' ? 'home_meta_title_sr' : 'home_meta_title';
     $metaDescKey = $locale === 'sr' ? 'home_meta_description_sr' : 'home_meta_description';
     $homePage = \App\Models\Page::seoFor('home', $locale);
@@ -12,14 +15,25 @@
     $heroCtaSecondary = $homePage?->section('hero.cta_secondary');
     $locationsCount = $locations->count();
     $minPriceEur = \App\Models\PricingRule::active()->min('price_eur');
+
+    // SEO landing override (page-specific H1, subtitle, hero image + alt, meta).
+    $heroAlt = __('Secure 24/7 luggage storage lockers in Belgrade');
+    if ($landing) {
+        $heroHeadline = $landing->h1;
+        $heroSubhead = $landing->subtitle;
+        if (!empty($landing->hero_image)) { $heroImage = $landing->hero_image; }
+        if (!empty($landing->hero_alt)) { $heroAlt = $landing->hero_alt; }
+    }
 @endphp
 
-@section('title', $settings[$metaTitleKey] ?? ($settings['home_meta_title'] ?? 'Belgrade Luggage Locker — 24/7 Secure Luggage Storage'))
-@section('meta_description', $settings[$metaDescKey] ?? ($settings['home_meta_description'] ?? ''))
+@section('title', $landing->meta_title ?? ($settings[$metaTitleKey] ?? ($settings['home_meta_title'] ?? 'Belgrade Luggage Locker — 24/7 Secure Luggage Storage')))
+@section('meta_description', $landing->meta_description ?? ($settings[$metaDescKey] ?? ($settings['home_meta_description'] ?? '')))
+@section('og_image', $landing && !empty($landing->og_image) ? url($landing->og_image) : '')
 
 @section('head')
     {{-- Preload the LCP hero image so it paints sooner (Core Web Vitals). --}}
     <link rel="preload" as="image" href="{{ $heroImage }}" fetchpriority="high">
+    @if($landing)<link rel="canonical" href="{{ url()->current() }}">@endif
 @endsection
 
 @section('content')
@@ -27,7 +41,7 @@
 <section class="hero-section relative flex items-center justify-center overflow-hidden -mt-20">
     {{-- Background image --}}
     <div class="absolute inset-0">
-        <img src="{{ $heroImage }}" alt="{{ __('Secure 24/7 luggage storage lockers in Belgrade') }}" width="1920" height="1080" class="w-full h-full object-cover" loading="eager" fetchpriority="high">
+        <img src="{{ $heroImage }}" alt="{{ $heroAlt }}" width="1920" height="1080" class="w-full h-full object-cover" loading="eager" fetchpriority="high">
         <div class="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-[#0A0A0A]"></div>
     </div>
 

@@ -15,6 +15,39 @@ class HomeController extends Controller
 {
     public function index()
     {
+        return view('public.home', $this->homeData());
+    }
+
+    /**
+     * SEO landing page — renders the FULL homepage layout but with a
+     * page-specific H1, subtitle, hero image/alt and meta tags, pulled from
+     * config/landing_pages.php. Clean root-level URL (e.g. /luggage-storage-belgrade).
+     */
+    public function landing(string $slug)
+    {
+        $cfg = config('landing_pages.' . $slug);
+        abort_unless(is_array($cfg), 404);
+        $locale = app()->getLocale();
+        $sr = $locale === 'sr';
+        $pick = fn (string $k) => $sr ? ($cfg[$k . '_sr'] ?? $cfg[$k] ?? null) : ($cfg[$k] ?? null);
+
+        $landing = (object) [
+            'slug'             => $slug,
+            'h1'               => $pick('h1'),
+            'subtitle'         => $pick('subtitle'),
+            'meta_title'       => $pick('meta_title'),
+            'meta_description' => $pick('meta_description'),
+            'hero_image'       => $cfg['hero_image'] ?? null,
+            'hero_alt'         => $pick('hero_alt'),
+            'og_image'         => $cfg['hero_image'] ?? null,
+        ];
+
+        return view('public.home', $this->homeData() + ['landing' => $landing]);
+    }
+
+    /** Shared homepage view data (used by the homepage and SEO landing pages). */
+    private function homeData(): array
+    {
         $locale = app()->getLocale();
 
         $locations = Location::active()->orderBy('sort_order')->get();
@@ -55,6 +88,6 @@ class HomeController extends Controller
             ? $sectionSteps
             : $configSteps;
 
-        return view('public.home', compact('locations', 'faqs', 'blogPosts', 'pricingRules', 'reviews', 'howItWorksSteps', 'home'));
+        return compact('locations', 'faqs', 'blogPosts', 'pricingRules', 'reviews', 'howItWorksSteps', 'home');
     }
 }
