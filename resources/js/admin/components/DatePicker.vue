@@ -1,41 +1,39 @@
 <template>
-    <VueDatePicker
-        :model-value="modelValue"
-        model-type="yyyy-MM-dd"
-        :enable-time-picker="false"
-        :format="fmt"
-        :dark="true"
-        :teleport="true"
-        :auto-apply="true"
-        :clearable="false"
-        :hide-input-icon="true"
-        :month-change-on-scroll="false"
-        :min-date="minDate"
-        :max-date="maxDate"
-        class="bll-datepicker"
-        @update:model-value="(v) => emit('update:modelValue', v)"
+    <!-- Native date input: value is already YYYY-MM-DD (our model format), never
+         shows a time, and color-scheme:dark themes the picker + makes the
+         calendar icon visible. Reliable where vue-datepicker v12 ignored props. -->
+    <input
+        type="date"
+        class="ll-date"
+        :value="modelValue"
+        :min="min || undefined"
+        :max="max || undefined"
+        @input="emit('update:modelValue', $event.target.value)"
     />
 </template>
 
 <script setup>
-import { computed } from 'vue';
-import { VueDatePicker } from '@vuepic/vue-datepicker';
-import '@vuepic/vue-datepicker/dist/main.css';
-
-// Date-only picker bound to a 'YYYY-MM-DD' string (model-type handles the
-// conversion, so no time component and the value stays a plain date). Themed
-// + whole-field clickable like the rest of the admin.
-const props = defineProps({
+defineProps({
     modelValue: { type: String, default: null },
     min: { type: String, default: null },
     max: { type: String, default: null },
 });
 const emit = defineEmits(['update:modelValue']);
-
-const minDate = computed(() => props.min ? new Date(props.min + 'T00:00:00') : null);
-const maxDate = computed(() => props.max ? new Date(props.max + 'T00:00:00') : null);
-
-// Force the displayed text to Serbian d.m.Y regardless of locale defaults.
-const pad = (n) => String(n).padStart(2, '0');
-const fmt = (d) => d ? `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}` : '';
 </script>
+
+<style scoped>
+.ll-date {
+    width: 100%;
+    height: 42px;
+    background: #111;
+    border: 1px solid #2A2A2A;
+    border-radius: 8px;
+    padding: 0 14px;          /* left-aligned like the Select inputs */
+    color: #fff;
+    font-size: 0.875rem;
+    color-scheme: dark;        /* dark native picker + visible icon */
+}
+.ll-date:focus { outline: none; border-color: #F59E0B; }
+.ll-date::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.7; }
+.ll-date:hover::-webkit-calendar-picker-indicator { opacity: 1; }
+</style>
