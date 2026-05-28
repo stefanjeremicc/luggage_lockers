@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Location;
 use App\Services\Analytics\GoogleAnalyticsService;
+use App\Services\Analytics\SearchConsoleService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -41,6 +42,23 @@ class AnalyticsController extends Controller
             [$from, $to] = [$to, $from];
         }
         return response()->json($ga->traffic($from->toDateString(), $to->toDateString()));
+    }
+
+    /**
+     * Google Search Console performance (search queries, impressions, clicks,
+     * CTR, average position) for the date range. Separate async endpoint like
+     * ga() so the external API call doesn't block the page.
+     */
+    public function searchConsole(Request $request, SearchConsoleService $sc): JsonResponse
+    {
+        $today = Carbon::today();
+        // SC data lags ~2 days; default window mirrors the GA endpoint.
+        $from = $this->parseDate($request->query('from'), $today->copy()->subDays(29));
+        $to   = $this->parseDate($request->query('to'), $today);
+        if ($from->gt($to)) {
+            [$from, $to] = [$to, $from];
+        }
+        return response()->json($sc->performance($from->toDateString(), $to->toDateString()));
     }
 
     public function index(Request $request): JsonResponse

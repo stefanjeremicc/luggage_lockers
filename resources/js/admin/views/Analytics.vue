@@ -262,6 +262,91 @@
                 </template>
             </div>
 
+            <!-- Search performance (Google Search Console) -->
+            <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0] flex items-center gap-1">Search · Google Search Console <InfoTip text="What people searched on Google to find you (queries), how often you appeared (impressions), how many clicked through, and your average position. Data lags ~2 days." /></h2>
+                    <span class="text-xs text-[#6B7280]">{{ rangeLabel }}</span>
+                </div>
+                <div v-if="scLoading" class="text-sm text-[#A0A0A0]">Loading search data…</div>
+                <div v-else-if="!sc || !sc.ok" class="text-sm text-[#6B7280] italic">{{ scMessage }}</div>
+                <template v-else>
+                    <!-- Headline metrics -->
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0] flex items-center gap-1">Clicks <InfoTip text="Times someone clicked your site in Google search results." /></p><p class="text-xl font-bold mt-1 text-[#10B981]">{{ sc.headline.clicks }}</p></div>
+                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0] flex items-center gap-1">Impressions <InfoTip text="Times your site appeared in search results (whether clicked or not)." /></p><p class="text-xl font-bold mt-1 text-white">{{ sc.headline.impressions }}</p></div>
+                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0] flex items-center gap-1">CTR <InfoTip text="Click-through rate = clicks ÷ impressions. Higher means your title/description is compelling." /></p><p class="text-xl font-bold mt-1 text-white">{{ sc.headline.ctr }}%</p></div>
+                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0] flex items-center gap-1">Avg. position <InfoTip text="Average ranking of your site in results (1 = top). Lower is better." /></p><p class="text-xl font-bold mt-1 text-white">{{ sc.headline.position }}</p></div>
+                    </div>
+
+                    <!-- Impressions trend -->
+                    <div v-if="sc.timeseries && sc.timeseries.length" class="mb-6">
+                        <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">Impressions over time <InfoTip text="How often you appeared in search each day across the selected range." /></h3>
+                        <div class="overflow-x-auto">
+                            <div class="w-max min-w-full">
+                                <div class="h-24 flex items-end gap-1 px-1">
+                                    <div v-for="(d,i) in sc.timeseries" :key="i" :title="d.date + ': ' + d.impressions + ' impressions, ' + d.clicks + ' clicks'"
+                                        class="w-3 shrink-0 bg-[#3B82F6]/70 hover:bg-[#3B82F6] rounded-t"
+                                        :style="{ height: Math.max(2, Math.round((d.impressions / scMax) * 96)) + 'px' }"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top queries + Top pages side by side -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">Top search queries <InfoTip text="The actual phrases people typed on Google, ranked by clicks." /></h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm min-w-[420px]">
+                                    <thead><tr class="text-[#6B7280] text-[11px] uppercase">
+                                        <th class="text-left py-1">Query</th>
+                                        <th class="text-right py-1">Clicks</th>
+                                        <th class="text-right py-1">Impr.</th>
+                                        <th class="text-right py-1">CTR</th>
+                                        <th class="text-right py-1">Pos.</th>
+                                    </tr></thead>
+                                    <tbody>
+                                        <tr v-for="(q,i) in sc.queries" :key="i" class="border-t border-[#2A2A2A]">
+                                            <td class="py-1.5" :title="q.query">{{ trimText(q.query) }}</td>
+                                            <td class="py-1.5 text-right tabular-nums text-[#10B981]">{{ q.clicks }}</td>
+                                            <td class="py-1.5 text-right tabular-nums">{{ q.impressions }}</td>
+                                            <td class="py-1.5 text-right tabular-nums">{{ q.ctr }}%</td>
+                                            <td class="py-1.5 text-right tabular-nums">{{ q.position }}</td>
+                                        </tr>
+                                        <tr v-if="!sc.queries.length"><td colspan="5" class="py-2 text-[#6B7280] italic">No queries in range.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">Top pages in search <InfoTip text="Which of your pages got the most clicks from Google search." /></h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm min-w-[420px]">
+                                    <thead><tr class="text-[#6B7280] text-[11px] uppercase">
+                                        <th class="text-left py-1">Page</th>
+                                        <th class="text-right py-1">Clicks</th>
+                                        <th class="text-right py-1">Impr.</th>
+                                        <th class="text-right py-1">CTR</th>
+                                        <th class="text-right py-1">Pos.</th>
+                                    </tr></thead>
+                                    <tbody>
+                                        <tr v-for="(p,i) in sc.pages" :key="i" class="border-t border-[#2A2A2A]">
+                                            <td class="py-1.5" :title="p.page">{{ trimText(p.page.replace(/^https?:\/\/[^/]+/, '') || '/') }}</td>
+                                            <td class="py-1.5 text-right tabular-nums text-[#10B981]">{{ p.clicks }}</td>
+                                            <td class="py-1.5 text-right tabular-nums">{{ p.impressions }}</td>
+                                            <td class="py-1.5 text-right tabular-nums">{{ p.ctr }}%</td>
+                                            <td class="py-1.5 text-right tabular-nums">{{ p.position }}</td>
+                                        </tr>
+                                        <tr v-if="!sc.pages.length"><td colspan="5" class="py-2 text-[#6B7280] italic">No pages in range.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
             <!-- Time series -->
             <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 mb-8">
                 <div class="flex items-center justify-between mb-4">
@@ -482,6 +567,8 @@ const clickIdx = ref(null);
 const origin = window.location.origin;
 const ga = ref(null);
 const gaLoading = ref(true);
+const sc = ref(null);
+const scLoading = ref(true);
 const chartScroll = ref(null);
 const tipX = ref(0);
 const tipY = ref(0);
@@ -776,6 +863,37 @@ const loadGa = async () => {
     }
 };
 
+// ── Search Console ──────────────────────────────────────────────────────────
+const scMax = computed(() => {
+    const ts = sc.value?.timeseries || [];
+    return Math.max(1, ...ts.map(d => d.impressions || 0));
+});
+const scMessage = computed(() => {
+    const r = sc.value?.reason;
+    if (r === 'not_configured') return 'Search Console credentials not installed on the server yet.';
+    if (r === 'auth_failed') return 'Could not authenticate with Google. Check the service-account key on the server.';
+    if (r === 'forbidden') return `Search Console access not granted yet. In Search Console → Settings → Users and permissions → Add user, add: ${sc.value?.service_account || 'the ga-reader service account'} (Full or Restricted). Data appears within ~1h after granting.`;
+    if (r === 'api_error') return 'Search Console API error — try again shortly.';
+    return 'No Search Console data for this range (data also lags ~2 days).';
+});
+const loadSc = async () => {
+    scLoading.value = true;
+    try {
+        const qs = new URLSearchParams({ from: filters.from, to: filters.to }).toString();
+        const res = await apiFetch('/api/admin/analytics/search-console?' + qs);
+        sc.value = res.ok ? await res.json() : { ok: false, reason: 'api_error' };
+    } catch {
+        sc.value = { ok: false, reason: 'api_error' };
+    } finally {
+        scLoading.value = false;
+    }
+};
+// Trim a long URL/query for display.
+const trimText = (s, n = 48) => {
+    s = String(s || '');
+    return s.length > n ? s.slice(0, n - 1) + '…' : s;
+};
+
 const load = async () => {
     // Full-screen "Loading…" only on the very first load; subsequent filter
     // changes keep the current data visible and just dim slightly (no flicker).
@@ -783,6 +901,7 @@ const load = async () => {
     else refreshing.value = true;
     error.value = null;
     loadGa(); // async, non-blocking — GA panel fills in when ready
+    loadSc(); // async, non-blocking — Search Console panel fills in when ready
     try {
         const qs = new URLSearchParams({ ...filters }).toString();
         const res = await apiFetch('/api/admin/analytics?' + qs);
