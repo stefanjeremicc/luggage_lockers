@@ -94,6 +94,14 @@ Route::prefix('sr')->middleware(SetLocale::class)->name('sr.')->group(function (
 
     // SEO landing pages (SR)
     Route::get('/blizu/{slug}', [PageController::class, 'near'])->name('near');
+
+    // Serbian SEO landing pages (homepage clone w/ SR meta). Constrained to the
+    // configured `slug_sr` values so it never shadows other SR routes.
+    Route::get('/{slug}', [HomeController::class, 'landing'])->name('landing')
+        ->where('slug', implode('|', array_filter(array_map(
+            fn ($c) => $c['slug_sr'] ?? null,
+            config('landing_pages', [])
+        ))) ?: 'a\bnomatch');
 });
 
 /*

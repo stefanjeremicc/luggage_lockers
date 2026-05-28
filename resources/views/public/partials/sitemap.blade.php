@@ -29,9 +29,18 @@
         <changefreq>{{ $page['cf'] }}</changefreq><priority>{{ $page['priority'] }}</priority></url>
     @endforeach
 
-    @foreach(array_keys(config('landing_pages', [])) as $landingSlug)
-    <url><loc>{{ url("/{$landingSlug}") }}</loc>
+    @foreach(config('landing_pages', []) as $enSlug => $lp)
+    @php $srSlug = $lp['slug_sr'] ?? null; @endphp
+    <url><loc>{{ url("/{$enSlug}") }}</loc>
+        <xhtml:link rel="alternate" hreflang="en" href="{{ url("/{$enSlug}") }}"/>
+        @if($srSlug)<xhtml:link rel="alternate" hreflang="sr" href="{{ url("/sr/{$srSlug}") }}"/>@endif
         <changefreq>weekly</changefreq><priority>0.9</priority></url>
+    @if($srSlug)
+    <url><loc>{{ url("/sr/{$srSlug}") }}</loc>
+        <xhtml:link rel="alternate" hreflang="en" href="{{ url("/{$enSlug}") }}"/>
+        <xhtml:link rel="alternate" hreflang="sr" href="{{ url("/sr/{$srSlug}") }}"/>
+        <changefreq>weekly</changefreq><priority>0.9</priority></url>
+    @endif
     @endforeach
 
     @foreach($locations as $location)

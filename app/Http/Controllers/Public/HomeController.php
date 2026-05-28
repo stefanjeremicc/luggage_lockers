@@ -25,14 +25,33 @@ class HomeController extends Controller
      */
     public function landing(string $slug)
     {
-        $cfg = config('landing_pages.' . $slug);
-        abort_unless(is_array($cfg), 404);
+        $all = config('landing_pages', []);
         $locale = app()->getLocale();
         $sr = $locale === 'sr';
+
+        // Resolve the config entry + its canonical (EN) key. In EN the URL slug
+        // IS the config key; in SR the URL is the entry's slug_sr.
+        $key = null;
+        $cfg = null;
+        if ($sr) {
+            foreach ($all as $k => $c) {
+                if (($c['slug_sr'] ?? null) === $slug) {
+                    $key = $k;
+                    $cfg = $c;
+                    break;
+                }
+            }
+        } elseif (isset($all[$slug])) {
+            $key = $slug;
+            $cfg = $all[$slug];
+        }
+        abort_unless(is_array($cfg), 404);
+
         $pick = fn (string $k) => $sr ? ($cfg[$k . '_sr'] ?? $cfg[$k] ?? null) : ($cfg[$k] ?? null);
 
         $landing = (object) [
-            'slug'             => $slug,
+            'slug'             => $key,                     // EN slug (config key / EN URL)
+            'slug_sr'          => $cfg['slug_sr'] ?? null,  // SR URL slug (for hreflang)
             'h1'               => $pick('h1'),
             'subtitle'         => $pick('subtitle'),
             'meta_title'       => $pick('meta_title'),
