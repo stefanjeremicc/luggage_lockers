@@ -193,7 +193,9 @@
                                     :style="{ height: Math.max(2, (s / gaHourMax) * 100) + '%' }"
                                     :title="h + ':00 — ' + s + ' sessions'"></div>
                             </div>
-                            <div class="flex justify-between text-[10px] text-[#6B7280] mt-1"><span>00</span><span>03</span><span>06</span><span>09</span><span>12</span><span>15</span><span>18</span><span>21</span><span>23</span></div>
+                            <div class="flex gap-0.5 text-[8px] leading-none text-[#6B7280] mt-1">
+                                <span v-for="(s,h) in (ga.by_hour || [])" :key="h" class="flex-1 text-center tabular-nums">{{ String(h).padStart(2,'0') }}</span>
+                            </div>
                         </div>
                         <div>
                             <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">By day of week <InfoTip text="Sessions per weekday — which days are busiest." /></h3>
