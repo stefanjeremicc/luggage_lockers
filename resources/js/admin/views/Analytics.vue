@@ -145,7 +145,7 @@
             <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 mb-8">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0]">Site traffic · Google Analytics</h2>
-                    <span class="text-xs text-[#6B7280]">same date range</span>
+                    <span class="text-xs text-[#6B7280]">{{ rangeLabel }}</span>
                 </div>
                 <div v-if="gaLoading" class="text-sm text-[#A0A0A0]">Loading traffic…</div>
                 <div v-else-if="!ga || !ga.ok" class="text-sm text-[#6B7280] italic">{{ gaMessage }}</div>
@@ -599,6 +599,11 @@ const presets = [
     { key: 'month', label: 'This month' },
 ];
 const activePreset = ref('month');
+// Human label for the active range — preset name, or the custom dd.mm→dd.mm.
+const rangeLabel = computed(() => {
+    const p = presets.find(x => x.key === activePreset.value);
+    return p ? p.label : `${srDate(filters.from)} → ${srDate(filters.to)}`;
+});
 const setPreset = (key) => {
     const t = new Date();
     if (key === 'today') { filters.from = iso(t); filters.to = iso(t); }
