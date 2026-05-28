@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\BookingLocker;
+use App\Services\Lock\TtlockQuota;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -29,6 +30,16 @@ class DeleteExpiredBookingPins implements ShouldQueue
 
     public function handle(): void
     {
+        // While the monthly TTLock quota is exhausted, every delete call fails
+        // fast (and would be retried/re-dispatched every minute, flooding the
+        // log). Skip cleanup entirely until the quota resets on the 1st — the
+        // passcodes are timed and expire on the lock on their own; we only purge
+        // them from TTLock cloud here, which can safely wait. No API calls, no
+        // log spam, automatic resume after reset.
+        if (TtlockQuota::isExceeded()) {
+            return;
+        }
+
         $cutoff = now()->subMinutes(CreateTTLockAccessCode::TTLOCK_BUFFER_MINUTES);
 
         $rows = BookingLocker::query()

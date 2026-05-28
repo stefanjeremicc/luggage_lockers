@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\TtlockGateway;
 use App\Services\Lock\LockServiceInterface;
+use App\Services\Lock\TtlockQuota;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -17,6 +18,11 @@ class SyncGateways implements ShouldQueue
 
     public function handle(LockServiceInterface $lockService): void
     {
+        // Quota exhausted → no point polling TTLock until next month's reset.
+        if (TtlockQuota::isExceeded()) {
+            return;
+        }
+
         try {
             $response = $lockService->getGatewayList();
             $list = $response['list'] ?? [];

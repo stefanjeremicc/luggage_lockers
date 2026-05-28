@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\BookingLocker;
 use App\Services\Lock\LockServiceInterface;
+use App\Services\Lock\TtlockQuota;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -22,6 +23,15 @@ class DeleteTTLockAccessCode implements ShouldQueue
 
     public function handle(LockServiceInterface $lockService): void
     {
+        // Quota exhausted → the delete call can't succeed and would just throw
+        // a TtlockQuotaExceededException (logged with a full stacktrace) on
+        // every retry. Return quietly; the local ttlock_keyboard_pwd_id is left
+        // intact so DeleteExpiredBookingPins re-queues this cleanup once the
+        // quota resets next month.
+        if (TtlockQuota::isExceeded()) {
+            return;
+        }
+
         // The booking_locker row may already be gone (admin force-delete, or
         // the booking was wiped before this job ran). Silently swallow that —
         // the only thing this job does is best-effort cleanup of a TTLock

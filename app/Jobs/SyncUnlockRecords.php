@@ -6,6 +6,7 @@ use App\Enums\BookingStatus;
 use App\Models\BookingLocker;
 use App\Models\Locker;
 use App\Services\Lock\LockServiceInterface;
+use App\Services\Lock\TtlockQuota;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -20,6 +21,12 @@ class SyncUnlockRecords implements ShouldQueue
 
     public function handle(LockServiceInterface $lockService): void
     {
+        // Quota exhausted → skip polling until reset (the TTLock webhook still
+        // delivers unlock events; this is only the backup path).
+        if (TtlockQuota::isExceeded()) {
+            return;
+        }
+
         $end = Carbon::now();
         // Overlap the look-back window so we don't miss records if TTLock's
         // cloud is laggy.
