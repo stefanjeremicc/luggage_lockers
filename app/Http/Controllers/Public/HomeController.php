@@ -59,6 +59,9 @@ class HomeController extends Controller
             'hero_image'       => $cfg['hero_image'] ?? null,
             'hero_alt'         => $pick('hero_alt'),
             'og_image'         => $cfg['hero_image'] ?? null,
+            // Unique body content so these are real pages, not homepage clones.
+            'intro'            => $pick('intro'),
+            'faqs'             => $sr ? ($cfg['faqs_sr'] ?? $cfg['faqs'] ?? []) : ($cfg['faqs'] ?? []),
         ];
 
         return view('public.home', $this->homeData() + ['landing' => $landing]);

@@ -4,133 +4,110 @@
 |--------------------------------------------------------------------------
 | SEO landing pages
 |--------------------------------------------------------------------------
-| Query-targeted pages that render the FULL homepage layout (HomeController@
-| landing) but with a unique H1, subtitle, hero image + alt, and meta tags.
-| URL = root-level slug (e.g. /luggage-storage-belgrade). Add an entry here,
-| drop a hero image at the given path, and it's live (route is config-driven).
-| `*_sr` fields are kept for future Serbian versions (not routed yet).
+| Distinct-intent, query-targeted pages that render the homepage layout
+| (HomeController@landing) with a unique H1, subtitle, hero, meta tags AND
+| unique body content (`intro` + `faqs`) so they are NOT thin homepage clones.
+|
+| Word-order synonyms of "luggage storage Belgrade" are intentionally NOT
+| separate pages — they would cannibalise the homepage, which already ranks
+| for the whole cluster. Those slugs 301-redirect to the homepage (see
+| routes/web.php). Only genuinely different search intents live here.
+|
+| URL = root-level slug (EN) and /sr/{slug_sr} (SR). Both languages routed.
 */
 
 return [
 
-    'luggage-storage-belgrade' => [
-        'h1'               => "Luggage Storage in Belgrade",
-        'subtitle'         => "Secure, self-service luggage & bag storage 24/7 in central Belgrade — minutes from Slavija Square and the main bus station. Book online in 60 seconds, pay cash on arrival.",
-        'meta_title'       => "Luggage Storage Belgrade — 24/7 Secure Bag Storage",
-        'meta_description' => "Store your luggage in Belgrade 24/7. Secure smart lockers near Slavija Square and the bus station. Book in 60 seconds, pay on arrival — drop your bags and explore the city.",
-        'hero_image'       => '/images/landing/luggage-storage-belgrade.webp',
-        'hero_alt'         => "24/7 secure luggage storage lockers in central Belgrade",
-
-        'slug_sr'             => 'cuvanje-prtljaga-beograd',
-        'h1_sr'               => "Čuvanje prtljaga u Beogradu",
-        'subtitle_sr'         => "Sigurno samouslužno čuvanje prtljaga i torbi 0–24 u centru Beograda — par minuta od Slavije i glavne autobuske stanice. Rezerviši online za 60 sekundi, plati gotovinom na licu mesta.",
-        'meta_title_sr'       => "Čuvanje prtljaga Beograd — sigurni ormarići 0–24",
-        'meta_description_sr' => "Čuvanje prtljaga u Beogradu 0–24. Sigurni pametni ormarići blizu Slavije i autobuske stanice. Rezerviši za 60 sekundi, plati na licu mesta.",
-    ],
-
-    'belgrade-luggage-storage' => [
-        'h1'               => "Belgrade Luggage Storage",
-        'subtitle'         => "Drop your bags in seconds with secure, self-service luggage storage in central Belgrade — open 24/7, minutes from Slavija Square and the main bus station. Book online in 60 seconds, pay cash on arrival.",
-        'meta_title'       => "Belgrade Luggage Storage — Secure Bag Lockers 24/7",
-        'meta_description' => "Belgrade luggage storage made easy. Secure self-service lockers in the city centre, open 24/7. Book in 60 seconds, pay on arrival, and explore Belgrade bag-free.",
-        'hero_image'       => '/images/landing/belgrade-luggage-storage.webp',
-        'hero_alt'         => "Secure self-service luggage storage lockers in central Belgrade",
-
-        'slug_sr'             => 'cuvanje-prtljaga-beograd-centar',
-        'h1_sr'               => "Čuvanje prtljaga Beograd",
-        'subtitle_sr'         => "Ostavi torbe za par sekundi uz sigurno samouslužno čuvanje prtljaga u centru Beograda — otvoreno 0–24, par minuta od Slavije i glavne autobuske stanice. Rezerviši online za 60 sekundi, plati gotovinom na licu mesta.",
-        'meta_title_sr'       => "Čuvanje prtljaga Beograd — sigurni ormarići 0–24",
-        'meta_description_sr' => "Jednostavno čuvanje prtljaga u Beogradu. Sigurni samouslužni ormarići u centru grada, otvoreni 0–24. Rezerviši za 60 sekundi, plati na licu mesta.",
-    ],
-
     'airport-luggage-storage' => [
         'h1'               => "Airport Luggage Storage in Belgrade",
-        'subtitle'         => "Arriving early or flying out late? Store your bags safely on the way to or from Belgrade Nikola Tesla Airport. Secure 24/7 lockers in the city centre — book online in 60 seconds, pay cash on arrival.",
+        'subtitle'         => "Flying in early or out late from Nikola Tesla Airport? Store your bags in secure 24/7 lockers in central Belgrade, minutes from the A1 airport shuttle. Book online in 60 seconds, pay cash on arrival.",
         'meta_title'       => "Airport Luggage Storage Belgrade — 24/7 Secure Lockers",
-        'meta_description' => "Luggage storage for Belgrade airport travellers. Secure 24/7 lockers in the city centre near the airport shuttle. Book in 60 seconds, pay on arrival, travel light.",
+        'meta_description' => "Luggage storage for Belgrade Nikola Tesla Airport travellers. Secure 24/7 lockers in the city centre by the A1 shuttle. Book in 60 seconds, pay on arrival, travel light.",
         'hero_image'       => '/images/landing/airport-luggage-storage.webp',
         'hero_alt'         => "Secure airport luggage storage lockers in Belgrade city centre",
 
+        'intro' => "<h2>Luggage storage for Belgrade airport travellers</h2>"
+            . "<p>Belgrade Nikola Tesla Airport (BEG) sits about 18 km west of the city centre, roughly a 30–40 minute ride on the <strong>A1 airport shuttle</strong> or a 25-minute taxi. If you land early before hotel check-in, or check out hours before a late flight, you don't have to drag your suitcase around the city — leave it in one of our secure self-service lockers and explore hands-free.</p>"
+            . "<p>Both of our locations are in <strong>central Belgrade</strong>, minutes from Slavija Square and the A1 shuttle stop, so dropping off and picking up your bags fits naturally into your route to or from the airport. Lockers are open <strong>24/7</strong> with one-time PIN access, so an early-morning departure or a midnight arrival is never a problem.</p>"
+            . "<h2>How it works</h2>"
+            . "<p>Pick your locker size, book online in about 60 seconds, and get a PIN by email. Drop your bags, head to the airport or into town, and collect them whenever you're ready. You pay cash on arrival — no card needed, no hidden fees.</p>",
+        'faqs' => [
+            ['q' => "Is there luggage storage at Belgrade Airport?",
+             'a' => "Belgrade Nikola Tesla Airport has limited on-site options. Most travellers use secure luggage storage in the city centre instead — our 24/7 lockers are minutes from the A1 airport shuttle stop and far cheaper for a full day."],
+            ['q' => "How do I get from Nikola Tesla Airport to the city centre?",
+             'a' => "The A1 airport shuttle bus runs regularly to Slavija Square in about 30–40 minutes; a taxi takes around 25 minutes. Our lockers are a short walk from the central stops."],
+            ['q' => "Can I store my bags before an early flight or after checkout?",
+             'a' => "Yes. Our lockers are open 24/7 with one-time PIN access, so you can drop off or collect your luggage at any hour, including very early mornings and late nights."],
+            ['q' => "How much does airport luggage storage in Belgrade cost?",
+             'a' => "Pricing is clear and capped — you see the exact amount before you book, and pay cash on arrival. A full day costs far less than per-hour airport lockers."],
+        ],
+
         'slug_sr'             => 'cuvanje-prtljaga-aerodrom-beograd',
         'h1_sr'               => "Čuvanje prtljaga — aerodrom Beograd",
-        'subtitle_sr'         => "Stižeš ranije ili letiš kasno? Ostavi torbe na sigurnom na putu do ili od aerodroma Nikola Tesla. Sigurni ormarići 0–24 u centru grada — rezerviši online za 60 sekundi, plati gotovinom na licu mesta.",
+        'subtitle_sr'         => "Stižeš rano ili letiš kasno sa aerodroma Nikola Tesla? Ostavi torbe u sigurnim ormarićima 0–24 u centru Beograda, par minuta od A1 aerodromskog busa. Rezerviši online za 60 sekundi, plati gotovinom na licu mesta.",
         'meta_title_sr'       => "Čuvanje prtljaga aerodrom Beograd — ormarići 0–24",
-        'meta_description_sr' => "Čuvanje prtljaga za putnike sa beogradskog aerodroma. Sigurni ormarići 0–24 u centru grada. Rezerviši za 60 sekundi, plati na licu mesta.",
+        'meta_description_sr' => "Čuvanje prtljaga za putnike sa beogradskog aerodroma Nikola Tesla. Sigurni ormarići 0–24 u centru grada kod A1 busa. Rezerviši za 60 sekundi, plati na licu mesta.",
+        'intro_sr' => "<h2>Čuvanje prtljaga za putnike sa beogradskog aerodroma</h2>"
+            . "<p>Aerodrom Nikola Tesla (BEG) je oko 18 km zapadno od centra, otprilike 30–40 minuta vožnje <strong>A1 aerodromskim busom</strong> ili 25 minuta taksijem. Ako sletiš rano pre prijave u hotel ili se odjaviš satima pre kasnog leta, ne moraš da vučeš kofer po gradu — ostavi ga u našem sigurnom samouslužnom ormariću i razgledaj bez tereta.</p>"
+            . "<p>Obe lokacije su u <strong>centru Beograda</strong>, par minuta od Slavije i stajališta A1 busa, pa se ostavljanje i preuzimanje torbi prirodno uklapa u put do ili od aerodroma. Ormarići rade <strong>0–24</strong> uz pristup jednokratnim PIN-om, pa ni rani polazak ni dolazak u ponoć nisu problem.</p>"
+            . "<h2>Kako funkcioniše</h2>"
+            . "<p>Izaberi veličinu ormarića, rezerviši online za oko 60 sekundi i dobij PIN na mejl. Ostavi torbe, idi na aerodrom ili u grad, i preuzmi ih kad poželiš. Plaćaš gotovinom na licu mesta — bez kartice, bez skrivenih troškova.</p>",
+        'faqs_sr' => [
+            ['q' => "Postoji li čuvanje prtljaga na aerodromu u Beogradu?",
+             'a' => "Aerodrom Nikola Tesla ima ograničene opcije na licu mesta. Većina putnika koristi sigurno čuvanje prtljaga u centru grada — naši ormarići rade 0–24, par minuta su od stajališta A1 busa i znatno su jeftiniji za ceo dan."],
+            ['q' => "Kako da stignem od aerodroma do centra Beograda?",
+             'a' => "A1 aerodromski bus redovno vozi do Slavije za oko 30–40 minuta; taksi stiže za oko 25 minuta. Naši ormarići su na par koraka od centralnih stajališta."],
+            ['q' => "Mogu li da ostavim torbe pre ranog leta ili posle odjave?",
+             'a' => "Da. Ormarići rade 0–24 uz jednokratni PIN, pa torbe možeš da ostaviš ili preuzmeš u bilo koje doba, uključujući rano jutro i kasnu noć."],
+            ['q' => "Koliko košta čuvanje prtljaga blizu aerodroma?",
+             'a' => "Cena je jasna i ograničena — vidiš tačan iznos pre rezervacije i plaćaš gotovinom na licu mesta. Ceo dan košta znatno manje od aerodromskih ormarića po satu."],
+        ],
     ],
 
     'bus-station-luggage-storage' => [
         'h1'               => "Bus Station Luggage Storage in Belgrade",
-        'subtitle'         => "Just minutes from Belgrade's main bus and train station — leave your luggage in a secure self-service locker and explore the city between connections. Open 24/7, book online in 60 seconds, pay cash on arrival.",
+        'subtitle'         => "Minutes from Belgrade's main bus station (BAS) and Prokop railway station — leave your luggage in a secure 24/7 locker and explore the city between connections. Book online in 60 seconds, pay cash on arrival.",
         'meta_title'       => "Bus Station Luggage Storage Belgrade — 24/7 Lockers",
-        'meta_description' => "Luggage storage minutes from Belgrade's main bus station. Secure self-service lockers, open 24/7. Book in 60 seconds, pay on arrival, explore between buses.",
+        'meta_description' => "Luggage storage minutes from Belgrade's main bus station (BAS) and Prokop railway station. Secure 24/7 self-service lockers. Book in 60 seconds, pay on arrival.",
         'hero_image'       => '/images/landing/bus-station-luggage-storage.webp',
         'hero_alt'         => "Luggage storage lockers near Belgrade main bus station",
 
+        'intro' => "<h2>Luggage storage near Belgrade bus & train station</h2>"
+            . "<p>Belgrade's main bus station (BAS) and the <strong>Prokop railway station</strong> are the arrival point for travellers coming from across Serbia and the region. If you have hours between connections, you don't need to sit on a bench guarding your bags — store them in a secure self-service locker in the city centre and use the time to actually see Belgrade.</p>"
+            . "<p>Our central locations are a short ride or walk from the stations, close to Slavija Square, Knez Mihailova street and Kalemegdan Fortress. Lockers are open <strong>24/7</strong> with one-time PIN access, so late buses and early trains are never a problem.</p>"
+            . "<h2>How it works</h2>"
+            . "<p>Choose your locker size, book online in about 60 seconds, and receive a PIN by email. Drop your luggage, explore the city, and pick it up before your next departure. Pay cash on arrival — no card, no hidden fees.</p>",
+        'faqs' => [
+            ['q' => "Is there luggage storage at Belgrade bus station?",
+             'a' => "On-site storage at the bus station is limited. Our secure 24/7 lockers in the city centre are a short hop away and let you store bags for the whole day at a clear, capped price."],
+            ['q' => "Where is the main bus station in Belgrade?",
+             'a' => "Belgrade's main bus station (BAS) is near the Prokop railway station, a short ride from the city centre where our lockers are located, close to Slavija Square."],
+            ['q' => "Can I store luggage near Prokop railway station?",
+             'a' => "Yes. Our central locations are easy to reach from Prokop, so you can drop your bags after arriving by train and collect them before your next connection."],
+            ['q' => "How long can I leave my bags?",
+             'a' => "From a couple of hours to a full day or more. Pricing is capped, so a long layover stays affordable, and you collect your bags whenever you're ready."],
+        ],
+
         'slug_sr'             => 'cuvanje-prtljaga-autobuska-stanica-beograd',
         'h1_sr'               => "Čuvanje prtljaga — autobuska stanica Beograd",
-        'subtitle_sr'         => "Par minuta od glavne autobuske i železničke stanice u Beogradu — ostavi prtljag u sigurnom samouslužnom ormariću i razgledaj grad između polazaka. Otvoreno 0–24, rezerviši online za 60 sekundi, plati gotovinom na licu mesta.",
+        'subtitle_sr'         => "Par minuta od glavne autobuske stanice (BAS) i železničke stanice Prokop — ostavi prtljag u sigurnom ormariću 0–24 i razgledaj grad između polazaka. Rezerviši online za 60 sekundi, plati gotovinom na licu mesta.",
         'meta_title_sr'       => "Čuvanje prtljaga autobuska stanica Beograd — 0–24",
-        'meta_description_sr' => "Čuvanje prtljaga par minuta od glavne autobuske stanice u Beogradu. Sigurni samouslužni ormarići 0–24. Rezerviši za 60 sekundi, plati na licu mesta.",
-    ],
-
-    'luggage-storage' => [
-        'h1'               => "Luggage Storage",
-        'subtitle'         => "Secure, self-service luggage storage in central Belgrade — drop your bags in a smart locker and travel hands-free. Open 24/7, book online in 60 seconds, pay cash on arrival.",
-        'meta_title'       => "Luggage Storage in Belgrade — Secure Smart Lockers 24/7",
-        'meta_description' => "Self-service luggage storage in central Belgrade. Secure smart lockers, open 24/7. Book in 60 seconds, pay on arrival, and explore the city bag-free.",
-        'hero_image'       => '/images/landing/luggage-storage.webp',
-        'hero_alt'         => "Self-service luggage storage smart lockers in Belgrade",
-
-        'slug_sr'             => 'cuvanje-prtljaga',
-        'h1_sr'               => "Čuvanje prtljaga",
-        'subtitle_sr'         => "Sigurno samouslužno čuvanje prtljaga u centru Beograda — ostavi torbe u pametnom ormariću i kreći se bez tereta. Otvoreno 0–24, rezerviši online za 60 sekundi, plati gotovinom na licu mesta.",
-        'meta_title_sr'       => "Čuvanje prtljaga Beograd — pametni ormarići 0–24",
-        'meta_description_sr' => "Samouslužno čuvanje prtljaga u centru Beograda. Sigurni pametni ormarići, otvoreni 0–24. Rezerviši za 60 sekundi, plati na licu mesta.",
-    ],
-
-    'storage-belgrade' => [
-        'h1'               => "Storage in Belgrade",
-        'subtitle'         => "Need somewhere to keep your bags in Belgrade? Use our secure, self-service smart lockers in the city centre — open 24/7, minutes from Slavija Square and the bus station. Book online in 60 seconds, pay cash on arrival.",
-        'meta_title'       => "Storage in Belgrade — Secure 24/7 Luggage Lockers",
-        'meta_description' => "Secure storage in central Belgrade. Self-service smart lockers for luggage and bags, open 24/7. Book in 60 seconds, pay on arrival, explore the city.",
-        'hero_image'       => '/images/landing/storage-belgrade.webp',
-        'hero_alt'         => "Secure storage lockers in central Belgrade",
-
-        'slug_sr'             => 'ostava-beograd',
-        'h1_sr'               => "Ostava u Beogradu",
-        'subtitle_sr'         => "Treba ti mesto za torbe u Beogradu? Koristi naše sigurne samouslužne pametne ormariće u centru grada — otvoreno 0–24, par minuta od Slavije i autobuske stanice. Rezerviši online za 60 sekundi, plati gotovinom na licu mesta.",
-        'meta_title_sr'       => "Ostava Beograd — sigurni ormarići za prtljag 0–24",
-        'meta_description_sr' => "Sigurna ostava u centru Beograda. Samouslužni pametni ormarići za prtljag i torbe, otvoreni 0–24. Rezerviši za 60 sekundi, plati na licu mesta.",
-    ],
-
-    'belgrade-luggage-locker' => [
-        'h1'               => "Belgrade Luggage Lockers",
-        'subtitle'         => "Smart self-service luggage lockers in central Belgrade — choose your size, get a one-time PIN, and your bags are safe 24/7. Minutes from Slavija Square and the bus station. Book online in 60 seconds, pay cash on arrival.",
-        'meta_title'       => "Belgrade Luggage Lockers — Secure Smart Lockers 24/7",
-        'meta_description' => "Belgrade luggage lockers, open 24/7. Smart self-service lockers with one-time PIN access in the city centre. Book in 60 seconds, pay on arrival.",
-        'hero_image'       => '/images/landing/belgrade-luggage-locker.webp',
-        'hero_alt'         => "Smart self-service luggage lockers in central Belgrade",
-
-        'slug_sr'             => 'ormarici-za-prtljag-beograd',
-        'h1_sr'               => "Ormarići za prtljag u Beogradu",
-        'subtitle_sr'         => "Pametni samouslužni ormarići za prtljag u centru Beograda — izaberi veličinu, dobij jednokratni PIN i tvoje torbe su bezbedne 0–24. Par minuta od Slavije i autobuske stanice. Rezerviši online za 60 sekundi, plati gotovinom na licu mesta.",
-        'meta_title_sr'       => "Ormarići za prtljag Beograd — sigurni ormarići 0–24",
-        'meta_description_sr' => "Ormarići za prtljag u Beogradu, otvoreni 0–24. Pametni samouslužni ormarići sa jednokratnim PIN-om u centru grada. Rezerviši za 60 sekundi, plati na licu mesta.",
-    ],
-
-    'locker-room' => [
-        'h1'               => "Locker Room for Luggage in Belgrade",
-        'subtitle'         => "Need a locker room to stash your bags in Belgrade? Our smart self-service lockers in the city centre keep your luggage safe 24/7 — pick your size, get a one-time PIN, and go. Book online in 60 seconds, pay cash on arrival.",
-        'meta_title'       => "Luggage Locker Room Belgrade — Secure Storage Lockers 24/7",
-        'meta_description' => "A secure locker room for your luggage in central Belgrade. Smart self-service storage lockers, open 24/7, one-time PIN access. Book in 60 seconds, pay on arrival.",
-        'hero_image'       => '/images/landing/locker-room.webp',
-        'hero_alt'         => "Self-service luggage locker room in central Belgrade",
-
-        'slug_sr'             => 'garderoba-ormarici-beograd',
-        'h1_sr'               => "Garderoba sa ormarićima u Beogradu",
-        'subtitle_sr'         => "Treba ti garderoba za torbe u Beogradu? Naši pametni samouslužni ormarići u centru grada čuvaju prtljag bezbedno 0–24 — izaberi veličinu, dobij jednokratni PIN i kreni. Rezerviši online za 60 sekundi, plati gotovinom na licu mesta.",
-        'meta_title_sr'       => "Garderoba sa ormarićima Beograd — sigurni ormarići 0–24",
-        'meta_description_sr' => "Sigurna garderoba sa ormarićima za prtljag u centru Beograda. Pametni samouslužni ormarići, otvoreni 0–24, pristup jednokratnim PIN-om. Rezerviši za 60 sekundi, plati na licu mesta.",
+        'meta_description_sr' => "Čuvanje prtljaga par minuta od glavne autobuske stanice (BAS) i stanice Prokop u Beogradu. Sigurni samouslužni ormarići 0–24. Rezerviši za 60 sekundi, plati na licu mesta.",
+        'intro_sr' => "<h2>Čuvanje prtljaga blizu autobuske i železničke stanice</h2>"
+            . "<p>Glavna autobuska stanica (BAS) i <strong>železnička stanica Prokop</strong> su mesto dolaska putnika iz cele Srbije i regiona. Ako imaš sati između polazaka, ne moraš da sediš na klupi i čuvaš torbe — ostavi ih u sigurnom samouslužnom ormariću u centru grada i iskoristi vreme da stvarno vidiš Beograd.</p>"
+            . "<p>Naše centralne lokacije su na kratkoj vožnji ili šetnji od stanica, blizu Slavije, Knez Mihailove i Kalemegdana. Ormarići rade <strong>0–24</strong> uz jednokratni PIN, pa kasni autobusi i rani vozovi nisu problem.</p>"
+            . "<h2>Kako funkcioniše</h2>"
+            . "<p>Izaberi veličinu ormarića, rezerviši online za oko 60 sekundi i dobij PIN na mejl. Ostavi prtljag, razgledaj grad i preuzmi ga pre sledećeg polaska. Plaćaš gotovinom na licu mesta — bez kartice, bez skrivenih troškova.</p>",
+        'faqs_sr' => [
+            ['q' => "Postoji li čuvanje prtljaga na autobuskoj stanici u Beogradu?",
+             'a' => "Čuvanje na samoj stanici je ograničeno. Naši sigurni ormarići 0–24 u centru grada su na kratkom putu i omogućavaju da ostaviš torbe za ceo dan po jasnoj, ograničenoj ceni."],
+            ['q' => "Gde se nalazi glavna autobuska stanica u Beogradu?",
+             'a' => "Glavna autobuska stanica (BAS) je blizu železničke stanice Prokop, na kratkoj vožnji od centra grada gde su naši ormarići, u blizini Slavije."],
+            ['q' => "Mogu li da ostavim prtljag blizu stanice Prokop?",
+             'a' => "Da. Naše centralne lokacije se lako dostižu sa Prokopa, pa torbe možeš da ostaviš po dolasku vozom i preuzmeš pre sledećeg polaska."],
+            ['q' => "Koliko dugo mogu da ostavim torbe?",
+             'a' => "Od par sati do celog dana i duže. Cena je ograničena, pa dugo čekanje između polazaka ostaje povoljno, a torbe preuzimaš kad poželiš."],
+        ],
     ],
 
 ];

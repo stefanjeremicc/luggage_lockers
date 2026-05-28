@@ -24,7 +24,30 @@
         if (!empty($landing->hero_image)) { $heroImage = $landing->hero_image; }
         if (!empty($landing->hero_alt)) { $heroAlt = $landing->hero_alt; }
     }
+
+    // Page body content: landing pages bring their own intro + FAQs; the
+    // homepage falls back to its DB-driven FAQs and a generic SEO block below.
+    $seoIntro = $landing->intro ?? null;
+    $pageFaqs = (!empty($landing) && !empty($landing->faqs))
+        ? collect($landing->faqs)->map(fn ($f) => (object) ['question' => $f['q'], 'answer' => $f['a']])
+        : $faqs;
 @endphp
+
+@if($pageFaqs->count())
+@push('schema')
+<script type="application/ld+json">
+{!! json_encode([
+    '@context' => 'https://schema.org',
+    '@type' => 'FAQPage',
+    'mainEntity' => $pageFaqs->map(fn ($f) => [
+        '@type' => 'Question',
+        'name' => strip_tags((string) $f->question),
+        'acceptedAnswer' => ['@type' => 'Answer', 'text' => strip_tags((string) $f->answer)],
+    ])->values()->all(),
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
+</script>
+@endpush
+@endif
 
 @section('title', $landing->meta_title ?? ($settings[$metaTitleKey] ?? ($settings['home_meta_title'] ?? 'Belgrade Luggage Locker — 24/7 Secure Luggage Storage')))
 @section('meta_description', $landing->meta_description ?? ($settings[$metaDescKey] ?? ($settings['home_meta_description'] ?? '')))
@@ -509,15 +532,15 @@ function reviewSubmitForm() {
 @endif
 
 {{-- FAQ Preview --}}
-@if($faqs->count())
+@if($pageFaqs->count())
 <section class="py-16 lg:py-24">
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="text-3xl font-bold text-center mb-{{ $home?->section('faq.subtitle') ? '4' : '12' }}">{{ $home?->section('faq.title') ?: __('Frequently Asked Questions') }}</h2>
-        @if($home?->section('faq.subtitle'))
+        <h2 class="text-3xl font-bold text-center mb-{{ (!$landing && $home?->section('faq.subtitle')) ? '4' : '12' }}">{{ !$landing && $home?->section('faq.title') ? $home->section('faq.title') : __('Frequently Asked Questions') }}</h2>
+        @if(!$landing && $home?->section('faq.subtitle'))
         <p class="text-center text-[#A0A0A0] mb-12">{{ $home->section('faq.subtitle') }}</p>
         @endif
         <div class="space-y-3">
-            @foreach($faqs as $faq)
+            @foreach($pageFaqs as $faq)
             <div class="card !p-0 overflow-hidden" x-data="{ open: false }">
                 <button @click="open = !open" class="w-full flex items-center justify-between text-left py-4 px-4 sm:py-5 sm:px-6">
                     <span class="font-medium pr-4 text-sm sm:text-base">{{ $faq->question }}</span>
@@ -532,6 +555,40 @@ function reviewSubmitForm() {
         <div class="text-center mt-8">
             <a href="{{ route($lp . 'faq') }}" class="text-[#F59E0B] hover:underline">{{ __('View All FAQs') }} &rarr;</a>
         </div>
+    </div>
+</section>
+@endif
+
+{{-- SEO content — landing pages show their own intro; homepage shows a
+     generic keyword-rich block. Uses .blog-content styling (amber headings). --}}
+@if($landing && !empty($seoIntro))
+<section class="py-16 lg:py-24">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 blog-content">
+        {!! $seoIntro !!}
+    </div>
+</section>
+@elseif(!$landing)
+<section class="py-16 lg:py-24">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 blog-content">
+        @if($locale === 'sr')
+            <h2>Čuvanje prtljaga u Beogradu — 0–24, u centru grada</h2>
+            <p>Tražiš sigurno i povoljno <strong>čuvanje prtljaga u Beogradu</strong>? Naši pametni samouslužni ormarići u centru grada čuvaju tvoje torbe danonoćno, pa možeš da razgledaš Beograd bez tereta — bilo da si tek stigao pre prijave u hotel, čekaš kasniji let ili autobus, ili jednostavno želiš ruke slobodne.</p>
+            <h2>Dve lokacije u centru</h2>
+            <p>Nalazimo se u srcu grada, par minuta od <strong>Slavije</strong>, glavne autobuske stanice i železničke stanice Prokop, a lako dostupni i sa A1 aerodromskog busa. U blizini su Knez Mihailova, Trg republike i Kalemegdan — ostaviš torbe i odmah si u centru zbivanja.</p>
+            <h2>Kako funkcioniše</h2>
+            <p>Izaberi veličinu ormarića, rezerviši online za oko 60 sekundi i dobij jednokratni PIN na mejl. Ostaviš prtljag, razgledaš grad i preuzmeš ga kad poželiš. Plaćaš gotovinom na licu mesta — bez kartice, bez skrivenih troškova, sa jasnom i ograničenom cenom.</p>
+            <h2>Zašto baš mi</h2>
+            <p>Sigurni pametni ormarići sa jednokratnim PIN-om, pristup 0–24, centralne lokacije i poštene cene. Idealno za turiste, putnike u prolazu i sve kojima trebaju ruke slobodne u Beogradu.</p>
+        @else
+            <h2>Luggage storage in Belgrade — 24/7, in the city centre</h2>
+            <p>Looking for secure, affordable <strong>luggage storage in Belgrade</strong>? Our smart self-service lockers in the city centre keep your bags safe around the clock so you can explore Belgrade hands-free — whether you've just arrived before hotel check-in, have hours before a later flight or bus, or simply want your hands free.</p>
+            <h2>Two central locations</h2>
+            <p>We're in the heart of the city, minutes from <strong>Slavija Square</strong>, the main bus station and Prokop railway station, and easy to reach from the A1 airport shuttle. Knez Mihailova street, Republic Square and Kalemegdan Fortress are all close by — drop your bags and you're right in the middle of everything.</p>
+            <h2>How it works</h2>
+            <p>Choose your locker size, book online in about 60 seconds, and get a one-time PIN by email. Drop your luggage, explore the city, and collect it whenever you're ready. Pay cash on arrival — no card, no hidden fees, with clear capped pricing.</p>
+            <h2>Why choose us</h2>
+            <p>Secure smart lockers with one-time PIN access, open 24/7, central locations and honest pricing. Ideal for tourists, travellers passing through, and anyone who needs their hands free in Belgrade.</p>
+        @endif
     </div>
 </section>
 @endif

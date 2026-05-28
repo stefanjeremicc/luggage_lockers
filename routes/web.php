@@ -64,8 +64,18 @@ Route::middleware(SetLocale::class)->group(function () {
     // SEO landing pages targeting points of interest
     Route::get('/near/{slug}', [PageController::class, 'near'])->name('near');
 
-    // Query-targeted SEO landing pages (homepage clone w/ unique meta). Slug is
-    // constrained to the configured keys so it never shadows other routes.
+    // Consolidated synonym landing pages → 301 to the homepage, which already
+    // ranks for the whole "luggage storage Belgrade" cluster (avoids self-
+    // cannibalisation). Only distinct-intent pages remain as real landing pages.
+    foreach ([
+        'luggage-storage-belgrade', 'belgrade-luggage-storage', 'luggage-storage',
+        'storage-belgrade', 'belgrade-luggage-locker', 'locker-room',
+    ] as $oldSlug) {
+        Route::redirect('/' . $oldSlug, '/', 301);
+    }
+
+    // Query-targeted SEO landing pages (distinct intent + unique content). Slug
+    // is constrained to the configured keys so it never shadows other routes.
     Route::get('/{slug}', [HomeController::class, 'landing'])->name('landing')
         ->where('slug', implode('|', array_keys(config('landing_pages', []))) ?: 'a\bnomatch');
 });
@@ -95,8 +105,16 @@ Route::prefix('sr')->middleware(SetLocale::class)->name('sr.')->group(function (
     // SEO landing pages (SR)
     Route::get('/blizu/{slug}', [PageController::class, 'near'])->name('near');
 
-    // Serbian SEO landing pages (homepage clone w/ SR meta). Constrained to the
-    // configured `slug_sr` values so it never shadows other SR routes.
+    // Consolidated SR synonym slugs → 301 to the Serbian homepage.
+    foreach ([
+        'cuvanje-prtljaga-beograd', 'cuvanje-prtljaga-beograd-centar', 'cuvanje-prtljaga',
+        'ostava-beograd', 'ormarici-za-prtljag-beograd', 'garderoba-ormarici-beograd',
+    ] as $oldSlug) {
+        Route::redirect('/' . $oldSlug, '/sr', 301);
+    }
+
+    // Serbian SEO landing pages (distinct intent + unique content). Constrained
+    // to the configured `slug_sr` values so it never shadows other SR routes.
     Route::get('/{slug}', [HomeController::class, 'landing'])->name('landing')
         ->where('slug', implode('|', array_filter(array_map(
             fn ($c) => $c['slug_sr'] ?? null,
