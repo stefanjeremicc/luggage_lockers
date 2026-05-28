@@ -37,18 +37,41 @@
     if ($routeName) {
         $baseName = preg_replace('/^sr\./', '', $routeName);
         $params = request()->route() ? request()->route()->parameters() : [];
-        try {
-            $altUrls = [
-                'en' => route($baseName, $params),
-                'sr' => route('sr.' . $baseName, $params),
-            ];
-        } catch (\Throwable $e) {
-            $altUrls = null; // route has no counterpart — skip alternates
+
+        // SEO landing pages use a DIFFERENT slug per language (EN = config key,
+        // SR = slug_sr), so the generic route($params) reuse would point the SR
+        // alternate at the EN slug. Remap the {slug} param per language.
+        if ($baseName === 'landing' && isset($params['slug'])) {
+            $all = config('landing_pages', []);
+            $enKey = isset($all[$params['slug']]) ? $params['slug'] : null;
+            if (!$enKey) {
+                foreach ($all as $k => $c) {
+                    if (($c['slug_sr'] ?? null) === $params['slug']) { $enKey = $k; break; }
+                }
+            }
+            $srSlug = $enKey ? ($all[$enKey]['slug_sr'] ?? null) : null;
+            try {
+                $altUrls = [
+                    'en' => $enKey ? route('landing', ['slug' => $enKey]) : null,
+                    'sr' => $srSlug ? route('sr.landing', ['slug' => $srSlug]) : null,
+                ];
+            } catch (\Throwable $e) {
+                $altUrls = null;
+            }
+        } else {
+            try {
+                $altUrls = [
+                    'en' => route($baseName, $params),
+                    'sr' => route('sr.' . $baseName, $params),
+                ];
+            } catch (\Throwable $e) {
+                $altUrls = null; // route has no counterpart — skip alternates
+            }
         }
     }
 @endphp
 @if($altUrls)
-<link rel="alternate" hreflang="en" href="{{ $altUrls['en'] }}">
-<link rel="alternate" hreflang="sr" href="{{ $altUrls['sr'] }}">
-<link rel="alternate" hreflang="x-default" href="{{ $altUrls['en'] }}">
+@if(!empty($altUrls['en']))<link rel="alternate" hreflang="en" href="{{ $altUrls['en'] }}">@endif
+@if(!empty($altUrls['sr']))<link rel="alternate" hreflang="sr" href="{{ $altUrls['sr'] }}">@endif
+@if(!empty($altUrls['en']))<link rel="alternate" hreflang="x-default" href="{{ $altUrls['en'] }}">@endif
 @endif

@@ -33,13 +33,8 @@
 @section('head')
     {{-- Preload the LCP hero image so it paints sooner (Core Web Vitals). --}}
     <link rel="preload" as="image" href="{{ $heroImage }}" fetchpriority="high">
-    @if($landing)
-        <link rel="canonical" href="{{ url()->current() }}">
-        {{-- hreflang: link the EN and SR versions of this landing page to each other. --}}
-        @if($landing->slug)<link rel="alternate" hreflang="en" href="{{ url('/' . $landing->slug) }}">@endif
-        @if($landing->slug_sr)<link rel="alternate" hreflang="sr" href="{{ url('/sr/' . $landing->slug_sr) }}">@endif
-        @if($landing->slug)<link rel="alternate" hreflang="x-default" href="{{ url('/' . $landing->slug) }}">@endif
-    @endif
+    {{-- canonical + hreflang are emitted centrally by partials/seo-meta.blade.php
+         (it remaps landing-page slugs per language). --}}
 @endsection
 
 @section('content')
