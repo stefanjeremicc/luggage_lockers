@@ -105,51 +105,58 @@ class GoogleAnalyticsService
     }
 
     /**
-     * Full traffic snapshot for a date range: headline metrics, daily series,
-     * channel breakdown, and top landing pages.
+     * Full traffic snapshot for a date range. Cached 5 min per range so
+     * re-selecting the same range is instant, and all reports are fetched with
+     * batchRunReports (2 HTTP calls instead of ~8) to cut load time.
      */
     public function traffic(string $from, string $to): array
     {
         if (!$this->isConfigured()) {
             return ['ok' => false, 'reason' => 'not_configured'];
         }
+        return Cache::remember("ga:traffic:{$from}:{$to}", 300, fn () => $this->buildTraffic($from, $to));
+    }
 
+    private function buildTraffic(string $from, string $to): array
+    {
         $range = [['startDate' => $from, 'endDate' => $to]];
-
-        // Headline totals (+ engagement: how long visitors stayed).
-        $totals = $this->runReport([
+        $topBy = fn (string $dim, string $metric, ?int $limit) => array_filter([
             'dateRanges' => $range,
-            'metrics' => [
-                ['name' => 'sessions'],
-                ['name' => 'totalUsers'],
-                ['name' => 'newUsers'],
-                ['name' => 'screenPageViews'],
-                ['name' => 'averageSessionDuration'],
-                ['name' => 'engagementRate'],
-            ],
-        ]);
-        if ($totals === null) {
+            'dimensions' => [['name' => $dim]],
+            'metrics' => [['name' => $metric]],
+            'orderBys' => [['metric' => ['metricName' => $metric], 'desc' => true]],
+            'limit' => $limit,
+        ], fn ($v) => $v !== null);
+
+        // Report order is fixed — results come back in the same order.
+        $requests = [
+            /* 0 totals  */ ['dateRanges' => $range, 'metrics' => [['name' => 'sessions'], ['name' => 'totalUsers'], ['name' => 'newUsers'], ['name' => 'screenPageViews'], ['name' => 'averageSessionDuration'], ['name' => 'engagementRate']]],
+            /* 1 daily   */ ['dateRanges' => $range, 'dimensions' => [['name' => 'date']], 'metrics' => [['name' => 'sessions'], ['name' => 'totalUsers']], 'orderBys' => [['dimension' => ['dimensionName' => 'date']]]],
+            /* 2 channel */ $topBy('sessionDefaultChannelGroup', 'sessions', 20),
+            /* 3 landing */ $topBy('landingPagePlusQueryString', 'sessions', 20),
+            /* 4 pages   */ $topBy('pagePath', 'screenPageViews', 20),
+            /* 5 hour    */ ['dateRanges' => $range, 'dimensions' => [['name' => 'hour']], 'metrics' => [['name' => 'sessions']]],
+            /* 6 devices */ $topBy('deviceCategory', 'sessions', null),
+            /* 7 country */ $topBy('country', 'sessions', 8),
+        ];
+
+        $reports = $this->batchRunReports($requests);
+        if ($reports === null || !isset($reports[0])) {
             return ['ok' => false, 'reason' => 'api_error'];
         }
 
+        $m = fn (int $rep, int $i) => $reports[$rep]['rows'][0]['metricValues'][$i]['value'] ?? '0';
         $headline = [
-            'sessions'         => (int) $this->metric($totals, 0),
-            'users'            => (int) $this->metric($totals, 1),
-            'new_users'        => (int) $this->metric($totals, 2),
-            'pageviews'        => (int) $this->metric($totals, 3),
-            'avg_duration'     => (float) $this->metric($totals, 4), // seconds
-            'engagement_rate'  => (float) $this->metric($totals, 5), // 0..1
+            'sessions'        => (int) $m(0, 0),
+            'users'           => (int) $m(0, 1),
+            'new_users'       => (int) $m(0, 2),
+            'pageviews'       => (int) $m(0, 3),
+            'avg_duration'    => (float) $m(0, 4),
+            'engagement_rate' => (float) $m(0, 5),
         ];
 
-        // Daily sessions/users time-series.
-        $daily = $this->runReport([
-            'dateRanges' => $range,
-            'dimensions' => [['name' => 'date']],
-            'metrics' => [['name' => 'sessions'], ['name' => 'totalUsers']],
-            'orderBys' => [['dimension' => ['dimensionName' => 'date']]],
-        ]);
         $timeseries = [];
-        foreach ($daily['rows'] ?? [] as $r) {
+        foreach ($reports[1]['rows'] ?? [] as $r) {
             $d = $r['dimensionValues'][0]['value'] ?? '';
             $timeseries[] = [
                 'date'     => $d ? substr($d, 0, 4) . '-' . substr($d, 4, 2) . '-' . substr($d, 6, 2) : $d,
@@ -158,110 +165,66 @@ class GoogleAnalyticsService
             ];
         }
 
-        // Channel breakdown.
-        $channelsRep = $this->runReport([
-            'dateRanges' => $range,
-            'dimensions' => [['name' => 'sessionDefaultChannelGroup']],
-            'metrics' => [['name' => 'sessions']],
-            'orderBys' => [['metric' => ['metricName' => 'sessions'], 'desc' => true]],
-            'limit' => 20,
-        ]);
-        $channels = [];
-        foreach ($channelsRep['rows'] ?? [] as $r) {
-            $channels[] = [
-                'channel'  => $r['dimensionValues'][0]['value'] ?? '(other)',
-                'sessions' => (int) ($r['metricValues'][0]['value'] ?? 0),
-            ];
-        }
+        // Generic "dimension + single metric" rows → list of [key => label, valKey => int].
+        $rows = function (int $rep, string $labelKey, string $valKey) use ($reports) {
+            $out = [];
+            foreach ($reports[$rep]['rows'] ?? [] as $r) {
+                $out[] = [
+                    $labelKey => $r['dimensionValues'][0]['value'] ?? '',
+                    $valKey   => (int) ($r['metricValues'][0]['value'] ?? 0),
+                ];
+            }
+            return $out;
+        };
 
-        // Top landing pages.
-        $landingRep = $this->runReport([
-            'dateRanges' => $range,
-            'dimensions' => [['name' => 'landingPagePlusQueryString']],
-            'metrics' => [['name' => 'sessions']],
-            'orderBys' => [['metric' => ['metricName' => 'sessions'], 'desc' => true]],
-            'limit' => 20,
-        ]);
-        $landing = [];
-        foreach ($landingRep['rows'] ?? [] as $r) {
-            $landing[] = [
-                'page'     => $r['dimensionValues'][0]['value'] ?? '/',
-                'sessions' => (int) ($r['metricValues'][0]['value'] ?? 0),
-            ];
-        }
-
-        // Top pages by views (what visitors actually looked at).
-        $pages = [];
-        $pagesRep = $this->runReport([
-            'dateRanges' => $range,
-            'dimensions' => [['name' => 'pagePath']],
-            'metrics' => [['name' => 'screenPageViews']],
-            'orderBys' => [['metric' => ['metricName' => 'screenPageViews'], 'desc' => true]],
-            'limit' => 20,
-        ]);
-        foreach ($pagesRep['rows'] ?? [] as $r) {
-            $pages[] = [
-                'page'  => $r['dimensionValues'][0]['value'] ?? '/',
-                'views' => (int) ($r['metricValues'][0]['value'] ?? 0),
-            ];
-        }
-
-        // Sessions by hour of day (0–23) — when visitors come.
         $byHour = array_fill(0, 24, 0);
-        $hourRep = $this->runReport([
-            'dateRanges' => $range,
-            'dimensions' => [['name' => 'hour']],
-            'metrics' => [['name' => 'sessions']],
-        ]);
-        foreach ($hourRep['rows'] ?? [] as $r) {
+        foreach ($reports[5]['rows'] ?? [] as $r) {
             $h = (int) ($r['dimensionValues'][0]['value'] ?? 0);
             if ($h >= 0 && $h <= 23) {
                 $byHour[$h] = (int) ($r['metricValues'][0]['value'] ?? 0);
             }
         }
 
-        // Device category (mobile / desktop / tablet).
-        $devices = [];
-        $devRep = $this->runReport([
-            'dateRanges' => $range,
-            'dimensions' => [['name' => 'deviceCategory']],
-            'metrics' => [['name' => 'sessions']],
-            'orderBys' => [['metric' => ['metricName' => 'sessions'], 'desc' => true]],
-        ]);
-        foreach ($devRep['rows'] ?? [] as $r) {
-            $devices[] = [
-                'device'   => $r['dimensionValues'][0]['value'] ?? '(other)',
-                'sessions' => (int) ($r['metricValues'][0]['value'] ?? 0),
-            ];
-        }
-
-        // Top countries.
-        $countries = [];
-        $countryRep = $this->runReport([
-            'dateRanges' => $range,
-            'dimensions' => [['name' => 'country']],
-            'metrics' => [['name' => 'sessions']],
-            'orderBys' => [['metric' => ['metricName' => 'sessions'], 'desc' => true]],
-            'limit' => 8,
-        ]);
-        foreach ($countryRep['rows'] ?? [] as $r) {
-            $countries[] = [
-                'country'  => $r['dimensionValues'][0]['value'] ?? '(unknown)',
-                'sessions' => (int) ($r['metricValues'][0]['value'] ?? 0),
-            ];
-        }
-
         return [
             'ok'         => true,
             'headline'   => $headline,
             'timeseries' => $timeseries,
-            'channels'   => $channels,
-            'landing'    => $landing,
-            'pages'      => $pages,
+            'channels'   => $rows(2, 'channel', 'sessions'),
+            'landing'    => $rows(3, 'page', 'sessions'),
+            'pages'      => $rows(4, 'page', 'views'),
             'by_hour'    => $byHour,
-            'devices'    => $devices,
-            'countries'  => $countries,
+            'devices'    => $rows(6, 'device', 'sessions'),
+            'countries'  => $rows(7, 'country', 'sessions'),
         ];
+    }
+
+    /** Run multiple reports in as few HTTP calls as possible (max 5 per batch). */
+    private function batchRunReports(array $requests): ?array
+    {
+        $token = $this->accessToken();
+        if (!$token) {
+            return null;
+        }
+        $all = [];
+        foreach (array_chunk($requests, 5) as $chunk) {
+            try {
+                $res = Http::withToken($token)->post(
+                    'https://analyticsdata.googleapis.com/v1beta/properties/' . self::PROPERTY_ID . ':batchRunReports',
+                    ['requests' => array_values($chunk)]
+                );
+                if (!$res->successful()) {
+                    Log::error('GA batchRunReports failed', ['body' => $res->body()]);
+                    return null;
+                }
+                foreach ($res->json('reports', []) as $rep) {
+                    $all[] = $rep;
+                }
+            } catch (\Throwable $e) {
+                Log::error('GA batchRunReports error: ' . $e->getMessage());
+                return null;
+            }
+        }
+        return $all;
     }
 
     private function metric(array $report, int $i): string

@@ -206,7 +206,7 @@
                                     :style="{ height: Math.max(2, (s / gaHourMax) * 100) + '%' }"
                                     :title="h + ':00 — ' + s + ' sessions'"></div>
                             </div>
-                            <div class="flex justify-between text-[10px] text-[#6B7280] mt-1"><span>00h</span><span>06h</span><span>12h</span><span>18h</span><span>23h</span></div>
+                            <div class="flex justify-between text-[10px] text-[#6B7280] mt-1"><span>00</span><span>03</span><span>06</span><span>09</span><span>12</span><span>15</span><span>18</span><span>21</span><span>23</span></div>
                         </div>
                     </div>
 
