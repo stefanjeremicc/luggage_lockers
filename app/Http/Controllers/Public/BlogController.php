@@ -55,6 +55,7 @@ class BlogController extends Controller
             'category' => $this->categoryName($p, $locale),
             'author_name' => $p->author_name,
             'published_at' => $p->published_at,
+            'updated_at' => $p->updated_at,
             'meta_title' => $p->metaTitleFor($locale),
             'meta_description' => $p->metaDescriptionFor($locale),
         ];
