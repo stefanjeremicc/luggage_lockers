@@ -130,7 +130,7 @@ class GoogleAnalyticsService
 
         // Report order is fixed — results come back in the same order.
         $requests = [
-            /* 0 totals  */ ['dateRanges' => $range, 'metrics' => [['name' => 'sessions'], ['name' => 'totalUsers'], ['name' => 'newUsers'], ['name' => 'screenPageViews'], ['name' => 'averageSessionDuration'], ['name' => 'engagementRate']]],
+            /* 0 totals  */ ['dateRanges' => $range, 'metrics' => [['name' => 'sessions'], ['name' => 'totalUsers'], ['name' => 'newUsers'], ['name' => 'screenPageViews'], ['name' => 'averageSessionDuration'], ['name' => 'engagementRate'], ['name' => 'screenPageViewsPerSession']]],
             /* 1 daily   */ ['dateRanges' => $range, 'dimensions' => [['name' => 'date']], 'metrics' => [['name' => 'sessions'], ['name' => 'totalUsers']], 'orderBys' => [['dimension' => ['dimensionName' => 'date']]]],
             /* 2 channel */ $topBy('sessionDefaultChannelGroup', 'sessions', 20),
             /* 3 landing */ $topBy('landingPagePlusQueryString', 'sessions', 20),
@@ -138,6 +138,8 @@ class GoogleAnalyticsService
             /* 5 hour    */ ['dateRanges' => $range, 'dimensions' => [['name' => 'hour']], 'metrics' => [['name' => 'sessions']]],
             /* 6 devices */ $topBy('deviceCategory', 'sessions', null),
             /* 7 country */ $topBy('country', 'sessions', 8),
+            /* 8 new/ret */ ['dateRanges' => $range, 'dimensions' => [['name' => 'newVsReturning']], 'metrics' => [['name' => 'sessions']]],
+            /* 9 dow     */ ['dateRanges' => $range, 'dimensions' => [['name' => 'dayOfWeek']], 'metrics' => [['name' => 'sessions']]],
         ];
 
         $reports = $this->batchRunReports($requests);
@@ -153,6 +155,7 @@ class GoogleAnalyticsService
             'pageviews'       => (int) $m(0, 3),
             'avg_duration'    => (float) $m(0, 4),
             'engagement_rate' => (float) $m(0, 5),
+            'pages_per_session' => round((float) $m(0, 6), 1),
         ];
 
         $timeseries = [];
@@ -185,16 +188,27 @@ class GoogleAnalyticsService
             }
         }
 
+        // Sessions by day of week (GA4: 0=Sunday … 6=Saturday).
+        $byDow = array_fill(0, 7, 0);
+        foreach ($reports[9]['rows'] ?? [] as $r) {
+            $d = (int) ($r['dimensionValues'][0]['value'] ?? 0);
+            if ($d >= 0 && $d <= 6) {
+                $byDow[$d] = (int) ($r['metricValues'][0]['value'] ?? 0);
+            }
+        }
+
         return [
-            'ok'         => true,
-            'headline'   => $headline,
-            'timeseries' => $timeseries,
-            'channels'   => $rows(2, 'channel', 'sessions'),
-            'landing'    => $rows(3, 'page', 'sessions'),
-            'pages'      => $rows(4, 'page', 'views'),
-            'by_hour'    => $byHour,
-            'devices'    => $rows(6, 'device', 'sessions'),
-            'countries'  => $rows(7, 'country', 'sessions'),
+            'ok'             => true,
+            'headline'       => $headline,
+            'timeseries'     => $timeseries,
+            'channels'       => $rows(2, 'channel', 'sessions'),
+            'landing'        => $rows(3, 'page', 'sessions'),
+            'pages'          => $rows(4, 'page', 'views'),
+            'by_hour'        => $byHour,
+            'devices'        => $rows(6, 'device', 'sessions'),
+            'countries'      => $rows(7, 'country', 'sessions'),
+            'new_returning'  => $rows(8, 'type', 'sessions'),
+            'by_dow'         => $byDow,
         ];
     }
 

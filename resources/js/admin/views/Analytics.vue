@@ -150,27 +150,28 @@
                 <div v-if="gaLoading" class="text-sm text-[#A0A0A0]">Loading traffic…</div>
                 <div v-else-if="!ga || !ga.ok" class="text-sm text-[#6B7280] italic">{{ gaMessage }}</div>
                 <template v-else>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4 mb-5">
-                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Sessions</p><p class="text-xl font-bold mt-1 text-white">{{ ga.headline.sessions }}</p></div>
-                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Users</p><p class="text-xl font-bold mt-1 text-white">{{ ga.headline.users }}</p></div>
-                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0]">New users</p><p class="text-xl font-bold mt-1 text-white">{{ ga.headline.new_users }}</p></div>
-                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Pageviews</p><p class="text-xl font-bold mt-1 text-white">{{ ga.headline.pageviews }}</p></div>
-                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Avg. time</p><p class="text-xl font-bold mt-1 text-white">{{ fmtDuration(ga.headline.avg_duration) }}</p></div>
-                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Engagement</p><p class="text-xl font-bold mt-1 text-white">{{ Math.round((ga.headline.engagement_rate || 0) * 100) }}%</p></div>
-                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Conversion</p><p class="text-xl font-bold mt-1 text-[#10B981]">{{ conversionRate }}%</p></div>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-5">
+                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0] flex items-center gap-1">Sessions <InfoTip text="Visits to your site — a session groups one visitor's activity (ends after ~30 min idle)." /></p><p class="text-xl font-bold mt-1 text-white">{{ ga.headline.sessions }}</p></div>
+                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0] flex items-center gap-1">Users <InfoTip text="Unique people who visited (one person can have several sessions)." /></p><p class="text-xl font-bold mt-1 text-white">{{ ga.headline.users }}</p></div>
+                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0] flex items-center gap-1">New users <InfoTip text="First-time visitors in this period." /></p><p class="text-xl font-bold mt-1 text-white">{{ ga.headline.new_users }}</p></div>
+                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0] flex items-center gap-1">Pageviews <InfoTip text="Total pages opened — one visit can open many pages." /></p><p class="text-xl font-bold mt-1 text-white">{{ ga.headline.pageviews }}</p></div>
+                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0] flex items-center gap-1">Avg. time <InfoTip text="Average time a visitor actively spent on the site per session." /></p><p class="text-xl font-bold mt-1 text-white">{{ fmtDuration(ga.headline.avg_duration) }}</p></div>
+                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0] flex items-center gap-1">Pages/visit <InfoTip text="Average number of pages opened per visit (browsing depth)." /></p><p class="text-xl font-bold mt-1 text-white">{{ ga.headline.pages_per_session ?? '—' }}</p></div>
+                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0] flex items-center gap-1">Engagement <InfoTip text="Share of visits that were engaged: lasted 10s+, converted, or viewed 2+ pages." /></p><p class="text-xl font-bold mt-1 text-white">{{ Math.round((ga.headline.engagement_rate || 0) * 100) }}%</p></div>
+                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0] flex items-center gap-1">Conversion <InfoTip text="Bookings ÷ sessions — how many visits turned into a booking." /></p><p class="text-xl font-bold mt-1 text-[#10B981]">{{ conversionRate }}%</p></div>
                     </div>
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div>
-                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2">Traffic by channel</h3>
+                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">Traffic by channel <InfoTip text="Where visitors came from, grouped into Google's channels (Direct, Organic Search, Paid Search…)." /></h3>
                             <table class="w-full text-sm">
                                 <tr v-for="(c,i) in ga.channels" :key="i" class="border-t border-[#2A2A2A]">
-                                    <td class="py-1.5">{{ c.channel }}</td>
+                                    <td class="py-1.5"><span class="inline-flex items-center gap-1">{{ c.channel }} <InfoTip :text="channelInfo(c.channel)" /></span></td>
                                     <td class="py-1.5 text-right tabular-nums">{{ c.sessions }}</td>
                                 </tr>
                             </table>
                         </div>
                         <div>
-                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2">Top landing pages</h3>
+                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">Top landing pages <InfoTip text="The FIRST page each visit started on — how people enter the site (counted by sessions)." /></h3>
                             <table class="w-full text-sm">
                                 <tr v-for="(c,i) in ga.landing" :key="i" class="border-t border-[#2A2A2A]">
                                     <td class="py-1.5 max-w-[240px] truncate">
@@ -186,7 +187,7 @@
                     <!-- What visitors viewed + when they come -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
                         <div>
-                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2">Most viewed pages</h3>
+                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">Most viewed pages <InfoTip text="Pages opened most often across ALL visits (counted by views, not just entry pages)." /></h3>
                             <table class="w-full text-sm">
                                 <tr v-for="(c,i) in ga.pages" :key="i" class="border-t border-[#2A2A2A]">
                                     <td class="py-1.5 max-w-[240px] truncate">
@@ -199,7 +200,7 @@
                             </table>
                         </div>
                         <div>
-                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2">When visitors come (by hour)</h3>
+                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">When visitors come (by hour) <InfoTip text="Sessions by hour of day — taller bars = busier hours." /></h3>
                             <div class="flex items-end gap-0.5 h-28 border-b border-[#2A2A2A]">
                                 <div v-for="(s,h) in (ga.by_hour || [])" :key="h"
                                     class="flex-1 bg-[#F59E0B]/80 rounded-t hover:bg-[#F59E0B]"
@@ -213,7 +214,7 @@
                     <!-- Devices + countries -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
                         <div>
-                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2">Devices</h3>
+                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">Devices <InfoTip text="What device visitors used — phone, computer or tablet." /></h3>
                             <table class="w-full text-sm">
                                 <tr v-for="(c,i) in ga.devices" :key="i" class="border-t border-[#2A2A2A]">
                                     <td class="py-1.5 capitalize">{{ c.device }}</td>
@@ -222,13 +223,37 @@
                             </table>
                         </div>
                         <div>
-                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2">Top countries</h3>
+                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">Top countries <InfoTip text="Which countries your visitors are in (by sessions)." /></h3>
                             <table class="w-full text-sm">
                                 <tr v-for="(c,i) in ga.countries" :key="i" class="border-t border-[#2A2A2A]">
                                     <td class="py-1.5">{{ c.country }}</td>
                                     <td class="py-1.5 text-right tabular-nums">{{ c.sessions }}</td>
                                 </tr>
                             </table>
+                        </div>
+                    </div>
+
+                    <!-- New vs returning + day of week -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                        <div>
+                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">New vs returning <InfoTip text="First-time visitors vs people coming back again." /></h3>
+                            <table class="w-full text-sm">
+                                <tr v-for="(c,i) in ga.new_returning" :key="i" class="border-t border-[#2A2A2A]">
+                                    <td class="py-1.5 capitalize">{{ c.type || '(unknown)' }}</td>
+                                    <td class="py-1.5 text-right tabular-nums">{{ c.sessions }}</td>
+                                </tr>
+                                <tr v-if="!ga.new_returning || !ga.new_returning.length"><td colspan="2" class="py-2 text-[#6B7280] italic">No data.</td></tr>
+                            </table>
+                        </div>
+                        <div>
+                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">By day of week <InfoTip text="Sessions per weekday — which days are busiest." /></h3>
+                            <div class="flex items-end gap-1.5 h-28 border-b border-[#2A2A2A]">
+                                <div v-for="(s,d) in (ga.by_dow || [])" :key="d"
+                                    class="flex-1 bg-[#F59E0B]/80 rounded-t hover:bg-[#F59E0B]"
+                                    :style="{ height: Math.max(2, (s / gaDowMax) * 100) + '%' }"
+                                    :title="dowNames[d] + ' — ' + s + ' sessions'"></div>
+                            </div>
+                            <div class="flex justify-between text-[10px] text-[#6B7280] mt-1"><span v-for="(n,d) in dowNames" :key="d">{{ n }}</span></div>
                         </div>
                     </div>
                 </template>
@@ -424,6 +449,7 @@ import { ref, reactive, computed, onMounted, onUnmounted, nextTick, h } from 'vu
 import { useAuth } from '../composables/useAuth';
 import Select from '../components/Select.vue';
 import DatePicker from '../components/DatePicker.vue';
+import InfoTip from '../components/InfoTip.vue';
 
 const { apiFetch } = useAuth();
 const data = ref(null);
@@ -535,6 +561,22 @@ const CHANNEL_META = {
     unknown:    { label: 'Unknown', color: '#3A3A3A' },
 };
 const channelMeta = (key) => CHANNEL_META[key] || { label: key, color: '#6B7280' };
+
+// Plain-language explanations for GA's channel names (shown via InfoTip).
+const GA_CHANNEL_INFO = {
+    'Direct': 'Typed the address or used a bookmark — no referring source.',
+    'Organic Search': 'Came from unpaid Google/Bing search results.',
+    'Paid Search': 'Clicked a paid search ad (Google Ads).',
+    'Paid Social': 'Clicked a paid social ad (Facebook/Instagram).',
+    'Organic Social': 'Came from a social post (not paid).',
+    'Referral': 'Came from a link on another website.',
+    'Email': 'Came from an email link.',
+    'Cross-network': 'Google Ads shown across networks (Search + Display + YouTube).',
+    'Display': 'Clicked a banner / display ad.',
+    'Affiliates': 'Came via an affiliate link.',
+    'Unassigned': 'GA could not classify the source (often blocked/missing tags).',
+};
+const channelInfo = (c) => GA_CHANNEL_INFO[c] || 'Traffic source as classified by Google Analytics.';
 // In the source table a value may be a UTM source (e.g. "chatgpt.com") or a
 // detected channel key (e.g. "google_ads") — show the friendly channel label
 // for the latter, otherwise the raw source.
@@ -684,6 +726,8 @@ const fmtDuration = (sec) => {
     return s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`;
 };
 const gaHourMax = computed(() => Math.max(1, ...((ga.value?.by_hour) || [0])));
+const gaDowMax = computed(() => Math.max(1, ...((ga.value?.by_dow) || [0])));
+const dowNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']; // GA4: 0=Sunday
 const gaMessage = computed(() => {
     if (!ga.value) return 'No traffic data.';
     if (ga.value.reason === 'not_configured') return 'Google Analytics credentials not installed on the server yet.';
