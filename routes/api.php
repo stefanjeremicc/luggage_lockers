@@ -59,6 +59,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', CheckRole::class . ':admin']
     Route::get('/analytics/ga', [AnalyticsController::class, 'ga']);
     Route::get('/analytics/search-console', [AnalyticsController::class, 'searchConsole']);
 
+    Route::get('/sitemap', [\App\Http\Controllers\Api\Admin\SitemapController::class, 'index']);
+    Route::get('/sitemap/check', [\App\Http\Controllers\Api\Admin\SitemapController::class, 'check']);
+
     Route::get('/bookings', [BookingManagementController::class, 'index']);
     Route::get('/bookings/export', [BookingManagementController::class, 'export']);
     Route::get('/bookings/{id}', [BookingManagementController::class, 'show']);
