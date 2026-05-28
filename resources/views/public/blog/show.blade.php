@@ -56,7 +56,7 @@
         <img src="{{ $post->featured_image }}" alt="{{ $post->title }}" class="w-full rounded-xl mt-8">
         @endif
 
-        <div class="prose prose-invert max-w-none mt-8 text-[#A0A0A0]">
+        <div class="blog-content mt-8">
             {!! $post->content !!}
         </div>
     </div>
