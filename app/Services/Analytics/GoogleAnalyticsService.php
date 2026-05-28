@@ -116,7 +116,7 @@ class GoogleAnalyticsService
 
         $range = [['startDate' => $from, 'endDate' => $to]];
 
-        // Headline totals.
+        // Headline totals (+ engagement: how long visitors stayed).
         $totals = $this->runReport([
             'dateRanges' => $range,
             'metrics' => [
@@ -124,6 +124,8 @@ class GoogleAnalyticsService
                 ['name' => 'totalUsers'],
                 ['name' => 'newUsers'],
                 ['name' => 'screenPageViews'],
+                ['name' => 'averageSessionDuration'],
+                ['name' => 'engagementRate'],
             ],
         ]);
         if ($totals === null) {
@@ -131,10 +133,12 @@ class GoogleAnalyticsService
         }
 
         $headline = [
-            'sessions'  => (int) $this->metric($totals, 0),
-            'users'     => (int) $this->metric($totals, 1),
-            'new_users' => (int) $this->metric($totals, 2),
-            'pageviews' => (int) $this->metric($totals, 3),
+            'sessions'         => (int) $this->metric($totals, 0),
+            'users'            => (int) $this->metric($totals, 1),
+            'new_users'        => (int) $this->metric($totals, 2),
+            'pageviews'        => (int) $this->metric($totals, 3),
+            'avg_duration'     => (float) $this->metric($totals, 4), // seconds
+            'engagement_rate'  => (float) $this->metric($totals, 5), // 0..1
         ];
 
         // Daily sessions/users time-series.
@@ -186,12 +190,77 @@ class GoogleAnalyticsService
             ];
         }
 
+        // Top pages by views (what visitors actually looked at).
+        $pages = [];
+        $pagesRep = $this->runReport([
+            'dateRanges' => $range,
+            'dimensions' => [['name' => 'pagePath']],
+            'metrics' => [['name' => 'screenPageViews']],
+            'orderBys' => [['metric' => ['metricName' => 'screenPageViews'], 'desc' => true]],
+            'limit' => 20,
+        ]);
+        foreach ($pagesRep['rows'] ?? [] as $r) {
+            $pages[] = [
+                'page'  => $r['dimensionValues'][0]['value'] ?? '/',
+                'views' => (int) ($r['metricValues'][0]['value'] ?? 0),
+            ];
+        }
+
+        // Sessions by hour of day (0–23) — when visitors come.
+        $byHour = array_fill(0, 24, 0);
+        $hourRep = $this->runReport([
+            'dateRanges' => $range,
+            'dimensions' => [['name' => 'hour']],
+            'metrics' => [['name' => 'sessions']],
+        ]);
+        foreach ($hourRep['rows'] ?? [] as $r) {
+            $h = (int) ($r['dimensionValues'][0]['value'] ?? 0);
+            if ($h >= 0 && $h <= 23) {
+                $byHour[$h] = (int) ($r['metricValues'][0]['value'] ?? 0);
+            }
+        }
+
+        // Device category (mobile / desktop / tablet).
+        $devices = [];
+        $devRep = $this->runReport([
+            'dateRanges' => $range,
+            'dimensions' => [['name' => 'deviceCategory']],
+            'metrics' => [['name' => 'sessions']],
+            'orderBys' => [['metric' => ['metricName' => 'sessions'], 'desc' => true]],
+        ]);
+        foreach ($devRep['rows'] ?? [] as $r) {
+            $devices[] = [
+                'device'   => $r['dimensionValues'][0]['value'] ?? '(other)',
+                'sessions' => (int) ($r['metricValues'][0]['value'] ?? 0),
+            ];
+        }
+
+        // Top countries.
+        $countries = [];
+        $countryRep = $this->runReport([
+            'dateRanges' => $range,
+            'dimensions' => [['name' => 'country']],
+            'metrics' => [['name' => 'sessions']],
+            'orderBys' => [['metric' => ['metricName' => 'sessions'], 'desc' => true]],
+            'limit' => 8,
+        ]);
+        foreach ($countryRep['rows'] ?? [] as $r) {
+            $countries[] = [
+                'country'  => $r['dimensionValues'][0]['value'] ?? '(unknown)',
+                'sessions' => (int) ($r['metricValues'][0]['value'] ?? 0),
+            ];
+        }
+
         return [
             'ok'         => true,
             'headline'   => $headline,
             'timeseries' => $timeseries,
             'channels'   => $channels,
             'landing'    => $landing,
+            'pages'      => $pages,
+            'by_hour'    => $byHour,
+            'devices'    => $devices,
+            'countries'  => $countries,
         ];
     }
 

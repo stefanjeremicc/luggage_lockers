@@ -150,11 +150,13 @@
                 <div v-if="gaLoading" class="text-sm text-[#A0A0A0]">Loading traffic…</div>
                 <div v-else-if="!ga || !ga.ok" class="text-sm text-[#6B7280] italic">{{ gaMessage }}</div>
                 <template v-else>
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-5">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4 mb-5">
                         <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Sessions</p><p class="text-xl font-bold mt-1 text-white">{{ ga.headline.sessions }}</p></div>
                         <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Users</p><p class="text-xl font-bold mt-1 text-white">{{ ga.headline.users }}</p></div>
                         <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0]">New users</p><p class="text-xl font-bold mt-1 text-white">{{ ga.headline.new_users }}</p></div>
                         <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Pageviews</p><p class="text-xl font-bold mt-1 text-white">{{ ga.headline.pageviews }}</p></div>
+                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Avg. time</p><p class="text-xl font-bold mt-1 text-white">{{ fmtDuration(ga.headline.avg_duration) }}</p></div>
+                        <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Engagement</p><p class="text-xl font-bold mt-1 text-white">{{ Math.round((ga.headline.engagement_rate || 0) * 100) }}%</p></div>
                         <div><p class="text-xs uppercase tracking-wide text-[#A0A0A0]">Conversion</p><p class="text-xl font-bold mt-1 text-[#10B981]">{{ conversionRate }}%</p></div>
                     </div>
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -175,6 +177,55 @@
                                         <a v-if="isPath(c.page)" :href="origin + c.page" target="_blank" class="text-[#F59E0B] hover:underline" :title="c.page">{{ c.page }}</a>
                                         <span v-else class="text-[#A0A0A0]">{{ c.page }}</span>
                                     </td>
+                                    <td class="py-1.5 text-right tabular-nums">{{ c.sessions }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- What visitors viewed + when they come -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                        <div>
+                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2">Most viewed pages</h3>
+                            <table class="w-full text-sm">
+                                <tr v-for="(c,i) in ga.pages" :key="i" class="border-t border-[#2A2A2A]">
+                                    <td class="py-1.5 max-w-[240px] truncate">
+                                        <a v-if="isPath(c.page)" :href="origin + c.page" target="_blank" class="text-[#F59E0B] hover:underline" :title="c.page">{{ c.page }}</a>
+                                        <span v-else class="text-[#A0A0A0]" :title="c.page">{{ c.page || '(other)' }}</span>
+                                    </td>
+                                    <td class="py-1.5 text-right tabular-nums">{{ c.views }}</td>
+                                </tr>
+                                <tr v-if="!ga.pages || !ga.pages.length"><td colspan="2" class="py-2 text-[#6B7280] italic">No data.</td></tr>
+                            </table>
+                        </div>
+                        <div>
+                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2">When visitors come (by hour)</h3>
+                            <div class="flex items-end gap-0.5 h-28 border-b border-[#2A2A2A]">
+                                <div v-for="(s,h) in (ga.by_hour || [])" :key="h"
+                                    class="flex-1 bg-[#F59E0B]/80 rounded-t hover:bg-[#F59E0B]"
+                                    :style="{ height: Math.max(2, (s / gaHourMax) * 100) + '%' }"
+                                    :title="h + ':00 — ' + s + ' sessions'"></div>
+                            </div>
+                            <div class="flex justify-between text-[10px] text-[#6B7280] mt-1"><span>00h</span><span>06h</span><span>12h</span><span>18h</span><span>23h</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Devices + countries -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                        <div>
+                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2">Devices</h3>
+                            <table class="w-full text-sm">
+                                <tr v-for="(c,i) in ga.devices" :key="i" class="border-t border-[#2A2A2A]">
+                                    <td class="py-1.5 capitalize">{{ c.device }}</td>
+                                    <td class="py-1.5 text-right tabular-nums">{{ c.sessions }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div>
+                            <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2">Top countries</h3>
+                            <table class="w-full text-sm">
+                                <tr v-for="(c,i) in ga.countries" :key="i" class="border-t border-[#2A2A2A]">
+                                    <td class="py-1.5">{{ c.country }}</td>
                                     <td class="py-1.5 text-right tabular-nums">{{ c.sessions }}</td>
                                 </tr>
                             </table>
@@ -622,6 +673,12 @@ const conversionRate = computed(() => {
     const b = data.value?.summary?.bookings || 0;
     return s > 0 ? ((b / s) * 100).toFixed(1) : '0.0';
 });
+// Seconds → "Xm Ys" (or "Ys"); used for avg engagement time.
+const fmtDuration = (sec) => {
+    const s = Math.round(sec || 0);
+    return s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`;
+};
+const gaHourMax = computed(() => Math.max(1, ...((ga.value?.by_hour) || [0])));
 const gaMessage = computed(() => {
     if (!ga.value) return 'No traffic data.';
     if (ga.value.reason === 'not_configured') return 'Google Analytics credentials not installed on the server yet.';
