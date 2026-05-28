@@ -263,7 +263,7 @@
             <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 mb-8">
                 <div class="flex items-center justify-between mb-4">
                     <div>
-                        <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0]">Over time ({{ filters.group }})</h2>
+                        <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0] flex items-center gap-1">Over time ({{ filters.group }}) <InfoTip text="Revenue (€ collected) or number of bookings per day/week/month over the selected range. Attributed to the check-in date. Hover/tap a bar for details." /></h2>
                         <p class="text-[11px] mt-0.5" :class="activeBar ? 'text-white' : 'text-[#6B7280]'">
                             <template v-if="activeBar">{{ srDate(activeBar.period) }} · {{ activeBar.bookings }} bookings · <span class="text-[#10B981]">€{{ money(activeBar.revenue) }}</span></template>
                             <template v-else>{{ tsMetric === 'revenue' ? '€ collected per ' + filters.group : 'bookings per ' + filters.group }}</template>
@@ -315,7 +315,7 @@
             <!-- Channels + Landing pages -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
-                    <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0] mb-4">By channel</h2>
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0] mb-4 flex items-center gap-1">By channel <InfoTip text="Which marketing source each BOOKING came from (from the visitor's first-touch attribution)." /></h2>
                     <table class="w-full text-sm">
                         <thead>
                             <tr class="text-[#6B7280] text-xs uppercase">
@@ -326,9 +326,12 @@
                         </thead>
                         <tbody>
                             <tr v-for="c in sorted(data.by_channel, sChannel)" :key="c.key" class="border-t border-[#2A2A2A]">
-                                <td class="py-2 flex items-center gap-2">
-                                    <span class="w-2.5 h-2.5 rounded-full" :style="{ backgroundColor: channelMeta(c.key).color }"></span>
-                                    {{ channelMeta(c.key).label }}
+                                <td class="py-2">
+                                    <span class="inline-flex items-center gap-2">
+                                        <span class="w-2.5 h-2.5 rounded-full" :style="{ backgroundColor: channelMeta(c.key).color }"></span>
+                                        {{ channelMeta(c.key).label }}
+                                        <InfoTip :text="bookingChannelInfo(c.key)" />
+                                    </span>
                                 </td>
                                 <td class="py-2 text-right tabular-nums">{{ c.count }}</td>
                                 <td class="py-2 text-right tabular-nums text-[#10B981]">€{{ money(c.revenue) }}</td>
@@ -339,7 +342,7 @@
                 </div>
 
                 <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
-                    <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0] mb-4">By entry page (landing)</h2>
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0] mb-4 flex items-center gap-1">By entry page (landing) <InfoTip text="The page the visitor first landed on before this booking (their first-touch landing page). Tap a row to see the full URL." /></h2>
                     <table class="w-full text-sm table-fixed">
                         <colgroup><col /><col style="width:60px" /><col style="width:84px" /></colgroup>
                         <thead>
@@ -421,7 +424,7 @@
                 </div>
 
                 <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
-                    <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0] mb-4">By status</h2>
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0] mb-4 flex items-center gap-1">By status <InfoTip text="Bookings grouped into Completed / Active / Upcoming / Cancelled." /></h2>
                     <table class="w-full text-sm">
                         <thead>
                             <tr class="text-[#6B7280] text-xs uppercase">
@@ -432,7 +435,7 @@
                         </thead>
                         <tbody>
                             <tr v-for="c in sorted(statusBuckets, sStatus)" :key="c.key" class="border-t border-[#2A2A2A]">
-                                <td class="py-2"><span class="px-2 py-0.5 rounded-full text-xs" :class="c.cls">{{ c.label }}</span></td>
+                                <td class="py-2"><span class="inline-flex items-center gap-1"><span class="px-2 py-0.5 rounded-full text-xs" :class="c.cls">{{ c.label }}</span> <InfoTip :text="statusInfo(c.key)" /></span></td>
                                 <td class="py-2 text-right tabular-nums">{{ c.count }}</td>
                                 <td class="py-2 text-right tabular-nums text-[#10B981]">€{{ money(c.revenue) }}</td>
                             </tr>
@@ -577,6 +580,26 @@ const GA_CHANNEL_INFO = {
     'Unassigned': 'GA could not classify the source (often blocked/missing tags).',
 };
 const channelInfo = (c) => GA_CHANNEL_INFO[c] || 'Traffic source as classified by Google Analytics.';
+
+// Booking-side (our own marketing_source) channel + status explanations.
+const BOOKING_CHANNEL_INFO = {
+    direct: 'Typed the address, a bookmark, or an untagged QR — no source.',
+    organic: 'Found you via a search engine (unpaid).',
+    google_ads: 'Clicked a paid Google ad (gclid detected).',
+    facebook: 'Came from Facebook or Instagram.',
+    qr: 'Scanned a QR-code link tagged utm_source=qr.',
+    referral: 'Came from a link on another website / partner.',
+    unknown: 'Booked before source tracking existed.',
+    other: 'Other tagged source.',
+};
+const bookingChannelInfo = (k) => BOOKING_CHANNEL_INFO[k] || 'Marketing source of the booking.';
+const STATUS_INFO = {
+    completed: 'Stay finished (completed + expired bookings).',
+    active: 'Currently in use — checked in, not yet checked out.',
+    upcoming: 'Confirmed / pending bookings starting in the future.',
+    cancelled: 'Cancelled bookings (not counted as revenue).',
+};
+const statusInfo = (k) => STATUS_INFO[k] || '';
 // In the source table a value may be a UTM source (e.g. "chatgpt.com") or a
 // detected channel key (e.g. "google_ads") — show the friendly channel label
 // for the latter, otherwise the raw source.
