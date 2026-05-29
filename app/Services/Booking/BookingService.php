@@ -484,16 +484,31 @@ class BookingService
         //  (2) a fresh confirmation that re-renders from the REMAINING booking_lockers
         //      (so it shows only the lockers/PINs still valid and the new total).
         if ($notify) {
+            // (1) Cancellation notice FIRST — sent synchronously so it fully
+            //     leaves before we touch the confirmation.
+            $noticeSent = false;
             try {
                 BookingNotifier::sendLockerRemoved(
                     $booking->fresh(['customer', 'location']),
                     $removedNumberList
                 );
+                $noticeSent = true;
             } catch (\Throwable $e) {
                 Log::error('locker-removed notice failed', [
                     'booking_id' => $booking->id, 'error' => $e->getMessage(),
                 ]);
             }
+
+            // Guarantee inbox ORDER: the notice is already sent first above, but
+            // mail clients sort by timestamp — if both land in the same second the
+            // order isn't guaranteed. A short gap gives the cancellation notice a
+            // strictly earlier timestamp so it always appears before the new
+            // confirmation. Only wait if the notice actually went out.
+            if ($noticeSent) {
+                sleep(2);
+            }
+
+            // (2) Fresh confirmation with only the remaining lockers.
             try {
                 \App\Jobs\SendBookingConfirmation::dispatchSync($booking->id);
             } catch (\Throwable $e) {
