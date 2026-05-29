@@ -114,7 +114,7 @@
                     </div>
                     <!-- Row 2: Cancel/Delete (left) + Mark paid (right) -->
                     <div class="grid grid-cols-2 gap-2">
-                        <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="cancelBooking(b.id)"
+                        <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="cancelBooking(b)"
                             class="bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-3 py-2.5 text-xs font-semibold active:bg-[#333]">Cancel booking</button>
                         <button v-else-if="isFinal(b)" @click="deleteBooking(b.id)"
                             class="bg-[#EF4444]/15 text-[#EF4444] rounded-lg px-3 py-2.5 text-xs font-semibold active:bg-[#EF4444]/25">Delete</button>
@@ -215,7 +215,7 @@
                                     class="action-icon" aria-label="Extend">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
                                 </button>
-                                <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="cancelBooking(b.id)" title="Cancel booking"
+                                <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="cancelBooking(b)" title="Cancel booking"
                                     class="action-icon" aria-label="Cancel">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                                 </button>
@@ -370,6 +370,36 @@
                 </div>
             </template>
         </Modal>
+
+        <!-- Cancel / remove-lockers modal — only opened for bookings with >1 locker -->
+        <Modal :model-value="!!cancelModal" @update:model-value="v => !v && (cancelModal = null)"
+            size="sm" position="center" title="Cancel booking"
+            :subtitle="cancelModal ? '#' + (cancelModal.booking_number ?? cancelModal.id) : ''">
+            <template v-if="cancelModal">
+                <p class="text-xs text-[#A0A0A0] mb-3">Choose which locker(s) to remove. The rest stay active and the price is recalculated. Select all to cancel the whole booking.</p>
+                <div class="flex flex-col gap-2">
+                    <label v-for="p in cancelModal.pins" :key="p.booking_locker_id"
+                        class="flex items-center gap-3 bg-[#111] border border-[#2A2A2A]/60 rounded-lg px-3 py-2.5 cursor-pointer hover:border-[#2A2A2A]">
+                        <input type="checkbox" :checked="!!cancelSel[p.booking_locker_id]"
+                            @change="cancelSel = { ...cancelSel, [p.booking_locker_id]: $event.target.checked }"
+                            class="w-4 h-4 accent-[#EF4444]">
+                        <span class="font-medium text-white">{{ p.locker_number }}</span>
+                        <span class="text-xs text-[#6B7280] uppercase">{{ p.size }}</span>
+                    </label>
+                </div>
+                <button @click="toggleCancelAll" class="mt-3 text-xs text-[#F59E0B] hover:underline">
+                    {{ cancelAllSelected ? 'Deselect all' : 'Select all (cancel whole booking)' }}
+                </button>
+            </template>
+            <template #footer>
+                <div class="flex gap-2 justify-end">
+                    <Btn variant="secondary" size="sm" @click="cancelModal = null">Close</Btn>
+                    <Btn variant="danger" size="sm" :disabled="cancelSelectedCount === 0 || cancelBusy" @click="submitLockerRemoval()">
+                        {{ cancelAllSelected ? 'Cancel booking' : (cancelSelectedCount > 0 ? 'Remove ' + cancelSelectedCount + ' locker(s)' : 'Remove') }}
+                    </Btn>
+                </div>
+            </template>
+        </Modal>
     </div>
 </template>
 <script setup>
@@ -433,6 +463,10 @@ const sortMenuOpen = ref(false);
 const notifBooking = ref(null);
 const extendOpen = ref(null);
 const extendDuration = ref('24h');
+// Cancel / remove-lockers modal (only used when a booking has >1 locker).
+const cancelModal = ref(null);   // the booking being edited
+const cancelSel = ref({});       // { booking_locker_id: true } selected for removal
+const cancelBusy = ref(false);
 const extendOptions = [
     { value: '6h', label: '+ 6 hours' },
     { value: '24h', label: '+ 24 hours' },
@@ -695,15 +729,30 @@ const reissuePin = async (id) => {
     } catch { toast.error('Failed to re-issue PIN'); }
 };
 
-const cancelBooking = async (id) => {
-    const ok = await confirmDialog.ask({
-        title: 'Cancel booking?',
-        message: 'Locker will be freed and a cancellation email sent to the customer.',
-        variant: 'danger',
-        confirmText: 'Cancel booking',
-        cancelText: 'Keep',
-    });
-    if (!ok) return;
+// Entry point from the × button. Single-locker bookings keep the exact old
+// behaviour (simple confirm → full cancel). Multi-locker bookings open a modal
+// where the admin picks which locker(s) to remove (or all = full cancel).
+const cancelBooking = async (b) => {
+    const lockers = b?.pins ?? [];
+    if (lockers.length <= 1) {
+        const ok = await confirmDialog.ask({
+            title: 'Cancel booking?',
+            message: 'Locker will be freed and a cancellation email sent to the customer.',
+            variant: 'danger',
+            confirmText: 'Cancel booking',
+            cancelText: 'Keep',
+        });
+        if (!ok) return;
+        return doFullCancel(b.id);
+    }
+    // Multiple lockers → open selection modal.
+    cancelSel.value = {};
+    cancelModal.value = b;
+};
+
+// The original full-cancel call, unchanged — reused by the simple path and by
+// the modal when every locker is selected.
+const doFullCancel = async (id) => {
     try {
         const res = await apiFetch(`/api/admin/bookings/${id}`, { method: 'DELETE' });
         if (!res.ok) {
@@ -714,6 +763,63 @@ const cancelBooking = async (id) => {
         toast.success('Booking cancelled');
         fetchBookings();
     } catch { toast.error('Failed to cancel'); }
+};
+
+const cancelSelectedCount = computed(() => Object.values(cancelSel.value).filter(Boolean).length);
+const cancelAllSelected = computed(() =>
+    !!cancelModal.value && cancelSelectedCount.value === (cancelModal.value.pins?.length ?? 0) && cancelSelectedCount.value > 0
+);
+const toggleCancelAll = () => {
+    const lockers = cancelModal.value?.pins ?? [];
+    const pickAll = cancelSelectedCount.value !== lockers.length;
+    const next = {};
+    if (pickAll) lockers.forEach(p => { next[p.booking_locker_id] = true; });
+    cancelSel.value = next;
+};
+
+// "Continue" in the modal → final are-you-sure → call the right endpoint.
+const submitLockerRemoval = async () => {
+    const b = cancelModal.value;
+    if (!b) return;
+    const lockers = b.pins ?? [];
+    const ids = lockers.filter(p => cancelSel.value[p.booking_locker_id]).map(p => p.booking_locker_id);
+    if (!ids.length) { toast.error('Select at least one locker.'); return; }
+
+    const removedLabels = lockers.filter(p => cancelSel.value[p.booking_locker_id])
+        .map(p => p.locker_number).join(', ');
+    const keptLabels = lockers.filter(p => !cancelSel.value[p.booking_locker_id])
+        .map(p => p.locker_number).join(', ');
+    const all = ids.length === lockers.length;
+    const num = '#' + (b.booking_number ?? b.id);
+
+    const ok = await confirmDialog.ask({
+        title: all ? `Cancel whole booking ${num}?` : `Remove ${removedLabels} from ${num}?`,
+        message: all
+            ? 'Every locker will be freed and a cancellation email sent to the customer.'
+            : `${keptLabels} stay active. ${removedLabels} freed, price recalculated, and the guest gets an updated email.`,
+        variant: 'danger',
+        confirmText: all ? 'Cancel booking' : `Remove ${removedLabels}`,
+        cancelText: 'Back',
+    });
+    if (!ok) return;
+
+    cancelBusy.value = true;
+    try {
+        if (all) {
+            await doFullCancel(b.id);
+        } else {
+            const res = await apiFetch(`/api/admin/bookings/${b.id}/remove-lockers`, {
+                method: 'POST',
+                body: JSON.stringify({ booking_locker_ids: ids, notify: true }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) { toast.error(data.message || 'Failed to remove locker(s)'); return; }
+            toast.success(data.message || 'Locker(s) removed');
+            fetchBookings();
+        }
+        cancelModal.value = null;
+    } catch { toast.error('Failed to remove locker(s)'); }
+    finally { cancelBusy.value = false; }
 };
 
 const deleteBooking = async (id) => {
