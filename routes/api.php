@@ -70,6 +70,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', CheckRole::class . ':admin']
     Route::post('/bookings/{id}/resend', [BookingManagementController::class, 'resendConfirmation']);
     Route::post('/bookings/{id}/reissue-pin', [BookingManagementController::class, 'reissuePin']);
     Route::get('/bookings/{id}/notifications/{logId}/preview', [BookingManagementController::class, 'previewNotification']);
+    Route::post('/bookings/{id}/remove-lockers', [BookingManagementController::class, 'removeLockers']);
     Route::delete('/bookings/{id}', [BookingManagementController::class, 'destroy']);
     Route::delete('/bookings/{id}/force', [BookingManagementController::class, 'forceDestroy']);
 

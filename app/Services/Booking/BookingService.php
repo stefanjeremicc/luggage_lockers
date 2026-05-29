@@ -355,6 +355,145 @@ class BookingService
     }
 
     /**
+     * Remove one or more lockers from a booking WITHOUT touching the rest.
+     *
+     * Hard safety guarantees (this method can never affect another booking):
+     *  - Targets are loaded scoped to THIS booking's id; ids from other bookings
+     *    are silently ignored.
+     *  - All DB writes run inside a single transaction (atomic; rolls back on error).
+     *  - Permanent PINs (locker.permanent_pin) are NEVER modified — only the
+     *    booking↔locker association row is deleted, freeing the locker.
+     *  - One-time TTLock codes are deleted ONLY when ttlock_keyboard_pwd_id is set
+     *    (so it works in permanent-PIN mode now AND one-time mode after quota reset).
+     *  - If the caller selects EVERY locker, we delegate to the proven cancel()
+     *    path (full cancellation) instead of leaving an empty booking.
+     *  - Pricing is recomputed with the SAME PricingService used by create().
+     *
+     * @param  int[]  $bookingLockerIds
+     * @return array{action:string,removed:int,booking:Booking}
+     */
+    public function removeLockers(Booking $booking, array $bookingLockerIds, string $initiatedBy = 'admin', bool $notify = true): array
+    {
+        $status = $booking->booking_status instanceof BookingStatus
+            ? $booking->booking_status->value
+            : $booking->booking_status;
+        if ($status === BookingStatus::Cancelled->value) {
+            throw new \RuntimeException('Booking is already cancelled.');
+        }
+
+        // Scope strictly to THIS booking — ids belonging to any other booking
+        // are dropped here, so the operation is physically incapable of touching
+        // a different reservation.
+        $targets = BookingLocker::with('locker')
+            ->where('booking_id', $booking->id)
+            ->whereIn('id', $bookingLockerIds)
+            ->get();
+
+        if ($targets->isEmpty()) {
+            throw new \RuntimeException('None of the selected lockers belong to this booking.');
+        }
+
+        $totalOnBooking = BookingLocker::where('booking_id', $booking->id)->count();
+
+        // Selecting every locker == cancel the whole booking → reuse the existing,
+        // battle-tested cancel() path rather than emptying the booking.
+        if ($targets->count() >= $totalOnBooking) {
+            $this->cancel($booking, 'Cancelled by admin (all lockers removed)', $initiatedBy);
+            return ['action' => 'cancelled', 'removed' => $targets->count(), 'booking' => $booking->fresh()];
+        }
+
+        $removedNumbers = $targets->map(fn ($t) => $t->locker?->number)->filter()->values()->implode(', ');
+
+        DB::transaction(function () use ($booking, $targets) {
+            foreach ($targets as $bl) {
+                // One-time mode: delete the per-booking TTLock code so it stops
+                // working. Permanent mode (ttlock_keyboard_pwd_id null): there is
+                // nothing per-booking to delete and we must NOT touch the locker's
+                // shared permanent PIN.
+                if ($bl->ttlock_keyboard_pwd_id) {
+                    try {
+                        DeleteTTLockAccessCode::dispatchSync($bl->id);
+                    } catch (\Throwable $e) {
+                        Log::error('Sync TTLock delete on locker-remove failed; queued for retry', [
+                            'booking_locker_id' => $bl->id, 'error' => $e->getMessage(),
+                        ]);
+                        DeleteTTLockAccessCode::dispatch($bl->id);
+                    }
+                }
+                $bl->delete(); // frees the locker for that window; permanent_pin untouched
+            }
+
+            // Recompute each booking_item's qty from the SURVIVING booking_lockers,
+            // delete emptied items, then re-price the whole booking the same way
+            // create() does (PricingService) so totals can never drift.
+            $surviving = BookingLocker::where('booking_id', $booking->id)->get();
+            $byItem = $surviving->groupBy('booking_item_id');
+
+            foreach ($booking->items()->get() as $item) {
+                $cnt = $byItem->has($item->id) ? $byItem->get($item->id)->count() : 0;
+                if ($cnt === 0) {
+                    $item->delete();
+                } elseif ((int) $item->qty !== $cnt) {
+                    $item->update([
+                        'qty' => $cnt,
+                        'line_total_eur' => (float) $item->unit_price_eur * $cnt,
+                    ]);
+                }
+            }
+
+            $items = $booking->items()->get()->map(fn ($it) => [
+                'size' => $it->locker_size instanceof LockerSize ? $it->locker_size->value : $it->locker_size,
+                'qty' => (int) $it->qty,
+                'duration' => $it->duration_key,
+            ])->all();
+
+            $update = ['locker_qty' => $surviving->count()];
+
+            if (!empty($items)) {
+                $pricing = $this->pricingService->calculateForItems($booking->location_id, $items, $booking->duration_label);
+                if (!isset($pricing['error'])) {
+                    $update['price_eur'] = $pricing['subtotal_eur'];
+                    $update['service_fee_eur'] = $pricing['service_fee_eur'];
+                    $update['total_eur'] = $pricing['total_eur'];
+                    $update['price_rsd'] = $pricing['total_rsd'];
+                }
+                // Aggregate window may shrink if a whole item was removed.
+                $minIn = $booking->items()->min('check_in');
+                $maxOut = $booking->items()->max('check_out');
+                if ($minIn) { $update['check_in'] = $minIn; }
+                if ($maxOut) { $update['check_out'] = $maxOut; }
+            }
+
+            $booking->update($update);
+        });
+
+        // Audit trail in the booking notes.
+        $note = trim(($booking->notes ? $booking->notes . "\n" : '')
+            . '[' . now()->toDateTimeString() . "] Removed locker(s): {$removedNumbers} by {$initiatedBy}.");
+        $booking->update(['notes' => $note]);
+
+        // Send the guest a refreshed confirmation: it re-renders from the
+        // remaining booking_lockers, so it shows only the lockers/PINs that are
+        // still valid and the new total.
+        if ($notify) {
+            try {
+                \App\Jobs\SendBookingConfirmation::dispatchSync($booking->id);
+            } catch (\Throwable $e) {
+                Log::error('Updated confirmation after locker-remove failed; queued', [
+                    'booking_id' => $booking->id, 'error' => $e->getMessage(),
+                ]);
+                \App\Jobs\SendBookingConfirmation::dispatch($booking->id);
+            }
+        }
+
+        return [
+            'action' => 'removed',
+            'removed' => $targets->count(),
+            'booking' => $booking->fresh(['lockers', 'items', 'customer', 'location']),
+        ];
+    }
+
+    /**
      * Build the attribution columns for a new booking from the client-supplied
      * first-touch payload. Derives a normalised marketing_source channel and
      * keeps the raw UTM/referrer values for auditing.

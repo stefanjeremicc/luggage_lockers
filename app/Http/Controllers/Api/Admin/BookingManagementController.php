@@ -140,6 +140,7 @@ class BookingManagementController extends Controller
                 }
                 $lastUsed = $bl->locker?->last_used_at;
                 return [
+                    'booking_locker_id' => $bl->id,
                     'locker_number' => $bl->locker?->number,
                     'size' => $bl->locker?->size?->value,
                     'pin' => $pin,
@@ -318,6 +319,40 @@ class BookingManagementController extends Controller
         $booking = Booking::findOrFail($id);
         $service->cancel($booking, 'Cancelled by admin', 'admin');
         return response()->json(['message' => 'Booking cancelled']);
+    }
+
+    /**
+     * Remove specific locker(s) from a booking, keeping the rest active. If the
+     * admin selects every locker, this performs a full cancellation instead.
+     * The actual logic lives in BookingService::removeLockers() (transactional,
+     * permanent/one-time aware, scoped strictly to this booking).
+     */
+    public function removeLockers(Request $request, int $id, BookingService $service): JsonResponse
+    {
+        $data = $request->validate([
+            'booking_locker_ids'   => 'required|array|min:1',
+            'booking_locker_ids.*' => 'integer',
+            'notify'               => 'sometimes|boolean',
+        ]);
+
+        $booking = Booking::findOrFail($id);
+
+        try {
+            $result = $service->removeLockers(
+                $booking,
+                $data['booking_locker_ids'],
+                'admin',
+                $data['notify'] ?? true
+            );
+        } catch (\Throwable $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        $message = $result['action'] === 'cancelled'
+            ? 'All lockers removed — booking cancelled.'
+            : "Removed {$result['removed']} locker(s). The remaining lockers stay active.";
+
+        return response()->json(['message' => $message, 'action' => $result['action']]);
     }
 
     public function forceDestroy(int $id): JsonResponse
