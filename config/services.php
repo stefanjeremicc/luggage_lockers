@@ -49,4 +49,13 @@ return [
         'phone_id' => env('WHATSAPP_PHONE_ID'),
     ],
 
+    // Google Search Console — OAuth (user) credentials. SC won't accept the
+    // service account, so we authenticate as the property owner via a stored
+    // refresh token. Secrets live in .env (never committed).
+    'search_console' => [
+        'client_id'     => env('SC_OAUTH_CLIENT_ID'),
+        'client_secret' => env('SC_OAUTH_CLIENT_SECRET'),
+        'refresh_token' => env('SC_OAUTH_REFRESH_TOKEN'),
+    ],
+
 ];

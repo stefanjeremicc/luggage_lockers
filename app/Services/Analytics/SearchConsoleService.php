@@ -41,7 +41,14 @@ class SearchConsoleService
 
     public function isConfigured(): bool
     {
-        return is_readable($this->credentialsPath());
+        return $this->oauthConfigured() || is_readable($this->credentialsPath());
+    }
+
+    /** OAuth (user) credentials present? This is the primary auth for SC. */
+    private function oauthConfigured(): bool
+    {
+        $o = config('services.search_console');
+        return !empty($o['client_id']) && !empty($o['client_secret']) && !empty($o['refresh_token']);
     }
 
     private function credentialsPath(): string
@@ -49,9 +56,35 @@ class SearchConsoleService
         return storage_path('app/' . self::CREDENTIALS_FILE);
     }
 
-    /** Get (and cache) an OAuth access token scoped for Search Console. */
+    /**
+     * Get (and cache) an access token for the Search Console API.
+     * Prefers OAuth (the property owner's refresh token) — Search Console does
+     * not accept the service account. Falls back to the service-account JWT
+     * only if no OAuth credentials are configured.
+     */
     private function accessToken(): ?string
     {
+        if ($this->oauthConfigured()) {
+            return Cache::remember('sc:oauth_token', 3000, function () { // 50 min
+                $o = config('services.search_console');
+                try {
+                    $res = Http::asForm()->post(self::TOKEN_URI, [
+                        'client_id'     => $o['client_id'],
+                        'client_secret' => $o['client_secret'],
+                        'refresh_token' => $o['refresh_token'],
+                        'grant_type'    => 'refresh_token',
+                    ]);
+                    if ($res->successful()) {
+                        return $res->json('access_token');
+                    }
+                    Log::error('SC OAuth refresh failed', ['body' => $res->body()]);
+                } catch (\Throwable $e) {
+                    Log::error('SC OAuth refresh error: ' . $e->getMessage());
+                }
+                return null;
+            });
+        }
+
         return Cache::remember('sc:access_token', 3000, function () { // 50 min
             $path = $this->credentialsPath();
             if (!is_readable($path)) {
