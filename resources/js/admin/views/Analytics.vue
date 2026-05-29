@@ -298,21 +298,21 @@
                         <div class="min-w-0">
                             <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">Top search queries <InfoTip text="The actual phrases people typed on Google, ranked by clicks." /></h3>
                             <div class="overflow-x-auto -mx-1 px-1">
-                                <table class="w-full text-sm min-w-[380px]">
-                                    <thead><tr class="text-[#6B7280] text-[11px] uppercase">
-                                        <th class="text-left py-1">Query</th>
-                                        <th class="text-right py-1">Clicks</th>
-                                        <th class="text-right py-1">Impr.</th>
-                                        <th class="text-right py-1">CTR</th>
-                                        <th class="text-right py-1">Pos.</th>
+                                <table class="w-full text-sm min-w-[460px]">
+                                    <thead><tr class="text-[#6B7280] text-[11px] uppercase border-b border-[#2A2A2A]">
+                                        <th class="text-left py-1.5 pr-2 cursor-pointer select-none hover:text-white whitespace-nowrap" @click="sortBy(sScQ,'query')">Query <span class="text-[#F59E0B]">{{ scArrow(sScQ,'query') }}</span></th>
+                                        <th class="text-right py-1.5 px-2.5 cursor-pointer select-none hover:text-white" @click="sortBy(sScQ,'clicks')"><span class="inline-flex items-center gap-1 justify-end whitespace-nowrap">Clicks <span @click.stop><InfoTip text="Times someone clicked your site in Google search results." /></span><span class="text-[#F59E0B] inline-block w-2">{{ scArrow(sScQ,'clicks') }}</span></span></th>
+                                        <th class="text-right py-1.5 px-2.5 cursor-pointer select-none hover:text-white" @click="sortBy(sScQ,'impressions')"><span class="inline-flex items-center gap-1 justify-end whitespace-nowrap">Impr. <span @click.stop><InfoTip text="How often you appeared in Google search results (whether clicked or not)." /></span><span class="text-[#F59E0B] inline-block w-2">{{ scArrow(sScQ,'impressions') }}</span></span></th>
+                                        <th class="text-right py-1.5 px-2.5 cursor-pointer select-none hover:text-white" @click="sortBy(sScQ,'ctr')"><span class="inline-flex items-center gap-1 justify-end whitespace-nowrap">CTR <span @click.stop><InfoTip text="Click-through rate = clicks ÷ impressions. Higher = more compelling title/description." /></span><span class="text-[#F59E0B] inline-block w-2">{{ scArrow(sScQ,'ctr') }}</span></span></th>
+                                        <th class="text-right py-1.5 px-2.5 cursor-pointer select-none hover:text-white" @click="sortBy(sScQ,'position')"><span class="inline-flex items-center gap-1 justify-end whitespace-nowrap">Pos. <span @click.stop><InfoTip text="Average ranking in results (1 = top). Lower is better." /></span><span class="text-[#F59E0B] inline-block w-2">{{ scArrow(sScQ,'position') }}</span></span></th>
                                     </tr></thead>
                                     <tbody>
-                                        <tr v-for="(q,i) in sc.queries" :key="i" class="border-t border-[#2A2A2A]">
-                                            <td class="py-1.5" :title="q.query">{{ trimText(q.query) }}</td>
-                                            <td class="py-1.5 text-right tabular-nums text-[#10B981]">{{ q.clicks }}</td>
-                                            <td class="py-1.5 text-right tabular-nums">{{ q.impressions }}</td>
-                                            <td class="py-1.5 text-right tabular-nums">{{ q.ctr }}%</td>
-                                            <td class="py-1.5 text-right tabular-nums">{{ q.position }}</td>
+                                        <tr v-for="(q,i) in sorted(sc.queries, sScQ)" :key="i" class="border-t border-[#2A2A2A]">
+                                            <td class="py-2 pr-2" :title="q.query">{{ trimText(q.query) }}</td>
+                                            <td class="py-2 px-2.5 text-right tabular-nums text-[#10B981]">{{ q.clicks }}</td>
+                                            <td class="py-2 px-2.5 text-right tabular-nums">{{ q.impressions }}</td>
+                                            <td class="py-2 px-2.5 text-right tabular-nums">{{ q.ctr }}%</td>
+                                            <td class="py-2 px-2.5 text-right tabular-nums">{{ q.position }}</td>
                                         </tr>
                                         <tr v-if="!sc.queries.length"><td colspan="5" class="py-2 text-[#6B7280] italic">No queries in range.</td></tr>
                                     </tbody>
@@ -322,21 +322,21 @@
                         <div class="min-w-0">
                             <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">Top pages in search <InfoTip text="Which of your pages got the most clicks from Google search." /></h3>
                             <div class="overflow-x-auto -mx-1 px-1">
-                                <table class="w-full text-sm min-w-[380px]">
-                                    <thead><tr class="text-[#6B7280] text-[11px] uppercase">
-                                        <th class="text-left py-1">Page</th>
-                                        <th class="text-right py-1">Clicks</th>
-                                        <th class="text-right py-1">Impr.</th>
-                                        <th class="text-right py-1">CTR</th>
-                                        <th class="text-right py-1">Pos.</th>
+                                <table class="w-full text-sm min-w-[460px]">
+                                    <thead><tr class="text-[#6B7280] text-[11px] uppercase border-b border-[#2A2A2A]">
+                                        <th class="text-left py-1.5 pr-2 cursor-pointer select-none hover:text-white whitespace-nowrap" @click="sortBy(sScP,'page')">Page <span class="text-[#F59E0B]">{{ scArrow(sScP,'page') }}</span></th>
+                                        <th class="text-right py-1.5 px-2.5 cursor-pointer select-none hover:text-white" @click="sortBy(sScP,'clicks')"><span class="inline-flex items-center gap-1 justify-end whitespace-nowrap">Clicks <span @click.stop><InfoTip text="Clicks this page got from Google search results." /></span><span class="text-[#F59E0B] inline-block w-2">{{ scArrow(sScP,'clicks') }}</span></span></th>
+                                        <th class="text-right py-1.5 px-2.5 cursor-pointer select-none hover:text-white" @click="sortBy(sScP,'impressions')"><span class="inline-flex items-center gap-1 justify-end whitespace-nowrap">Impr. <span @click.stop><InfoTip text="How often this page appeared in Google search results." /></span><span class="text-[#F59E0B] inline-block w-2">{{ scArrow(sScP,'impressions') }}</span></span></th>
+                                        <th class="text-right py-1.5 px-2.5 cursor-pointer select-none hover:text-white" @click="sortBy(sScP,'ctr')"><span class="inline-flex items-center gap-1 justify-end whitespace-nowrap">CTR <span @click.stop><InfoTip text="Click-through rate = clicks ÷ impressions for this page." /></span><span class="text-[#F59E0B] inline-block w-2">{{ scArrow(sScP,'ctr') }}</span></span></th>
+                                        <th class="text-right py-1.5 px-2.5 cursor-pointer select-none hover:text-white" @click="sortBy(sScP,'position')"><span class="inline-flex items-center gap-1 justify-end whitespace-nowrap">Pos. <span @click.stop><InfoTip text="Average ranking of this page in results (1 = top)." /></span><span class="text-[#F59E0B] inline-block w-2">{{ scArrow(sScP,'position') }}</span></span></th>
                                     </tr></thead>
                                     <tbody>
-                                        <tr v-for="(p,i) in sc.pages" :key="i" class="border-t border-[#2A2A2A]">
-                                            <td class="py-1.5" :title="p.page">{{ trimText(p.page.replace(/^https?:\/\/[^/]+/, '') || '/') }}</td>
-                                            <td class="py-1.5 text-right tabular-nums text-[#10B981]">{{ p.clicks }}</td>
-                                            <td class="py-1.5 text-right tabular-nums">{{ p.impressions }}</td>
-                                            <td class="py-1.5 text-right tabular-nums">{{ p.ctr }}%</td>
-                                            <td class="py-1.5 text-right tabular-nums">{{ p.position }}</td>
+                                        <tr v-for="(p,i) in sorted(sc.pages, sScP)" :key="i" class="border-t border-[#2A2A2A]">
+                                            <td class="py-2 pr-2" :title="p.page">{{ trimText(p.page.replace(/^https?:\/\/[^/]+/, '') || '/') }}</td>
+                                            <td class="py-2 px-2.5 text-right tabular-nums text-[#10B981]">{{ p.clicks }}</td>
+                                            <td class="py-2 px-2.5 text-right tabular-nums">{{ p.impressions }}</td>
+                                            <td class="py-2 px-2.5 text-right tabular-nums">{{ p.ctr }}%</td>
+                                            <td class="py-2 px-2.5 text-right tabular-nums">{{ p.position }}</td>
                                         </tr>
                                         <tr v-if="!sc.pages.length"><td colspan="5" class="py-2 text-[#6B7280] italic">No pages in range.</td></tr>
                                     </tbody>
@@ -803,6 +803,10 @@ const sLanding = reactive({ col: 'count', dir: 'desc' });
 const sSource  = reactive({ col: 'count', dir: 'desc' });
 const sLoc     = reactive({ col: 'count', dir: 'desc' });
 const sStatus  = reactive({ col: 'count', dir: 'desc' });
+// Search Console tables (queries + pages) — sortable by any column.
+const sScQ = reactive({ col: 'clicks', dir: 'desc' });
+const sScP = reactive({ col: 'clicks', dir: 'desc' });
+const scArrow = (s, col) => s.col === col ? (s.dir === 'asc' ? '▲' : '▼') : '';
 
 const sortBy = (state, col) => {
     if (state.col === col) state.dir = state.dir === 'asc' ? 'desc' : 'asc';
