@@ -1,7 +1,7 @@
 <template>
     <Teleport to="body">
         <Transition name="fade">
-            <div v-if="modelValue" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" @click.self="cancel">
+            <div v-if="modelValue" class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" @click.self="cancel">
                 <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl shadow-2xl max-w-md w-full p-6">
                     <div class="flex items-start gap-3 mb-4">
                         <div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" :class="iconBg">
