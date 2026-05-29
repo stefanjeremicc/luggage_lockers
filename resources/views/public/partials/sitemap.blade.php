@@ -44,29 +44,29 @@
     @endforeach
 
     @foreach($locations as $location)
-    @php $locMod = optional($location->updated_at)->toAtomString(); @endphp
+    @php $locMod = optional($location->updated_at)->toAtomString(); $locSr = $location->slug_sr ?: $location->slug; @endphp
     <url><loc>{{ url("/locations/{$location->slug}") }}</loc>
         <xhtml:link rel="alternate" hreflang="en" href="{{ url("/locations/{$location->slug}") }}"/>
-        <xhtml:link rel="alternate" hreflang="sr" href="{{ url("/sr/lokacije/{$location->slug}") }}"/>
+        <xhtml:link rel="alternate" hreflang="sr" href="{{ url("/sr/lokacije/{$locSr}") }}"/>
         @if($locMod)<lastmod>{{ $locMod }}</lastmod>@endif
         <changefreq>weekly</changefreq><priority>0.8</priority></url>
-    <url><loc>{{ url("/sr/lokacije/{$location->slug}") }}</loc>
+    <url><loc>{{ url("/sr/lokacije/{$locSr}") }}</loc>
         <xhtml:link rel="alternate" hreflang="en" href="{{ url("/locations/{$location->slug}") }}"/>
-        <xhtml:link rel="alternate" hreflang="sr" href="{{ url("/sr/lokacije/{$location->slug}") }}"/>
+        <xhtml:link rel="alternate" hreflang="sr" href="{{ url("/sr/lokacije/{$locSr}") }}"/>
         @if($locMod)<lastmod>{{ $locMod }}</lastmod>@endif
         <changefreq>weekly</changefreq><priority>0.8</priority></url>
     @endforeach
 
     @foreach($posts as $post)
-    @php $postMod = optional($post->updated_at)->toAtomString(); @endphp
+    @php $postMod = optional($post->updated_at)->toAtomString(); $postSr = $post->slug_sr ?: $post->slug; @endphp
     <url><loc>{{ url("/blog/{$post->slug}") }}</loc>
         <xhtml:link rel="alternate" hreflang="en" href="{{ url("/blog/{$post->slug}") }}"/>
-        <xhtml:link rel="alternate" hreflang="sr" href="{{ url("/sr/blog/{$post->slug}") }}"/>
+        <xhtml:link rel="alternate" hreflang="sr" href="{{ url("/sr/blog/{$postSr}") }}"/>
         @if($postMod)<lastmod>{{ $postMod }}</lastmod>@endif
         <changefreq>monthly</changefreq><priority>0.6</priority></url>
-    <url><loc>{{ url("/sr/blog/{$post->slug}") }}</loc>
+    <url><loc>{{ url("/sr/blog/{$postSr}") }}</loc>
         <xhtml:link rel="alternate" hreflang="en" href="{{ url("/blog/{$post->slug}") }}"/>
-        <xhtml:link rel="alternate" hreflang="sr" href="{{ url("/sr/blog/{$post->slug}") }}"/>
+        <xhtml:link rel="alternate" hreflang="sr" href="{{ url("/sr/blog/{$postSr}") }}"/>
         @if($postMod)<lastmod>{{ $postMod }}</lastmod>@endif
         <changefreq>monthly</changefreq><priority>0.6</priority></url>
     @endforeach
