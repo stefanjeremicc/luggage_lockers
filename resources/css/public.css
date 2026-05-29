@@ -157,7 +157,8 @@ body {
 /* Mobile button sizing */
 @media (max-width: 639px) {
     .btn-primary,
-    .btn-outline {
+    .btn-outline,
+    .btn-back {
         height: 40px;
         min-width: 0;
         padding: 0 16px;
@@ -290,10 +291,15 @@ body {
 
 /* Back button */
 .btn-back {
-    padding: 12px 24px;
+    /* Match .btn-primary height exactly so the Back/Continue row is aligned. */
+    height: 45px;
+    padding: 0 18px;
     border: 1px solid var(--color-border-card);
     border-radius: 12px;
     color: var(--color-text-secondary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
