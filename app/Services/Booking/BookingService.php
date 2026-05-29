@@ -402,7 +402,8 @@ class BookingService
             return ['action' => 'cancelled', 'removed' => $targets->count(), 'booking' => $booking->fresh()];
         }
 
-        $removedNumbers = $targets->map(fn ($t) => $t->locker?->number)->filter()->values()->implode(', ');
+        $removedNumberList = $targets->map(fn ($t) => $t->locker?->number)->filter()->values()->all();
+        $removedNumbers = implode(', ', $removedNumberList);
 
         // 1) TTLock cleanup runs OUTSIDE the DB transaction — a network call must
         //    never hold DB row locks open. Only one-time codes need deleting
@@ -484,10 +485,9 @@ class BookingService
         //      (so it shows only the lockers/PINs still valid and the new total).
         if ($notify) {
             try {
-                BookingNotifier::send(
-                    $booking->fresh(['customer', 'location', 'lockers']),
-                    'booking_locker_removed',
-                    ['removed_lockers' => $removedNumbers]
+                BookingNotifier::sendLockerRemoved(
+                    $booking->fresh(['customer', 'location']),
+                    $removedNumberList
                 );
             } catch (\Throwable $e) {
                 Log::error('locker-removed notice failed', [

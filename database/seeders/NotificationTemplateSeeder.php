@@ -233,7 +233,8 @@ class NotificationTemplateSeeder extends Seeder
                 'variables' => $commonVars,
                 'body' => $this->emailShell('Locker Removed', '#F59E0B',
                     '<p class="info">Hi {{ customer_name }},</p>'.
-                    '<p class="info">We\'ve removed the following locker(s) from your booking at <strong style="color:#fff">{{ location_name }}</strong>: <strong style="color:#fff">{{ removed_lockers }}</strong>. Any code for the removed locker(s) no longer works.</p>'.
+                    '<p class="info">We\'ve removed the following locker(s) from your booking at <strong style="color:#fff">{{ location_name }}</strong>:</p>'.
+                    '{{ removed_lockers_block }}'.
                     '<p class="info">Your remaining locker(s) are unchanged and still active. An updated confirmation with the current lockers and total follows in a separate email.</p>'.
                     '<div style="text-align:center;margin:20px 0">'.
                     '<p style="margin:0;color:#fff;font-size:14px"><strong>{{ support_phone }}</strong></p>'.
@@ -247,7 +248,8 @@ class NotificationTemplateSeeder extends Seeder
                 'variables' => $commonVars,
                 'body' => $this->emailShell('Loker uklonjen', '#F59E0B',
                     '<p class="info">Zdravo {{ customer_name }},</p>'.
-                    '<p class="info">Uklonili smo sledeće lokere iz vaše rezervacije na <strong style="color:#fff">{{ location_name }}</strong>: <strong style="color:#fff">{{ removed_lockers }}</strong>. Šifra za uklonjeni loker više ne radi.</p>'.
+                    '<p class="info">Uklonili smo sledeće lokere iz vaše rezervacije na <strong style="color:#fff">{{ location_name }}</strong>:</p>'.
+                    '{{ removed_lockers_block }}'.
                     '<p class="info">Preostali lokeri su nepromenjeni i i dalje aktivni. Ažurirana potvrda sa trenutnim lokerima i iznosom stiže u zasebnom mejlu.</p>'.
                     '<div style="text-align:center;margin:20px 0">'.
                     '<p style="margin:0;color:#fff;font-size:14px"><strong>{{ support_phone }}</strong></p>'.
