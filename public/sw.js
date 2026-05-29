@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bll-v3';
+const CACHE_NAME = 'bll-v4';
 const STATIC_ASSETS = ['/', '/faq', '/about', '/contact'];
 
 self.addEventListener('install', event => {
@@ -19,6 +19,14 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
     const { request } = event;
+
+    // Only ever handle GET. The Cache API rejects non-GET requests, so POST/
+    // PUT/DELETE (bookings, cancel, remove-locker, login, …) must go straight
+    // to the network untouched — never intercepted, never cached.
+    if (request.method !== 'GET') {
+        return;
+    }
+
     const url = new URL(request.url);
 
     // Never cache anything that contains PII or auth state.
