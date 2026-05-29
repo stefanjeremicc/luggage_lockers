@@ -17,6 +17,7 @@ class NotificationTemplateSeeder extends Seeder
             'booking_cancelled_by_customer',
             'booking_cancelled_by_admin',
             'booking_cancelled_admin',
+            'booking_locker_removed',
             'pin_reissued',
             'pin_reissued_admin',
             'review_request',
@@ -218,6 +219,36 @@ class NotificationTemplateSeeder extends Seeder
                     '<p class="info">Zdravo {{ customer_name }},</p>'.
                     '<p class="info">Otkazali smo vašu rezervaciju na <strong style="color:#fff">{{ location_name }}</strong> zakazanu za {{ check_in_full }}. Nema naplate.</p>'.
                     '<p class="info">Ako je ovo neočekivano ili želite više detalja, javite nam se — drago nam je da pomognemo da nađemo drugi termin ili lokaciju.</p>'.
+                    '<div style="text-align:center;margin:20px 0">'.
+                    '<p style="margin:0;color:#fff;font-size:14px"><strong>{{ support_phone }}</strong></p>'.
+                    '<p style="margin:6px 0 0"><a href="mailto:{{ support_email }}" style="color:#F59E0B">{{ support_email }}</a></p>'.
+                    '</div>'.
+                    '<p class="info" style="text-align:center;margin-top:20px;color:#6B7280">— {{ site_name }}</p>'),
+            ],
+
+            // ─── booking_locker_removed (one or more lockers removed; rest stay) ───────────────
+            [
+                'key' => 'booking_locker_removed', 'channel' => 'email', 'locale' => 'en',
+                'subject' => 'A locker was removed from your booking — {{ site_name }}',
+                'variables' => $commonVars,
+                'body' => $this->emailShell('Locker Removed', '#F59E0B',
+                    '<p class="info">Hi {{ customer_name }},</p>'.
+                    '<p class="info">We\'ve removed the following locker(s) from your booking at <strong style="color:#fff">{{ location_name }}</strong>: <strong style="color:#fff">{{ removed_lockers }}</strong>. Any code for the removed locker(s) no longer works.</p>'.
+                    '<p class="info">Your remaining locker(s) are unchanged and still active. An updated confirmation with the current lockers and total follows in a separate email.</p>'.
+                    '<div style="text-align:center;margin:20px 0">'.
+                    '<p style="margin:0;color:#fff;font-size:14px"><strong>{{ support_phone }}</strong></p>'.
+                    '<p style="margin:6px 0 0"><a href="mailto:{{ support_email }}" style="color:#F59E0B">{{ support_email }}</a></p>'.
+                    '</div>'.
+                    '<p class="info" style="text-align:center;margin-top:20px;color:#6B7280">— {{ site_name }}</p>'),
+            ],
+            [
+                'key' => 'booking_locker_removed', 'channel' => 'email', 'locale' => 'sr',
+                'subject' => 'Uklonjen je loker iz vaše rezervacije — {{ site_name }}',
+                'variables' => $commonVars,
+                'body' => $this->emailShell('Loker uklonjen', '#F59E0B',
+                    '<p class="info">Zdravo {{ customer_name }},</p>'.
+                    '<p class="info">Uklonili smo sledeće lokere iz vaše rezervacije na <strong style="color:#fff">{{ location_name }}</strong>: <strong style="color:#fff">{{ removed_lockers }}</strong>. Šifra za uklonjeni loker više ne radi.</p>'.
+                    '<p class="info">Preostali lokeri su nepromenjeni i i dalje aktivni. Ažurirana potvrda sa trenutnim lokerima i iznosom stiže u zasebnom mejlu.</p>'.
                     '<div style="text-align:center;margin:20px 0">'.
                     '<p style="margin:0;color:#fff;font-size:14px"><strong>{{ support_phone }}</strong></p>'.
                     '<p style="margin:6px 0 0"><a href="mailto:{{ support_email }}" style="color:#F59E0B">{{ support_email }}</a></p>'.

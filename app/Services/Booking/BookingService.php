@@ -404,23 +404,29 @@ class BookingService
 
         $removedNumbers = $targets->map(fn ($t) => $t->locker?->number)->filter()->values()->implode(', ');
 
+        // 1) TTLock cleanup runs OUTSIDE the DB transaction — a network call must
+        //    never hold DB row locks open. Only one-time codes need deleting
+        //    (ttlock_keyboard_pwd_id set); permanent-PIN lockers have nothing
+        //    per-booking to remove and their shared permanent_pin is never touched.
+        //    This mirrors the proven cancel()/reissuePin() path, so it will work
+        //    unchanged once the monthly quota resets and one-time codes return.
+        foreach ($targets as $bl) {
+            if ($bl->ttlock_keyboard_pwd_id) {
+                try {
+                    DeleteTTLockAccessCode::dispatchSync($bl->id);
+                } catch (\Throwable $e) {
+                    Log::error('Sync TTLock delete on locker-remove failed; queued for retry', [
+                        'booking_locker_id' => $bl->id, 'error' => $e->getMessage(),
+                    ]);
+                    DeleteTTLockAccessCode::dispatch($bl->id);
+                }
+            }
+        }
+
+        // 2) DB changes — atomic.
         DB::transaction(function () use ($booking, $targets) {
             foreach ($targets as $bl) {
-                // One-time mode: delete the per-booking TTLock code so it stops
-                // working. Permanent mode (ttlock_keyboard_pwd_id null): there is
-                // nothing per-booking to delete and we must NOT touch the locker's
-                // shared permanent PIN.
-                if ($bl->ttlock_keyboard_pwd_id) {
-                    try {
-                        DeleteTTLockAccessCode::dispatchSync($bl->id);
-                    } catch (\Throwable $e) {
-                        Log::error('Sync TTLock delete on locker-remove failed; queued for retry', [
-                            'booking_locker_id' => $bl->id, 'error' => $e->getMessage(),
-                        ]);
-                        DeleteTTLockAccessCode::dispatch($bl->id);
-                    }
-                }
-                $bl->delete(); // frees the locker for that window; permanent_pin untouched
+                $bl->delete(); // frees the locker; permanent_pin untouched
             }
 
             // Recompute each booking_item's qty from the SURVIVING booking_lockers,
@@ -472,10 +478,22 @@ class BookingService
             . '[' . now()->toDateTimeString() . "] Removed locker(s): {$removedNumbers} by {$initiatedBy}.");
         $booking->update(['notes' => $note]);
 
-        // Send the guest a refreshed confirmation: it re-renders from the
-        // remaining booking_lockers, so it shows only the lockers/PINs that are
-        // still valid and the new total.
+        // Notify the guest in two steps, in order:
+        //  (1) a "locker(s) removed" notice naming exactly what was cancelled, then
+        //  (2) a fresh confirmation that re-renders from the REMAINING booking_lockers
+        //      (so it shows only the lockers/PINs still valid and the new total).
         if ($notify) {
+            try {
+                BookingNotifier::send(
+                    $booking->fresh(['customer', 'location', 'lockers']),
+                    'booking_locker_removed',
+                    ['removed_lockers' => $removedNumbers]
+                );
+            } catch (\Throwable $e) {
+                Log::error('locker-removed notice failed', [
+                    'booking_id' => $booking->id, 'error' => $e->getMessage(),
+                ]);
+            }
             try {
                 \App\Jobs\SendBookingConfirmation::dispatchSync($booking->id);
             } catch (\Throwable $e) {
