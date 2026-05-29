@@ -8,6 +8,39 @@
             </button>
         </div>
 
+        <!-- Hub: sections moved here from the sidebar (Notifications / Sitemap / Users) -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
+            <router-link to="/admin/notification-templates" class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 hover:border-[#F59E0B]/50 transition flex items-start gap-3">
+                <span class="shrink-0 w-9 h-9 rounded-lg bg-[#F59E0B]/10 text-[#F59E0B] flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                </span>
+                <span class="min-w-0">
+                    <span class="block text-sm font-semibold text-white">Notifications</span>
+                    <span class="block text-xs text-[#6B7280] mt-0.5">Email & WhatsApp templates</span>
+                </span>
+            </router-link>
+
+            <router-link to="/admin/sitemap" class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 hover:border-[#F59E0B]/50 transition flex items-start gap-3">
+                <span class="shrink-0 w-9 h-9 rounded-lg bg-[#F59E0B]/10 text-[#F59E0B] flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+                </span>
+                <span class="min-w-0">
+                    <span class="block text-sm font-semibold text-white">Sitemap</span>
+                    <span class="block text-xs text-[#6B7280] mt-0.5">View URLs & check broken links</span>
+                </span>
+            </router-link>
+
+            <router-link v-if="user?.role === 'super_admin'" to="/admin/users" class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 hover:border-[#F59E0B]/50 transition flex items-start gap-3">
+                <span class="shrink-0 w-9 h-9 rounded-lg bg-[#F59E0B]/10 text-[#F59E0B] flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-5.13a4 4 0 11-8 0 4 4 0 018 0zm6 0a4 4 0 01-4 4"/></svg>
+                </span>
+                <span class="min-w-0">
+                    <span class="block text-sm font-semibold text-white">Users</span>
+                    <span class="block text-xs text-[#6B7280] mt-0.5">Admin accounts & roles</span>
+                </span>
+            </router-link>
+        </div>
+
         <div v-if="loading" class="text-sm text-[#A0A0A0]">Loading…</div>
 
         <template v-else>
@@ -97,7 +130,7 @@ import { useToast } from '../composables/useToast';
 import PhoneInput from '../components/PhoneInput.vue';
 import Select from '../components/Select.vue';
 
-const { apiFetch } = useAuth();
+const { apiFetch, user } = useAuth();
 const toast = useToast();
 
 const values = ref({});
