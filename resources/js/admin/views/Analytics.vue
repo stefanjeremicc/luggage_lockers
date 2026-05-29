@@ -142,7 +142,7 @@
             </div>
 
             <!-- Site traffic (Google Analytics) -->
-            <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 mb-8">
+            <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-3 sm:p-5 mb-8 overflow-hidden">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0]">Site traffic · Google Analytics</h2>
                     <span class="text-xs text-[#6B7280]">{{ rangeLabel }}</span>
@@ -263,7 +263,7 @@
             </div>
 
             <!-- Search performance (Google Search Console) -->
-            <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 mb-8">
+            <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-3 sm:p-5 mb-8 overflow-hidden">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-sm font-semibold uppercase tracking-wide text-[#A0A0A0] flex items-center gap-1">Search · Google Search Console <InfoTip text="What people searched on Google to find you (queries), how often you appeared (impressions), how many clicked through, and your average position. Data lags ~2 days." /></h2>
                     <span class="text-xs text-[#6B7280]">{{ rangeLabel }}</span>
@@ -295,10 +295,10 @@
 
                     <!-- Top queries + Top pages side by side -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div>
+                        <div class="min-w-0">
                             <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">Top search queries <InfoTip text="The actual phrases people typed on Google, ranked by clicks." /></h3>
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-sm min-w-[420px]">
+                            <div class="overflow-x-auto -mx-1 px-1">
+                                <table class="w-full text-sm min-w-[380px]">
                                     <thead><tr class="text-[#6B7280] text-[11px] uppercase">
                                         <th class="text-left py-1">Query</th>
                                         <th class="text-right py-1">Clicks</th>
@@ -319,10 +319,10 @@
                                 </table>
                             </div>
                         </div>
-                        <div>
+                        <div class="min-w-0">
                             <h3 class="text-xs uppercase tracking-wide text-[#6B7280] mb-2 flex items-center gap-1">Top pages in search <InfoTip text="Which of your pages got the most clicks from Google search." /></h3>
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-sm min-w-[420px]">
+                            <div class="overflow-x-auto -mx-1 px-1">
+                                <table class="w-full text-sm min-w-[380px]">
                                     <thead><tr class="text-[#6B7280] text-[11px] uppercase">
                                         <th class="text-left py-1">Page</th>
                                         <th class="text-right py-1">Clicks</th>
