@@ -322,6 +322,46 @@ class BookingManagementController extends Controller
     }
 
     /**
+     * Admin edit for a booking: times, customer, pricing, notes, attribution.
+     * Status-changing flows (cancel / extend / reissue PIN / mark paid) stay as
+     * their own dedicated actions.
+     */
+    public function edit(Request $request, int $id, BookingService $service): JsonResponse
+    {
+        // Phase A scope: customer (name/email/phone) + times + duration_label +
+        // notes. Other fields (pricing, attribution, locker/location reassign)
+        // are intentionally NOT exposed here yet — they require more careful UX
+        // and availability/TTLock handling.
+        $data = $request->validate([
+            'check_in'           => 'nullable|string',
+            'check_out'          => 'nullable|string',
+            'duration_label'     => 'nullable|string|max:50',
+            'customer'           => 'nullable|array',
+            'customer.full_name' => 'nullable|string|max:120',
+            'customer.email'     => 'nullable|email|max:160',
+            'customer.phone'     => 'nullable|string|max:40',
+            'notes'              => 'nullable|string|max:5000',
+            'notify'             => 'sometimes|boolean',
+        ]);
+
+        $booking = Booking::with('customer', 'items', 'bookingLockers.locker')->findOrFail($id);
+
+        try {
+            $result = $service->edit($booking, $data, $data['notify'] ?? false, 'admin');
+        } catch (\Throwable $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        $count = count($result['changes']);
+        return response()->json([
+            'message' => $count
+                ? "Booking updated ({$count} field(s) changed)" . (($data['notify'] ?? false) ? ' — customer notified.' : '.')
+                : 'No changes.',
+            'changes' => array_keys($result['changes']),
+        ]);
+    }
+
+    /**
      * Remove specific locker(s) from a booking, keeping the rest active. If the
      * admin selects every locker, this performs a full cancellation instead.
      * The actual logic lives in BookingService::removeLockers() (transactional,

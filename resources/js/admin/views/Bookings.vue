@@ -101,16 +101,19 @@
                 </dl>
 
                 <div class="mt-4 pt-3 border-t border-[#2A2A2A] space-y-2">
-                    <!-- Row 1: New PIN / Extend / Resend / Details (4 across, Details far right) -->
+                    <!-- Row 1: New PIN / Resend / Edit / Details (4 cards) -->
                     <div class="grid grid-cols-4 gap-2">
                         <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="reissuePin(b.id)"
-                            class="bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-1 py-2.5 text-xs font-semibold active:bg-[#333]">New PIN</button>
-                        <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="extendOpen = b"
-                            class="bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-1 py-2.5 text-xs font-semibold active:bg-[#333]">Extend</button>
+                            class="booking-card-btn">New PIN</button>
+                        <span v-else></span>
                         <button v-if="!isFinal(b)" @click="resendConfirmation(b.id)"
-                            class="bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-1 py-2.5 text-xs font-semibold active:bg-[#333]">Resend</button>
+                            class="booking-card-btn">Resend</button>
+                        <span v-else></span>
+                        <button v-if="!isFinal(b)" @click="openEdit(b)"
+                            class="booking-card-btn booking-card-btn--accent">Edit</button>
+                        <span v-else></span>
                         <button @click="openDetails(b)"
-                            class="col-start-4 bg-[#2A2A2A] text-[#A0A0A0] rounded-lg px-1 py-2.5 text-xs font-semibold active:bg-[#333]">Details</button>
+                            class="booking-card-btn">Details</button>
                     </div>
                     <!-- Row 2: Cancel/Delete (left) + Mark paid (right) -->
                     <div class="grid grid-cols-2 gap-2">
@@ -193,36 +196,34 @@
                                 </span>
                             </div>
                         </td>
-                        <td class="px-4 py-3 whitespace-nowrap">
-                            <div class="flex items-center justify-end gap-1">
-                                <button @click="openDetails(b)" title="Details"
-                                    class="action-icon" aria-label="Details">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                </button>
-                                <button v-if="(b.display_status ?? b.booking_status) !== 'cancelled'" @click="togglePaid(b)" :title="b.payment_status === 'paid' ? 'Paid — click to mark unpaid' : 'Mark as paid'"
-                                    class="action-icon" :class="b.payment_status === 'paid' ? 'text-[#10B981] bg-[#10B981]/10 hover:bg-[#10B981]/20' : 'text-[#A0A0A0] hover:bg-[#10B981]/15 hover:text-[#10B981]'" aria-label="Toggle paid">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
-                                </button>
-                                <button v-if="!isFinal(b)" @click="resendConfirmation(b.id)" title="Resend confirmation"
-                                    class="action-icon" aria-label="Resend">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12a8 8 0 018-8v4l5-5-5-5v4a10 10 0 100 20"/></svg>
-                                </button>
-                                <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="reissuePin(b.id)" title="Generate new PIN"
-                                    class="action-icon" aria-label="New PIN">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="16" r="1"/><path d="M7 11V7a5 5 0 0110 0v4"/><rect x="3" y="11" width="18" height="11" rx="2"/></svg>
-                                </button>
-                                <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="extendOpen = b" title="Extend duration"
-                                    class="action-icon" aria-label="Extend">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                                </button>
-                                <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="cancelBooking(b)" title="Cancel booking"
-                                    class="action-icon" aria-label="Cancel">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-                                </button>
-                                <button v-if="isFinal(b)" @click="deleteBooking(b.id)" title="Delete permanently"
-                                    class="action-icon text-[#EF4444] hover:bg-[#EF4444]/15" aria-label="Delete">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 01-2 2H9a2 2 0 01-2-2L5 6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-                                </button>
+                        <td class="px-3 py-3 whitespace-nowrap">
+                            <div class="flex flex-col items-end gap-1.5">
+                                <!-- Primary cards: NEW PIN / RESEND / EDIT / DETAILS -->
+                                <div class="flex items-center gap-1">
+                                    <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="reissuePin(b.id)"
+                                        class="booking-chip-btn" title="Generate new PIN">PIN</button>
+                                    <button v-if="!isFinal(b)" @click="resendConfirmation(b.id)"
+                                        class="booking-chip-btn" title="Resend confirmation">Resend</button>
+                                    <button v-if="!isFinal(b)" @click="openEdit(b)"
+                                        class="booking-chip-btn booking-chip-btn--accent" title="Edit booking (time, customer, duration)">Edit</button>
+                                    <button @click="openDetails(b)"
+                                        class="booking-chip-btn" title="Details">Details</button>
+                                </div>
+                                <!-- Secondary: paid toggle / cancel / delete -->
+                                <div class="flex items-center gap-1">
+                                    <button v-if="(b.display_status ?? b.booking_status) !== 'cancelled'" @click="togglePaid(b)" :title="b.payment_status === 'paid' ? 'Paid — click to mark unpaid' : 'Mark as paid'"
+                                        class="action-icon" :class="b.payment_status === 'paid' ? 'text-[#10B981] bg-[#10B981]/10 hover:bg-[#10B981]/20' : 'text-[#A0A0A0] hover:bg-[#10B981]/15 hover:text-[#10B981]'" aria-label="Toggle paid">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                                    </button>
+                                    <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="cancelBooking(b)" title="Cancel booking"
+                                        class="action-icon" aria-label="Cancel">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                                    </button>
+                                    <button v-if="isFinal(b)" @click="deleteBooking(b.id)" title="Delete permanently"
+                                        class="action-icon text-[#EF4444] hover:bg-[#EF4444]/15" aria-label="Delete">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 01-2 2H9a2 2 0 01-2-2L5 6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                                    </button>
+                                </div>
                             </div>
                         </td>
                     </tr>
@@ -356,17 +357,65 @@
             </ul>
         </Modal>
 
-        <!-- Extend modal -->
-        <Modal :model-value="!!extendOpen" @update:model-value="v => !v && (extendOpen = null)"
-            size="sm" position="center" title="Extend booking">
-            <template v-if="extendOpen">
-                <p class="text-xs text-[#A0A0A0] mb-4">Add more time on top of current check-out ({{ formatDate(extendOpen.check_out) }}).</p>
-                <Select :model-value="extendDuration" :options="extendOptions" @update:model-value="extendDuration = $event" />
+        <!-- Edit modal: customer (name/email/phone) + check_in/check_out + duration -->
+        <Modal :model-value="!!editForm" @update:model-value="v => !v && (editForm = null)"
+            size="md" position="center" title="Edit booking"
+            :subtitle="editForm ? '#' + (editForm.booking_number ?? editForm.id) : ''">
+            <template v-if="editForm">
+                <div class="edit-section">
+                    <h4 class="edit-section-title">When</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label class="edit-field">
+                            <span class="edit-label">Check-in</span>
+                            <input type="datetime-local" v-model="editForm.check_in" class="edit-input">
+                        </label>
+                        <label class="edit-field">
+                            <span class="edit-label">Check-out</span>
+                            <input type="datetime-local" v-model="editForm.check_out" class="edit-input">
+                        </label>
+                    </div>
+                    <div class="mt-3">
+                        <span class="edit-label block mb-1.5">Quick extend from check-out</span>
+                        <div class="flex flex-wrap gap-1.5">
+                            <button v-for="s in quickShifts" :key="s.key" type="button" @click="applyQuickShift(s.minutes)"
+                                class="edit-shift-btn">+{{ s.label }}</button>
+                        </div>
+                    </div>
+                    <div class="mt-3 flex items-center justify-between gap-2 text-xs">
+                        <span class="edit-label">Duration</span>
+                        <span class="text-[#F59E0B] font-semibold">{{ computedDurationLabel || '—' }}</span>
+                    </div>
+                </div>
+
+                <div class="edit-section">
+                    <h4 class="edit-section-title">Customer</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label class="edit-field sm:col-span-2">
+                            <span class="edit-label">Full name</span>
+                            <input type="text" v-model="editForm.customer.full_name" class="edit-input" maxlength="120">
+                        </label>
+                        <label class="edit-field">
+                            <span class="edit-label">Email</span>
+                            <input type="email" v-model="editForm.customer.email" class="edit-input" maxlength="160">
+                        </label>
+                        <label class="edit-field">
+                            <span class="edit-label">Phone</span>
+                            <input type="text" v-model="editForm.customer.phone" class="edit-input" maxlength="40">
+                        </label>
+                    </div>
+                </div>
+
+                <div class="edit-section">
+                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" v-model="editForm.notify" class="w-4 h-4 accent-[#F59E0B]">
+                        <span class="text-sm text-[#D4D4D4]">Notify customer (re-send confirmation email)</span>
+                    </label>
+                </div>
             </template>
             <template #footer>
                 <div class="flex gap-2 justify-end">
-                    <Btn variant="secondary" size="sm" @click="extendOpen = null">Cancel</Btn>
-                    <Btn variant="primary" size="sm" @click="confirmExtend()">Extend</Btn>
+                    <Btn variant="secondary" size="sm" :disabled="editBusy" @click="editForm = null">Cancel</Btn>
+                    <Btn variant="primary" size="sm" :disabled="editBusy" @click="saveEdit()">{{ editBusy ? 'Saving…' : 'Save changes' }}</Btn>
                 </div>
             </template>
         </Modal>
@@ -461,22 +510,22 @@ const openMenuId = ref(null);
 const detailsBooking = ref(null);
 const sortMenuOpen = ref(false);
 const notifBooking = ref(null);
-const extendOpen = ref(null);
-const extendDuration = ref('24h');
+// Edit modal — replaces the old Extend modal (duration shift now lives inside Edit's
+// check_out + quick-shift buttons). `editForm` is the reactive draft; null = closed.
+const editForm = ref(null);
+const editBusy = ref(false);
+const quickShifts = [
+    { key: '6h',  label: '6h',  minutes: 6 * 60 },
+    { key: '24h', label: '24h', minutes: 24 * 60 },
+    { key: '2d',  label: '2d',  minutes: 2 * 24 * 60 },
+    { key: '1w',  label: '1w',  minutes: 7 * 24 * 60 },
+    { key: '2w',  label: '2w',  minutes: 14 * 24 * 60 },
+    { key: '1m',  label: '1m',  minutes: 30 * 24 * 60 },
+];
 // Cancel / remove-lockers modal (only used when a booking has >1 locker).
 const cancelModal = ref(null);   // the booking being edited
 const cancelSel = ref({});       // { booking_locker_id: true } selected for removal
 const cancelBusy = ref(false);
-const extendOptions = [
-    { value: '6h', label: '+ 6 hours' },
-    { value: '24h', label: '+ 24 hours' },
-    { value: '2_days', label: '+ 2 days' },
-    { value: '3_days', label: '+ 3 days' },
-    { value: '5_days', label: '+ 5 days' },
-    { value: '1_week', label: '+ 1 week' },
-    { value: '2_weeks', label: '+ 2 weeks' },
-    { value: '1_month', label: '+ 1 month' },
-];
 
 let searchTimer = null;
 let reqToken = 0;
@@ -853,19 +902,98 @@ const openDetails = async (b) => {
     } catch { /* keep partial */ }
 };
 
-const confirmExtend = async () => {
-    const id = extendOpen.value?.id;
-    if (!id) return;
+// --- Edit booking ---------------------------------------------------------
+// Convert a UTC ISO datetime to a "YYYY-MM-DDTHH:MM" string for <input type="datetime-local">.
+// We render in the browser's local time, which matches the admin's display
+// timezone (Europe/Belgrade) in practice. The backend re-parses these strings
+// in config('app.display_timezone') → UTC, so the round-trip is lossless.
+const toLocalInput = (iso) => {
+    if (!iso) return '';
+    const dt = new Date(iso);
+    if (Number.isNaN(dt.getTime())) return '';
+    const pad = n => String(n).padStart(2, '0');
+    return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+};
+// "YYYY-MM-DDTHH:MM" → Date (interpreted in local tz, same as the input renders).
+const fromLocalInput = (s) => {
+    if (!s) return null;
+    const dt = new Date(s);
+    return Number.isNaN(dt.getTime()) ? null : dt;
+};
+
+const openEdit = (b) => {
+    if (isFinal(b)) { toast.error('This booking is finalised — edit not available.'); return; }
+    editForm.value = {
+        id: b.id,
+        booking_number: b.booking_number,
+        check_in: toLocalInput(b.check_in),
+        check_out: toLocalInput(b.check_out),
+        customer: {
+            full_name: b.customer?.full_name || '',
+            email: b.customer?.email || '',
+            phone: b.customer?.phone || '',
+        },
+        notify: true,
+    };
+};
+
+// Shift check_out by N minutes (quick +6h / +24h / +2d / +1w / +2w / +1m).
+const applyQuickShift = (minutes) => {
+    if (!editForm.value) return;
+    const base = fromLocalInput(editForm.value.check_out) || fromLocalInput(editForm.value.check_in);
+    if (!base) { toast.error('Set check-out first.'); return; }
+    base.setMinutes(base.getMinutes() + minutes);
+    editForm.value.check_out = toLocalInput(base.toISOString());
+};
+
+// Human-readable duration between check_in and check_out, derived live.
+const computedDurationLabel = computed(() => {
+    if (!editForm.value) return '';
+    const a = fromLocalInput(editForm.value.check_in);
+    const b = fromLocalInput(editForm.value.check_out);
+    if (!a || !b) return '';
+    const ms = b.getTime() - a.getTime();
+    if (ms <= 0) return 'invalid';
+    const mins = Math.round(ms / 60000);
+    if (mins < 60) return `${mins} min`;
+    const hours = mins / 60;
+    if (hours < 24) return `${Math.round(hours * 10) / 10} h`;
+    const days = hours / 24;
+    if (days < 7) return `${Math.round(days * 10) / 10} d`;
+    if (days < 30) return `${Math.round(days / 7 * 10) / 10} w`;
+    return `${Math.round(days / 30 * 10) / 10} mo`;
+});
+
+const saveEdit = async () => {
+    if (!editForm.value) return;
+    const f = editForm.value;
+    // Client-side guard so the user gets immediate feedback (server re-validates).
+    const a = fromLocalInput(f.check_in);
+    const b = fromLocalInput(f.check_out);
+    if (a && b && b.getTime() <= a.getTime()) {
+        toast.error('Check-out must be after check-in.');
+        return;
+    }
+    editBusy.value = true;
     try {
-        await apiFetch(`/api/admin/bookings/${id}/extend`, {
+        const payload = {
+            check_in: f.check_in ? f.check_in.replace('T', ' ') : null,
+            check_out: f.check_out ? f.check_out.replace('T', ' ') : null,
+            customer: { ...f.customer },
+            notify: !!f.notify,
+        };
+        const res = await apiFetch(`/api/admin/bookings/${f.id}/edit`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ duration: extendDuration.value }),
+            body: JSON.stringify(payload),
         });
-        toast.success('Booking extended');
-        extendOpen.value = null;
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { toast.error(data.message || 'Failed to save'); return; }
+        toast.success(data.message || 'Booking updated');
+        editForm.value = null;
         fetchBookings();
-    } catch { toast.error('Failed to extend'); }
+        if (detailsBooking.value?.id === f.id) openDetails({ id: f.id });
+    } catch { toast.error('Failed to save'); }
+    finally { editBusy.value = false; }
 };
 
 const copyText = async (text) => {
@@ -962,4 +1090,91 @@ onMounted(fetchBookings);
     letter-spacing: 0.04em;
     white-space: nowrap;
 }
+
+/* Mobile primary action cards (NEW PIN / RESEND / EDIT / DETAILS). */
+.booking-card-btn {
+    background: #2A2A2A;
+    color: #A0A0A0;
+    border-radius: 8px;
+    padding: 0.6rem 0.25rem;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    border: 1px solid transparent;
+}
+.booking-card-btn:active { background: #333; color: #fff; }
+.booking-card-btn--accent {
+    background: rgba(245, 158, 11, 0.12);
+    color: #F59E0B;
+    border-color: rgba(245, 158, 11, 0.35);
+}
+.booking-card-btn--accent:active { background: rgba(245, 158, 11, 0.22); }
+
+/* Desktop compact action chips (same intent, tighter for the table row). */
+.booking-chip-btn {
+    background: #2A2A2A;
+    color: #D4D4D4;
+    border-radius: 6px;
+    padding: 0.3rem 0.65rem;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    border: 1px solid transparent;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.booking-chip-btn:hover { background: #333; color: #fff; }
+.booking-chip-btn--accent {
+    background: rgba(245, 158, 11, 0.12);
+    color: #F59E0B;
+    border-color: rgba(245, 158, 11, 0.35);
+}
+.booking-chip-btn--accent:hover { background: rgba(245, 158, 11, 0.22); color: #FBBF24; }
+
+/* Edit modal — fits the site's dark/amber language. */
+.edit-section {
+    padding: 14px 0;
+    border-bottom: 1px solid #2A2A2A;
+}
+.edit-section:last-child { border-bottom: 0; }
+.edit-section-title {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #6B7280;
+    margin: 0 0 10px;
+}
+.edit-field { display: flex; flex-direction: column; gap: 4px; }
+.edit-label {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6B7280;
+}
+.edit-input {
+    background: #111;
+    border: 1px solid #2A2A2A;
+    border-radius: 8px;
+    padding: 0.55rem 0.7rem;
+    font-size: 13px;
+    color: #fff;
+    transition: border-color 0.15s;
+    width: 100%;
+    color-scheme: dark;
+}
+.edit-input:focus { border-color: #F59E0B; outline: none; }
+.edit-shift-btn {
+    background: #111;
+    border: 1px solid #2A2A2A;
+    color: #D4D4D4;
+    border-radius: 6px;
+    padding: 0.3rem 0.6rem;
+    font-size: 11px;
+    font-weight: 600;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.edit-shift-btn:hover { border-color: #F59E0B; color: #F59E0B; background: rgba(245, 158, 11, 0.08); }
 </style>

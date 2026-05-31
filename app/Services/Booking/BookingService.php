@@ -355,6 +355,153 @@ class BookingService
     }
 
     /**
+     * Generic admin-side edit for an existing booking.
+     *
+     * Editable fields (whitelisted; anything else is ignored):
+     *  - Times: check_in, check_out (date strings; parsed in display_timezone → UTC)
+     *  - Customer (one shared record): customer.full_name, customer.email, customer.phone
+     *  - Pricing: total_eur, service_fee_eur, payment_method
+     *  - Notes (free-text)
+     *  - Attribution: marketing_source, utm_source, utm_medium, utm_campaign, landing_page
+     *  - duration_label (display only — actual duration follows check_in/check_out)
+     *
+     * What this DOESN'T do (kept as separate dedicated actions to avoid coupling):
+     *  - cancel() / extend() / reissuePin() / markPaid (status-changing flows)
+     *  - locker swap / add (Phase 2)
+     *
+     * Safety:
+     *  - All DB writes in one transaction.
+     *  - Audit trail is automatically appended to notes (timestamp + diff).
+     *  - If times change AND a locker has a one-time TTLock code, its end-date is
+     *    pushed to TTLock (same mechanism as extend()).
+     *  - Customer edit affects the shared Customer record (all their bookings) —
+     *    that's correct behaviour; the UI warns about it.
+     *
+     * @return array{changes:array,booking:Booking}
+     */
+    public function edit(Booking $booking, array $data, bool $notify = false, string $initiatedBy = 'admin'): array
+    {
+        $tz = config('app.display_timezone');
+        $changes = [];
+
+        // Parse incoming datetime strings ("YYYY-MM-DD HH:MM") in local tz → UTC.
+        $parseTime = function ($v) use ($tz) {
+            if (empty($v)) return null;
+            return Carbon::parse(str_replace('T', ' ', (string) $v), $tz)->setTimezone('UTC');
+        };
+        $newIn  = isset($data['check_in'])  ? $parseTime($data['check_in'])  : null;
+        $newOut = isset($data['check_out']) ? $parseTime($data['check_out']) : null;
+
+        if ($newIn && $newOut && $newOut->lte($newIn)) {
+            throw new \RuntimeException('check_out must be after check_in.');
+        }
+
+        $timeChanged = false;
+
+        DB::transaction(function () use (&$changes, &$timeChanged, $booking, $data, $newIn, $newOut, $initiatedBy) {
+            // Customer (shared record across this customer's bookings).
+            if (!empty($data['customer']) && $booking->customer) {
+                $cu = $booking->customer;
+                foreach (['full_name', 'email', 'phone'] as $k) {
+                    if (array_key_exists($k, $data['customer'])) {
+                        $new = $data['customer'][$k];
+                        if ((string) $cu->$k !== (string) $new) {
+                            $changes["customer.$k"] = [(string) $cu->$k, (string) $new];
+                            $cu->$k = $new;
+                        }
+                    }
+                }
+                if ($cu->isDirty()) $cu->save();
+            }
+
+            // Booking column edits.
+            $update = [];
+            if ($newIn && (!$booking->check_in || !$newIn->equalTo($booking->check_in))) {
+                $changes['check_in'] = [(string) $booking->check_in, $newIn->toDateTimeString()];
+                $update['check_in'] = $newIn;
+                $timeChanged = true;
+            }
+            if ($newOut && (!$booking->check_out || !$newOut->equalTo($booking->check_out))) {
+                $changes['check_out'] = [(string) $booking->check_out, $newOut->toDateTimeString()];
+                $update['check_out'] = $newOut;
+                $timeChanged = true;
+            }
+
+            $scalar = ['duration_label', 'total_eur', 'service_fee_eur', 'payment_method',
+                       'marketing_source', 'utm_source', 'utm_medium', 'utm_campaign', 'landing_page'];
+            foreach ($scalar as $k) {
+                if (array_key_exists($k, $data)) {
+                    $new = $data[$k];
+                    if ((string) $booking->$k !== (string) $new) {
+                        $changes[$k] = [(string) $booking->$k, (string) $new];
+                        $update[$k] = $new;
+                    }
+                }
+            }
+
+            // Notes get an automatic audit-trail line appended on save.
+            $manualNotes = array_key_exists('notes', $data) ? (string) $data['notes'] : (string) ($booking->notes ?? '');
+            if (array_key_exists('notes', $data) && (string) $booking->notes !== $manualNotes) {
+                $changes['notes'] = [(string) $booking->notes, $manualNotes];
+            }
+
+            // If times shifted, mirror on every booking_item (per-item windows).
+            if (!empty($update['check_in']) || !empty($update['check_out'])) {
+                foreach ($booking->items as $it) {
+                    $it->update([
+                        'check_in'  => $update['check_in']  ?? $it->check_in,
+                        'check_out' => $update['check_out'] ?? $it->check_out,
+                    ]);
+                }
+            }
+
+            // Append audit line to notes if anything changed.
+            if (!empty($changes)) {
+                $diff = collect($changes)
+                    ->map(fn ($pair, $k) => "$k: " . ($pair[0] === '' ? '∅' : $pair[0]) . ' → ' . ($pair[1] === '' ? '∅' : $pair[1]))
+                    ->implode('; ');
+                $audit = '[' . now()->toDateTimeString() . "] Edited by {$initiatedBy}: $diff";
+                $update['notes'] = trim(($manualNotes ? $manualNotes . "\n" : '') . $audit);
+            }
+
+            if (!empty($update)) $booking->update($update);
+        });
+
+        // Push new end-date to TTLock for any locker holding a one-time code
+        // (permanent-PIN lockers carry ttlock_keyboard_pwd_id = null → skipped).
+        // Mirrors extend(); the start-date in TTLock keeps the original, which is
+        // safe (locker keeps working from the earlier window-start until the new end).
+        if ($timeChanged) {
+            $booking->refresh();
+            foreach ($booking->bookingLockers()->whereNotNull('ttlock_keyboard_pwd_id')->get() as $bl) {
+                try {
+                    app(\App\Services\Lock\LockServiceInterface::class)->updateAccessCodeTime(
+                        $bl->locker->ttlock_lock_id,
+                        $bl->ttlock_keyboard_pwd_id,
+                        $booking->check_out
+                    );
+                } catch (\Throwable $e) {
+                    Log::warning('Failed to push edited check_out to TTLock', [
+                        'booking_locker_id' => $bl->id, 'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+
+        // Optional: re-send confirmation so the customer sees the new state.
+        if ($notify && !empty($changes)) {
+            try {
+                \App\Jobs\SendBookingConfirmation::dispatchSync($booking->id);
+            } catch (\Throwable $e) {
+                Log::error('edit() notify failed; queued', ['booking_id' => $booking->id, 'error' => $e->getMessage()]);
+                \App\Jobs\SendBookingConfirmation::dispatch($booking->id);
+            }
+        }
+
+        return ['changes' => $changes, 'booking' => $booking->fresh(['customer', 'items', 'bookingLockers.locker'])];
+    }
+
+    /**
      * Remove one or more lockers from a booking WITHOUT touching the rest.
      *
      * Hard safety guarantees (this method can never affect another booking):
