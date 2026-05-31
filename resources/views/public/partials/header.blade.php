@@ -4,7 +4,28 @@
 
     $currentRoute = Route::currentRouteName() ?? 'home';
     $routeParams = Route::current()?->parameters() ?? [];
-    $switchRoute = $locale === 'en' ? 'sr.' . $currentRoute : str_replace('sr.', '', $currentRoute);
+    $baseRouteName = preg_replace('/^sr\./', '', $currentRoute);
+    $switchRoute = $locale === 'en' ? 'sr.' . $baseRouteName : $baseRouteName;
+
+    // Landing / blog / locations use a DIFFERENT slug per language (slug vs
+    // slug_sr). The default route() generation would reuse the current slug
+    // and send the user to /sr/<en-slug> → 404. Remap {slug} per language.
+    if (isset($routeParams['slug']) && in_array($baseRouteName, ['landing', 'blog.show', 'locations.show'], true)) {
+        $cur = is_object($routeParams['slug']) ? $routeParams['slug']->slug ?? (string) $routeParams['slug'] : (string) $routeParams['slug'];
+        $target = null;
+        if ($baseRouteName === 'landing') {
+            $all = config('landing_pages', []);
+            $enKey = isset($all[$cur]) ? $cur : null;
+            if (!$enKey) foreach ($all as $k => $c) if (($c['slug_sr'] ?? null) === $cur) { $enKey = $k; break; }
+            $target = $locale === 'en' ? ($all[$enKey]['slug_sr'] ?? null) : $enKey;
+        } else {
+            $modelClass = $baseRouteName === 'blog.show' ? \App\Models\BlogPost::class : \App\Models\Location::class;
+            $m = $modelClass::where('slug', $cur)->orWhere('slug_sr', $cur)->first();
+            if ($m) $target = $locale === 'en' ? ($m->slug_sr ?: $m->slug) : $m->slug;
+        }
+        if ($target) $routeParams['slug'] = $target;
+    }
+
     try { $switchUrl = route($switchRoute, $routeParams); } catch (\Exception $e) { $switchUrl = $locale === 'en' ? '/sr' : '/'; }
 @endphp
 <header class="fixed top-0 left-0 right-0 site-header" x-data="{ mobileOpen: false, scrolled: false }" @scroll.window="scrolled = (window.scrollY > 20)" @keydown.escape.window="mobileOpen = false">
