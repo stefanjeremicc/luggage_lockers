@@ -372,14 +372,14 @@
                 <div class="edit-section">
                     <h4 class="edit-section-title">When</h4>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <label class="edit-field">
+                        <div class="edit-field">
                             <span class="edit-label">Check-in</span>
-                            <input type="datetime-local" v-model="editForm.check_in" class="edit-input">
-                        </label>
-                        <label class="edit-field">
+                            <DateTimePicker v-model="editForm.check_in" />
+                        </div>
+                        <div class="edit-field">
                             <span class="edit-label">Check-out</span>
-                            <input type="datetime-local" v-model="editForm.check_out" class="edit-input">
-                        </label>
+                            <DateTimePicker v-model="editForm.check_out" :min="editForm.check_in" />
+                        </div>
                     </div>
                     <div class="mt-3">
                         <span class="edit-label block mb-1.5">Quick extend from check-out</span>
@@ -466,6 +466,7 @@ import { useToast } from '../composables/useToast';
 import Modal from '../components/Modal.vue';
 import Btn from '../components/Btn.vue';
 import Select from '../components/Select.vue';
+import DateTimePicker from '../components/DateTimePicker.vue';
 
 const perPageOptions = [
     { value: 20, label: '20' },
