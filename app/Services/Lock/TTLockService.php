@@ -143,9 +143,15 @@ class TTLockService implements LockServiceInterface
 
     public function deleteAccessCode(int $lockId, int $keyboardPwdId): bool
     {
+        // deleteType=2 → push the delete through the online gateway to the
+        // physical lock immediately. Without this, TTLock cloud accepts the
+        // delete but the keypad keeps the passcode in memory until the next
+        // BLE/app sync. Mirrors addType=2 (create) and changeType=2 (update);
+        // the lock-side state stays consistent with cloud-side state.
         $response = $this->request('POST', '/v3/keyboardPwd/delete', [
             'lockId' => $lockId,
             'keyboardPwdId' => $keyboardPwdId,
+            'deleteType' => 2,
         ]);
         return ($response['errcode'] ?? -1) === 0;
     }

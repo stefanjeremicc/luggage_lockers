@@ -45,13 +45,19 @@ class DeleteTTLockAccessCode implements ShouldQueue
             return;
         }
 
-        $lockService->deleteAccessCode(
+        // Only nuke the local pointer when TTLock unambiguously acknowledged the
+        // delete (errcode=0). If the response was missing/malformed we leave the
+        // pointer intact — DeleteExpiredBookingPins (cron, every minute) will
+        // pick the row up next tick and retry. A non-zero errcode throws inside
+        // request(), so this line is never reached on a hard failure → the row
+        // also stays intact and the queue worker retries via $tries.
+        $ok = $lockService->deleteAccessCode(
             $bl->locker->ttlock_lock_id,
             $bl->ttlock_keyboard_pwd_id
         );
 
-        // Clear our local pointer so the cleanup scheduler doesn't re-queue
-        // this row every tick once TTLock has accepted the delete.
-        $bl->update(['ttlock_keyboard_pwd_id' => null]);
+        if ($ok) {
+            $bl->update(['ttlock_keyboard_pwd_id' => null]);
+        }
     }
 }
