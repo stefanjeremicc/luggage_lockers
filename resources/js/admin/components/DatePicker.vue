@@ -18,9 +18,13 @@
             </svg>
         </button>
 
-        <!-- Dropdown calendar -->
+        <!-- Dropdown calendar — Teleported to body so it escapes any parent
+             overflow (e.g. modal body or scrollable filter strip). -->
+        <Teleport to="body">
         <Transition name="ll-dp-fade">
-            <div v-if="open" class="ll-dp-pop" @click.stop>
+            <div v-if="open" ref="pop" class="ll-dp-pop"
+                :style="{ top: popTop + 'px', left: popLeft + 'px' }"
+                @click.stop>
                 <!-- Header: month/year + nav -->
                 <div class="ll-dp-head">
                     <button type="button" class="ll-dp-monthbtn" @click="showYearGrid = !showYearGrid">
@@ -74,6 +78,7 @@
                 </div>
             </div>
         </Transition>
+        </Teleport>
     </div>
 </template>
 
@@ -90,8 +95,34 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue']);
 
 const root = ref(null);
+const pop = ref(null);
 const open = ref(false);
 const showYearGrid = ref(false);
+const popTop = ref(0);
+const popLeft = ref(0);
+const POPUP_WIDTH = 280;
+const POPUP_HEIGHT_EST = 340;
+
+const positionPop = () => {
+    if (!root.value) return;
+    const r = root.value.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    if (vw <= 640) {
+        popLeft.value = 16;
+        popTop.value = Math.max(16, Math.min(vh - POPUP_HEIGHT_EST - 16, r.bottom + 6));
+        return;
+    }
+    let left = r.left;
+    const maxLeft = vw - POPUP_WIDTH - 8;
+    if (left > maxLeft) left = Math.max(8, maxLeft);
+    let top = r.bottom + 6;
+    if (top + POPUP_HEIGHT_EST > vh - 8 && r.top - POPUP_HEIGHT_EST - 6 > 8) {
+        top = r.top - POPUP_HEIGHT_EST - 6;
+    }
+    popLeft.value = left;
+    popTop.value = top;
+};
 
 const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const weekHeaders = ['Mo','Tu','We','Th','Fr','Sa','Su'];
@@ -162,7 +193,14 @@ const cells = computed(() => {
     return out;
 });
 
-const toggle = () => { open.value = !open.value; if (!open.value) showYearGrid.value = false; };
+const toggle = () => {
+    open.value = !open.value;
+    if (!open.value) showYearGrid.value = false;
+    if (open.value) {
+        positionPop();
+        requestAnimationFrame(positionPop);
+    }
+};
 
 const close = () => { open.value = false; showYearGrid.value = false; };
 
@@ -200,13 +238,19 @@ const onDocClick = (e) => {
 };
 const onKey = (e) => { if (e.key === 'Escape' && open.value) close(); };
 
+const onReposition = () => { if (open.value) positionPop(); };
+
 onMounted(() => {
     document.addEventListener('click', onDocClick);
     document.addEventListener('keydown', onKey);
+    window.addEventListener('scroll', onReposition, true);
+    window.addEventListener('resize', onReposition);
 });
 onBeforeUnmount(() => {
     document.removeEventListener('click', onDocClick);
     document.removeEventListener('keydown', onKey);
+    window.removeEventListener('scroll', onReposition, true);
+    window.removeEventListener('resize', onReposition);
 });
 </script>
 
@@ -263,10 +307,10 @@ onBeforeUnmount(() => {
 
 /* Dropdown */
 .ll-dp-pop {
-    position: absolute;
-    z-index: 60;
-    top: calc(100% + 6px);
-    left: 0;
+    /* Teleported to body — fixed positioning via inline top/left so the popup
+       never makes the modal/page scroll. */
+    position: fixed;
+    z-index: 100;
     width: 280px;
     background: #1A1A1A;
     border: 1px solid #2A2A2A;

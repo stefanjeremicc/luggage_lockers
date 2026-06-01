@@ -20,8 +20,11 @@
             </svg>
         </button>
 
+        <Teleport to="body">
         <Transition name="ll-dtp-fade">
-            <div v-if="open" class="ll-dtp-pop" @click.stop>
+            <div v-if="open" ref="pop" class="ll-dtp-pop"
+                :style="{ top: popTop + 'px', left: popLeft + 'px' }"
+                @click.stop>
                 <!-- Header: month/year + nav -->
                 <div class="ll-dtp-head">
                     <button type="button" class="ll-dtp-monthbtn" @click="showYearGrid = !showYearGrid">
@@ -110,6 +113,7 @@
                 </div>
             </div>
         </Transition>
+        </Teleport>
     </div>
 </template>
 
@@ -126,8 +130,40 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue']);
 
 const root = ref(null);
+const pop = ref(null);
 const open = ref(false);
 const showYearGrid = ref(false);
+// Teleported popup position (viewport-fixed). Recomputed every time we open
+// and on scroll/resize while open, so the dropdown stays visually attached to
+// the trigger even though it lives on document.body (escapes modal overflow).
+const popTop = ref(0);
+const popLeft = ref(0);
+const POPUP_WIDTH = 300; // matches .ll-dtp-pop CSS width
+const POPUP_HEIGHT_EST = 420; // header + grid + time + footer; close enough for flip-up decision
+
+const positionPop = () => {
+    if (!root.value) return;
+    const r = root.value.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const isMobile = vw <= 640;
+    if (isMobile) {
+        // On mobile we deliberately span almost the full viewport — center it.
+        popLeft.value = 16;
+        popTop.value = Math.max(16, Math.min(vh - POPUP_HEIGHT_EST - 16, r.bottom + 6));
+        return;
+    }
+    // Desktop: prefer below; flip above if not enough room.
+    let left = r.left;
+    const maxLeft = vw - POPUP_WIDTH - 8;
+    if (left > maxLeft) left = Math.max(8, maxLeft);
+    let top = r.bottom + 6;
+    if (top + POPUP_HEIGHT_EST > vh - 8 && r.top - POPUP_HEIGHT_EST - 6 > 8) {
+        top = r.top - POPUP_HEIGHT_EST - 6;
+    }
+    popLeft.value = left;
+    popTop.value = top;
+};
 
 const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const weekHeaders = ['Mo','Tu','We','Th','Fr','Sa','Su'];
@@ -235,6 +271,11 @@ const toggle = () => {
         hour.value = n.getHours();
         minute.value = n.getMinutes() - (n.getMinutes() % 5); // snap to 5
     }
+    if (open.value) {
+        positionPop();
+        // Defer once more after the popup renders so we can also flip-up if needed.
+        requestAnimationFrame(positionPop);
+    }
 };
 const close = () => { open.value = false; showYearGrid.value = false; };
 
@@ -334,13 +375,22 @@ const onDocClick = (e) => {
 };
 const onKey = (e) => { if (e.key === 'Escape' && open.value) close(); };
 
+const onReposition = () => { if (open.value) positionPop(); };
+
 onMounted(() => {
     document.addEventListener('click', onDocClick);
     document.addEventListener('keydown', onKey);
+    // Reposition on scroll/resize so the teleported popup follows the trigger
+    // even when the modal body or the page is scrolled (capture catches scrolls
+    // on any ancestor, not just window).
+    window.addEventListener('scroll', onReposition, true);
+    window.addEventListener('resize', onReposition);
 });
 onBeforeUnmount(() => {
     document.removeEventListener('click', onDocClick);
     document.removeEventListener('keydown', onKey);
+    window.removeEventListener('scroll', onReposition, true);
+    window.removeEventListener('resize', onReposition);
 });
 </script>
 
@@ -383,10 +433,11 @@ onBeforeUnmount(() => {
 .ll-dtp-clear:hover { background: #2A2A2A; color: #fff; }
 
 .ll-dtp-pop {
-    position: absolute;
-    z-index: 60;
-    top: calc(100% + 6px);
-    left: 0;
+    /* Teleported to body and positioned via inline top/left styles so the
+       popup escapes any parent overflow (e.g. Modal body's overflow-y-auto)
+       and never makes the modal content scroll. */
+    position: fixed;
+    z-index: 100;
     width: 300px;
     background: #1A1A1A;
     border: 1px solid #2A2A2A;
@@ -528,13 +579,9 @@ onBeforeUnmount(() => {
 
 @media (max-width: 640px) {
     .ll-dtp-pop {
+        /* Override inline left set by positionPop on mobile so the popup is
+           padded uniformly to the viewport. positionPop also pins left=16. */
         width: calc(100vw - 32px);
-        left: 50%;
-        transform: translateX(-50%);
-    }
-    .ll-dtp-fade-enter-from, .ll-dtp-fade-leave-to {
-        opacity: 0;
-        transform: translateX(-50%) translateY(-4px);
     }
 }
 </style>
