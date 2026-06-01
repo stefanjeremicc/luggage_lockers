@@ -152,10 +152,15 @@ class TTLockService implements LockServiceInterface
 
     public function updateAccessCodeTime(int $lockId, int $keyboardPwdId, Carbon $newEnd): bool
     {
+        // changeType=2 → push the new end-date through the online gateway so the
+        // physical lock actually applies it. Without this, TTLock cloud silently
+        // accepts the change but only commits it the next time the app touches
+        // the lock over Bluetooth — which on our setup is essentially "never".
         $response = $this->request('POST', '/v3/keyboardPwd/change', [
             'lockId' => $lockId,
             'keyboardPwdId' => $keyboardPwdId,
             'newEndDate' => $newEnd->getTimestampMs(),
+            'changeType' => 2,
         ]);
         return ($response['errcode'] ?? -1) === 0;
     }
