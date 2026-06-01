@@ -297,14 +297,20 @@ class BookingManagementController extends Controller
 
         $booking->update(['check_out' => $newCheckOut]);
 
+        // Mirror the new end on every booking_item so per-item windows stay in sync
+        // with the booking-level shift. Without this, mixed-duration bookings would
+        // diverge between booking.check_out and item.check_out.
+        $booking->items()->update(['check_out' => $newCheckOut]);
+
         // Push the new end time to TTLock for every locker in this booking so passcodes
         // remain valid for the extended window.
-        foreach (BookingLocker::where('booking_id', $booking->id)->whereNotNull('ttlock_keyboard_pwd_id')->get() as $bl) {
+        foreach (BookingLocker::with('bookingItem')->where('booking_id', $booking->id)->whereNotNull('ttlock_keyboard_pwd_id')->get() as $bl) {
+            $itemEnd = $bl->bookingItem?->check_out ?: $newCheckOut;
             try {
                 app(\App\Services\Lock\LockServiceInterface::class)->updateAccessCodeTime(
                     $bl->locker->ttlock_lock_id,
                     $bl->ttlock_keyboard_pwd_id,
-                    $newCheckOut
+                    $itemEnd
                 );
             } catch (\Throwable $e) {
                 \Log::warning('Failed to extend TTLock passcode end-date', ['booking_locker' => $bl->id, 'error' => $e->getMessage()]);

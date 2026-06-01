@@ -36,7 +36,7 @@ class CreateTTLockAccessCode implements ShouldQueue
 
     public function handle(LockServiceInterface $lockService, BookingService $bookingService): void
     {
-        $bl = BookingLocker::with(['booking.customer', 'booking.location', 'locker'])->findOrFail($this->bookingLockerId);
+        $bl = BookingLocker::with(['booking.customer', 'booking.location', 'locker', 'bookingItem'])->findOrFail($this->bookingLockerId);
 
         // No physical lock mapped → there's nothing to register with TTLock cloud,
         // but the manual-override flow still relies on the booking's encrypted PIN.
@@ -72,8 +72,17 @@ class CreateTTLockAccessCode implements ShouldQueue
         // TTLock just gets the relaxed window so the keypad is forgiving by
         // ±30 min on each end. We .copy() before subMinutes/addMinutes so the
         // model's own Carbon instances stay unmodified.
-        $ttlockStart = $bl->booking->check_in->copy()->subMinutes(self::TTLOCK_BUFFER_MINUTES);
-        $ttlockEnd   = $bl->booking->check_out->copy()->addMinutes(self::TTLOCK_BUFFER_MINUTES);
+        //
+        // Per-item window — a single booking can mix durations across sizes (e.g.
+        // 1 standard for 6h + 2 large for 24h). Each booking_locker is tied to
+        // ONE booking_item via booking_item_id; we MUST use that item's window so
+        // a 6h locker doesn't get 24h on TTLock. Fallback to booking-level only
+        // for legacy rows that lack item linkage.
+        $item = $bl->bookingItem;
+        $itemStart = $item?->check_in  ?: $bl->booking->check_in;
+        $itemEnd   = $item?->check_out ?: $bl->booking->check_out;
+        $ttlockStart = $itemStart->copy()->subMinutes(self::TTLOCK_BUFFER_MINUTES);
+        $ttlockEnd   = $itemEnd->copy()->addMinutes(self::TTLOCK_BUFFER_MINUTES);
 
         $maxInlineRetries = 5;
         $response = null;

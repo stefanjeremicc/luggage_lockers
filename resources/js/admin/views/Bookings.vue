@@ -75,6 +75,7 @@
                     <div v-if="b.pins?.length" class="flex flex-col items-end gap-1 text-xs shrink-0">
                         <div v-for="p in b.pins" :key="p.locker_number" class="flex items-center gap-1.5 whitespace-nowrap">
                             <span class="font-mono font-semibold text-white text-[15px] whitespace-nowrap">{{ p.locker_number || '—' }}</span>
+                            <span v-if="b.pins.length > 1 && pinDurationFor(b, p)" class="text-[#6B7280] text-[11px]">({{ durationLabel(pinDurationFor(b, p)) }})</span>
                             <span class="font-mono font-bold text-[#F59E0B] text-[15px]">({{ p.pin ? p.pin + '#' : '——' }})</span>
                             <span v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))"
                                 :title="p.ttlock_registered ? 'PIN active on smart lock' : 'PIN waiting for gateway sync'"
@@ -110,7 +111,7 @@
                             class="booking-card-btn">Resend</button>
                         <span v-else></span>
                         <button v-if="!isFinal(b)" @click="openEdit(b)"
-                            class="booking-card-btn booking-card-btn--accent">Edit</button>
+                            class="booking-card-btn">Edit</button>
                         <span v-else></span>
                         <button @click="openDetails(b)"
                             class="booking-card-btn">Details</button>
@@ -171,6 +172,7 @@
                             <div v-if="b.pins?.length" class="flex flex-col gap-1 text-xs">
                                 <div v-for="p in b.pins" :key="p.locker_number" class="flex items-center gap-1.5">
                                             <span class="font-mono font-semibold text-white text-[15px]">{{ p.locker_number || '—' }}</span>
+                                    <span v-if="b.pins.length > 1 && pinDurationFor(b, p)" class="text-[#6B7280] text-[11px]">({{ durationLabel(pinDurationFor(b, p)) }})</span>
                                     <span class="font-mono font-bold text-[#F59E0B] text-[15px]">({{ p.pin ? p.pin + '#' : '——' }})</span>
                                     <span v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))"
                                         :title="p.ttlock_registered ? 'PIN active on smart lock' : 'PIN waiting for gateway sync'"
@@ -201,11 +203,11 @@
                                 <!-- Primary cards: NEW PIN / RESEND / EDIT / DETAILS -->
                                 <div class="flex items-center gap-1">
                                     <button v-if="['confirmed','active'].includes((b.display_status ?? b.booking_status))" @click="reissuePin(b.id)"
-                                        class="booking-chip-btn" title="Generate new PIN">PIN</button>
+                                        class="booking-chip-btn" title="Generate new PIN">New PIN</button>
                                     <button v-if="!isFinal(b)" @click="resendConfirmation(b.id)"
                                         class="booking-chip-btn" title="Resend confirmation">Resend</button>
                                     <button v-if="!isFinal(b)" @click="openEdit(b)"
-                                        class="booking-chip-btn booking-chip-btn--accent" title="Edit booking (time, customer, duration)">Edit</button>
+                                        class="booking-chip-btn" title="Edit booking (time, customer, duration)">Edit</button>
                                     <button @click="openDetails(b)"
                                         class="booking-chip-btn" title="Details">Details</button>
                                 </div>
@@ -293,13 +295,17 @@
                         <dd class="booking-value">{{ formatDate(detailsBooking.check_in) || '—' }}</dd></div>
                     <div><dt class="booking-label">Check-out</dt>
                         <dd class="booking-value">{{ formatDate(detailsBooking.check_out) || '—' }}</dd></div>
-                    <div v-if="durationSummary(detailsBooking)"><dt class="booking-label">Duration</dt>
+                    <!-- Single-locker bookings get a dedicated Duration row; multi-locker
+                         bookings inline per-locker duration in parens next to each PIN
+                         so admin can see at a glance which locker was bought for how long. -->
+                    <div v-if="pinRows(detailsBooking).length <= 1 && durationSummary(detailsBooking)"><dt class="booking-label">Duration</dt>
                         <dd class="booking-value">{{ durationSummary(detailsBooking) }}</dd></div>
                     <div class="items-start"><dt class="booking-label">Items</dt>
                         <dd>
                             <div v-if="pinRows(detailsBooking).length" class="flex flex-col gap-1.5">
                                 <div v-for="p in pinRows(detailsBooking)" :key="p.number" class="flex items-center flex-wrap gap-x-2 gap-y-0.5">
                                     <span class="booking-value font-mono">{{ p.number || '—' }}</span>
+                                    <span v-if="pinRows(detailsBooking).length > 1 && p.duration" class="text-[#6B7280] text-xs">({{ durationLabel(p.duration) }})</span>
                                     <span class="font-mono !text-[#F59E0B]">({{ p.pin ? p.pin + '#' : '——' }})</span>
                                 </div>
                             </div>
@@ -307,6 +313,7 @@
                                 <div v-for="(line, i) in sizeBreakdown(detailsBooking)" :key="i" class="flex items-center gap-2">
                                     <span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center shrink-0" :class="sizeClass(line.size)">{{ line.size === 'large' ? 'B' : 'R' }}</span>
                                     <span class="booking-value">{{ line.qty }}×</span>
+                                    <span v-if="line.duration && sizeBreakdown(detailsBooking).length > 1" class="text-[#6B7280] text-xs">({{ durationLabel(line.duration) }})</span>
                                 </div>
                             </div>
                             <span v-else class="booking-value text-[#6B7280]">—</span>
@@ -357,7 +364,7 @@
             </ul>
         </Modal>
 
-        <!-- Edit modal: customer (name/email/phone) + check_in/check_out + duration -->
+        <!-- Edit modal: customer (name/email/phone) + check_in/check_out + duration. -->
         <Modal :model-value="!!editForm" @update:model-value="v => !v && (editForm = null)"
             size="md" position="center" title="Edit booking"
             :subtitle="editForm ? '#' + (editForm.booking_number ?? editForm.id) : ''">
@@ -625,6 +632,15 @@ const durationLabels = {
 };
 const sizeLabel = (s) => s === 'large' ? 'Big' : 'Regular';
 const durationLabel = (key) => durationLabels[key] || key || '';
+
+// Per-locker duration_key resolved from the booking_items array (sized-grouped).
+// Returns null when items are missing (legacy data) — UI hides the (duration) pill in that case.
+const pinDurationFor = (b, pin) => {
+    if (!Array.isArray(b.items) || !b.items.length) return null;
+    const size = pin.size || 'standard';
+    const it = b.items.find(i => i.locker_size === size);
+    return it?.duration_key || null;
+};
 // Distinct duration label(s) for a booking, e.g. "6 hours" (or "6 hours · 1 day"
 // when a multi-size booking mixes durations). Shown as its own modal row.
 const durationSummary = (b) => {
@@ -1091,26 +1107,17 @@ onMounted(fetchBookings);
     white-space: nowrap;
 }
 
-/* Mobile primary action cards (NEW PIN / RESEND / EDIT / DETAILS). */
+/* Mobile primary action cards (New PIN / Resend / Edit / Details). */
 .booking-card-btn {
     background: #2A2A2A;
-    color: #A0A0A0;
+    color: #D4D4D4;
     border-radius: 8px;
     padding: 0.6rem 0.25rem;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
-    border: 1px solid transparent;
+    font-size: 12px;
+    font-weight: 500;
+    transition: background 0.15s, color 0.15s;
 }
 .booking-card-btn:active { background: #333; color: #fff; }
-.booking-card-btn--accent {
-    background: rgba(245, 158, 11, 0.12);
-    color: #F59E0B;
-    border-color: rgba(245, 158, 11, 0.35);
-}
-.booking-card-btn--accent:active { background: rgba(245, 158, 11, 0.22); }
 
 /* Desktop compact action chips (same intent, tighter for the table row). */
 .booking-chip-btn {
@@ -1118,62 +1125,70 @@ onMounted(fetchBookings);
     color: #D4D4D4;
     border-radius: 6px;
     padding: 0.3rem 0.65rem;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    border: 1px solid transparent;
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    font-size: 12px;
+    font-weight: 500;
+    transition: background 0.15s, color 0.15s;
 }
 .booking-chip-btn:hover { background: #333; color: #fff; }
-.booking-chip-btn--accent {
-    background: rgba(245, 158, 11, 0.12);
-    color: #F59E0B;
-    border-color: rgba(245, 158, 11, 0.35);
-}
-.booking-chip-btn--accent:hover { background: rgba(245, 158, 11, 0.22); color: #FBBF24; }
 
 /* Edit modal — fits the site's dark/amber language. */
 .edit-section {
     padding: 14px 0;
     border-bottom: 1px solid #2A2A2A;
+    min-width: 0;
 }
+.edit-section > .grid { min-width: 0; }
+.edit-section > .grid > * { min-width: 0; }
 .edit-section:last-child { border-bottom: 0; }
 .edit-section-title {
-    font-size: 10px;
+    font-size: 13px;
     font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: #6B7280;
+    color: #D4D4D4;
     margin: 0 0 10px;
 }
-.edit-field { display: flex; flex-direction: column; gap: 4px; }
+.edit-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .edit-label {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #6B7280;
+    color: #A0A0A0;
 }
+/* Locked size + iOS-safe font-size (≥16px stops mobile Safari auto-zoom on focus). */
 .edit-input {
     background: #111;
     border: 1px solid #2A2A2A;
     border-radius: 8px;
-    padding: 0.55rem 0.7rem;
-    font-size: 13px;
+    padding: 0 0.75rem;
+    height: 42px;
+    line-height: 42px;
+    font-size: 16px;
     color: #fff;
     transition: border-color 0.15s;
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
     color-scheme: dark;
+    appearance: none;
+    -webkit-appearance: none;
+    font-family: inherit;
 }
 .edit-input:focus { border-color: #F59E0B; outline: none; }
+/* Datetime-local on iOS/Chrome adds its own internal padding that breaks uniform
+   height — kill it so all inputs match the text ones exactly. */
+.edit-input[type="datetime-local"] {
+    line-height: 1.2;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+.edit-input[type="datetime-local"]::-webkit-date-and-time-value { text-align: left; }
 .edit-shift-btn {
     background: #111;
     border: 1px solid #2A2A2A;
     color: #D4D4D4;
     border-radius: 6px;
-    padding: 0.3rem 0.6rem;
-    font-size: 11px;
-    font-weight: 600;
+    padding: 0.45rem 0.75rem;
+    font-size: 12px;
+    font-weight: 500;
     transition: border-color 0.15s, background 0.15s, color 0.15s;
 }
 .edit-shift-btn:hover { border-color: #F59E0B; color: #F59E0B; background: rgba(245, 158, 11, 0.08); }

@@ -471,14 +471,18 @@ class BookingService
         // (permanent-PIN lockers carry ttlock_keyboard_pwd_id = null → skipped).
         // Mirrors extend(); the start-date in TTLock keeps the original, which is
         // safe (locker keeps working from the earlier window-start until the new end).
+        // Per-item end: a mixed-duration booking (1×6h + 2×24h) needs the SHORT
+        // locker to keep its short window and the LONG ones to keep theirs.
+        // Item.check_out is the source of truth (mirrored on items above).
         if ($timeChanged) {
             $booking->refresh();
-            foreach ($booking->bookingLockers()->whereNotNull('ttlock_keyboard_pwd_id')->get() as $bl) {
+            foreach ($booking->bookingLockers()->with('bookingItem')->whereNotNull('ttlock_keyboard_pwd_id')->get() as $bl) {
+                $itemEnd = $bl->bookingItem?->check_out ?: $booking->check_out;
                 try {
                     app(\App\Services\Lock\LockServiceInterface::class)->updateAccessCodeTime(
                         $bl->locker->ttlock_lock_id,
                         $bl->ttlock_keyboard_pwd_id,
-                        $booking->check_out
+                        $itemEnd
                     );
                 } catch (\Throwable $e) {
                     Log::warning('Failed to push edited check_out to TTLock', [
