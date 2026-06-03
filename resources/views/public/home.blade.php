@@ -63,14 +63,14 @@
          preload. The imagesizes="100vw" tells the browser to size against
          viewport before layout, not after. --}}
     @if(($heroImage ?? '') === '/images/hero-belgrade.webp')
+        {{-- Only preload AVIF — browsers that can't decode image/avif silently
+             ignore the link[type=image/avif] hint and fall back to the WebP
+             <source> in the <picture> below. Loading BOTH would waste bytes
+             on browsers that picked AVIF (the WebP preload would be reported
+             as "preloaded but not used"). --}}
         <link rel="preload" as="image" type="image/avif"
             href="/images/hero-belgrade.avif"
             imagesrcset="/images/hero-belgrade-small.avif 480w, /images/hero-belgrade-mobile.avif 960w, /images/hero-belgrade.avif 1920w"
-            imagesizes="100vw"
-            fetchpriority="high">
-        <link rel="preload" as="image" type="image/webp"
-            href="/images/hero-belgrade.webp"
-            imagesrcset="/images/hero-belgrade-small.webp 480w, /images/hero-belgrade-mobile.webp 960w, /images/hero-belgrade.webp 1920w"
             imagesizes="100vw"
             fetchpriority="high">
     @else
