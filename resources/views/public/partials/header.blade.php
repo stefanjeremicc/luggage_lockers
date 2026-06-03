@@ -33,7 +33,10 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div class="flex items-center justify-between h-20">
             <a href="{{ route($prefix . 'home') }}" class="flex items-center relative z-50">
-                <img src="/images/logo.png" alt="{{ \App\Helpers\SiteSettings::siteName() }}" class="h-16 w-auto">
+                <picture>
+                    <source srcset="/images/logo.webp" type="image/webp">
+                    <img src="/images/logo.png" alt="{{ \App\Helpers\SiteSettings::siteName() }}" width="200" height="64" class="h-16 w-auto">
+                </picture>
             </a>
 
             <nav class="hidden md:flex items-center gap-8">
@@ -92,7 +95,10 @@
         {{-- Drawer header --}}
         <div class="flex items-center justify-between h-20 px-6">
             <a href="{{ route($prefix . 'home') }}" @click="mobileOpen = false" class="flex items-center">
-                <img src="/images/logo.png" alt="{{ \App\Helpers\SiteSettings::siteName() }}" class="h-12 w-auto">
+                <picture>
+                    <source srcset="/images/logo.webp" type="image/webp">
+                    <img src="/images/logo.png" alt="{{ \App\Helpers\SiteSettings::siteName() }}" width="150" height="48" class="h-12 w-auto">
+                </picture>
             </a>
             <div class="flex items-center gap-3">
                 {{-- Language switch (only show opposite language) --}}

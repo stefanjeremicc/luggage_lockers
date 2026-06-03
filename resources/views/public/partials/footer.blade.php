@@ -9,7 +9,10 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
-                <img src="/images/logo.png" alt="{{ $siteName }}" class="h-16 w-auto">
+                <picture>
+                    <source srcset="/images/logo.webp" type="image/webp">
+                    <img src="/images/logo.png" alt="{{ $siteName }}" width="200" height="64" class="h-16 w-auto" loading="lazy" decoding="async">
+                </picture>
                 <p class="mt-3 text-sm text-[#A0A0A0]">{{ __('24/7 secure luggage storage in Belgrade. Smart lockers, easy booking.') }}</p>
                 @if(count($social))
                     <div class="mt-4 flex items-center gap-3">
