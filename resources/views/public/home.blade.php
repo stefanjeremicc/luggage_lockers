@@ -54,8 +54,20 @@
 @section('og_image', $landing && !empty($landing->og_image) ? url($landing->og_image) : '')
 
 @section('head')
-    {{-- Preload the LCP hero image so it paints sooner (Core Web Vitals). --}}
-    <link rel="preload" as="image" href="{{ $heroImage }}" fetchpriority="high">
+    {{-- Preload the LCP hero image so it paints sooner (Core Web Vitals).
+         Only the default hero (hero-belgrade.webp) has pre-rendered responsive
+         variants (mobile/small). For landing-page custom hero images we fall
+         back to the original preload. The imagesrcset+imagesizes tells the
+         browser to pick the right size on the first paint, not after layout. --}}
+    @if(($heroImage ?? '') === '/images/hero-belgrade.webp')
+        <link rel="preload" as="image"
+            href="/images/hero-belgrade.webp"
+            imagesrcset="/images/hero-belgrade-small.webp 480w, /images/hero-belgrade-mobile.webp 960w, /images/hero-belgrade.webp 1920w"
+            imagesizes="100vw"
+            fetchpriority="high">
+    @else
+        <link rel="preload" as="image" href="{{ $heroImage }}" fetchpriority="high">
+    @endif
     {{-- canonical + hreflang are emitted centrally by partials/seo-meta.blade.php
          (it remaps landing-page slugs per language). --}}
 @endsection
@@ -63,9 +75,20 @@
 @section('content')
 {{-- Hero --}}
 <section class="hero-section relative flex items-center justify-center overflow-hidden -mt-20">
-    {{-- Background image --}}
+    {{-- Background image. Responsive srcset only when the default hero is in
+         use (we have pre-rendered mobile + small variants for that one only).
+         Browser picks the smallest variant that fits the viewport, cutting
+         the mobile payload from 354 KB → ~60 KB (small viewport → 18 KB). --}}
     <div class="absolute inset-0">
-        <img src="{{ $heroImage }}" alt="{{ $heroAlt }}" width="1920" height="1080" class="w-full h-full object-cover" loading="eager" fetchpriority="high">
+        @if(($heroImage ?? '') === '/images/hero-belgrade.webp')
+            <img src="/images/hero-belgrade.webp"
+                srcset="/images/hero-belgrade-small.webp 480w, /images/hero-belgrade-mobile.webp 960w, /images/hero-belgrade.webp 1920w"
+                sizes="100vw"
+                alt="{{ $heroAlt }}" width="1920" height="1080"
+                class="w-full h-full object-cover" loading="eager" fetchpriority="high">
+        @else
+            <img src="{{ $heroImage }}" alt="{{ $heroAlt }}" width="1920" height="1080" class="w-full h-full object-cover" loading="eager" fetchpriority="high">
+        @endif
         <div class="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-[#0A0A0A]"></div>
     </div>
 
