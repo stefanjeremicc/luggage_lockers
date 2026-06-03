@@ -36,7 +36,7 @@
             </div>
 
             <div>
-                <h4 class="text-sm font-semibold text-white mb-3">{{ __('Locations') }}</h4>
+                <h2 class="text-sm font-semibold text-white mb-3">{{ __('Locations') }}</h2>
                 <ul class="space-y-2 text-sm text-[#A0A0A0]">
                     @foreach($footerLocations as $loc)
                     <li><a href="{{ route($fp . 'locations.show', ['slug' => $loc->slugFor(app()->getLocale())]) }}" class="hover:text-white transition">{{ $loc->nameFor(app()->getLocale()) }}</a></li>
@@ -45,7 +45,7 @@
             </div>
 
             <div>
-                <h4 class="text-sm font-semibold text-white mb-3">{{ __('Company') }}</h4>
+                <h2 class="text-sm font-semibold text-white mb-3">{{ __('Company') }}</h2>
                 <ul class="space-y-2 text-sm text-[#A0A0A0]">
                     <li><a href="{{ route($fp . 'about') }}" class="hover:text-white transition">{{ __('About') }}</a></li>
                     <li><a href="{{ route($fp . 'faq') }}" class="hover:text-white transition">{{ __('FAQ') }}</a></li>
@@ -55,7 +55,7 @@
             </div>
 
             <div>
-                <h4 class="text-sm font-semibold text-white mb-3">{{ __('Legal') }}</h4>
+                <h2 class="text-sm font-semibold text-white mb-3">{{ __('Legal') }}</h2>
                 <ul class="space-y-2 text-sm text-[#A0A0A0]">
                     <li><a href="{{ route($fp . 'terms') }}" class="hover:text-white transition">{{ __('Terms & Conditions') }}</a></li>
                     <li><a href="{{ route($fp . 'privacy') }}" class="hover:text-white transition">{{ __('Privacy Policy') }}</a></li>
@@ -77,7 +77,7 @@
         @php $nearPois = config('seo.near_pois', []); $isSrFooter = app()->getLocale() === 'sr'; @endphp
         @if(count($nearPois))
         <div class="mt-10 pt-6 border-t border-[#2A2A2A]">
-            <h4 class="text-sm font-semibold text-white mb-3">{{ $isSrFooter ? 'Čuvanje prtljaga blizu' : 'Luggage storage near' }}</h4>
+            <h2 class="text-sm font-semibold text-white mb-3">{{ $isSrFooter ? 'Čuvanje prtljaga blizu' : 'Luggage storage near' }}</h2>
             <ul class="flex flex-wrap gap-x-4 gap-y-2 text-sm text-[#A0A0A0]">
                 @foreach($nearPois as $slug => $poi)
                 <li><a href="{{ route($fp . 'near', ['slug' => $slug]) }}" class="hover:text-white transition">{{ $isSrFooter ? ($poi['name_sr'] ?? $poi['name']) : $poi['name'] }}</a></li>
