@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    {{-- Eager preconnects: open TCP+TLS to every third-party origin we will
+         contact, BEFORE we issue any request to them. Order matters — these
+         must come before the actual <script>/<link> requests to those hosts so
+         the connection is warm when the loader fires. Saves ~100-200ms per
+         origin on a fresh visit. --}}
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
+    <link rel="preconnect" href="https://www.google-analytics.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
     {{-- Google Analytics 4 (gtag.js) --}}
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-SG2FY87HPF"></script>
     <script>
@@ -16,10 +26,11 @@
 
     @include('public.partials.seo-meta')
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     {{-- Load the font stylesheet asynchronously so it doesn't block first paint
-         (display=swap shows fallback text immediately, then swaps to Inter). --}}
+         (display=swap shows fallback text immediately, then swaps to Inter).
+         Preconnects to fonts.googleapis.com + fonts.gstatic.com are issued
+         above (before the gtag script) so the TCP+TLS handshake is done by
+         the time this preload fires. --}}
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"></noscript>
 
