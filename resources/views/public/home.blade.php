@@ -65,12 +65,14 @@
     @if(($heroImage ?? '') === '/images/hero-belgrade.webp')
         {{-- Only preload AVIF — browsers that can't decode image/avif silently
              ignore the link[type=image/avif] hint and fall back to the WebP
-             <source> in the <picture> below. Loading BOTH would waste bytes
-             on browsers that picked AVIF (the WebP preload would be reported
-             as "preloaded but not used"). --}}
+             <source> in the <picture> below. Five widths so the browser picks
+             the closest match to the viewport, never over- or under-fetching.
+             Mobile candidates (480/720/960) are aggressively compressed (q=32)
+             since pixelation isn't visible at that DPR; desktop (1280/1920)
+             use q=36-42 for crispness on large screens. --}}
         <link rel="preload" as="image" type="image/avif"
             href="/images/hero-belgrade.avif"
-            imagesrcset="/images/hero-belgrade-small.avif 480w, /images/hero-belgrade-mobile.avif 960w, /images/hero-belgrade.avif 1920w"
+            imagesrcset="/images/hero-belgrade-small.avif 480w, /images/hero-belgrade-720.avif 720w, /images/hero-belgrade-mobile.avif 960w, /images/hero-belgrade-tablet.avif 1280w, /images/hero-belgrade.avif 1920w"
             imagesizes="100vw"
             fetchpriority="high">
     @else
@@ -93,10 +95,10 @@
         @if(($heroImage ?? '') === '/images/hero-belgrade.webp')
             <picture>
                 <source type="image/avif"
-                    srcset="/images/hero-belgrade-small.avif 480w, /images/hero-belgrade-mobile.avif 960w, /images/hero-belgrade.avif 1920w"
+                    srcset="/images/hero-belgrade-small.avif 480w, /images/hero-belgrade-720.avif 720w, /images/hero-belgrade-mobile.avif 960w, /images/hero-belgrade-tablet.avif 1280w, /images/hero-belgrade.avif 1920w"
                     sizes="100vw">
                 <source type="image/webp"
-                    srcset="/images/hero-belgrade-small.webp 480w, /images/hero-belgrade-mobile.webp 960w, /images/hero-belgrade.webp 1920w"
+                    srcset="/images/hero-belgrade-small.webp 480w, /images/hero-belgrade-720.webp 720w, /images/hero-belgrade-mobile.webp 960w, /images/hero-belgrade-tablet.webp 1280w, /images/hero-belgrade.webp 1920w"
                     sizes="100vw">
                 <img src="/images/hero-belgrade.webp"
                     alt="{{ $heroAlt }}" width="1920" height="1080"
