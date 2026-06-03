@@ -12,7 +12,7 @@
             @foreach($posts as $post)
             <a href="{{ route($lp . 'blog.show', ['slug' => $post->slug]) }}" class="card hover:border-[#F59E0B] transition group">
                 @if($post->featured_image)
-                <img src="{{ $post->featured_image }}" alt="{{ $post->title }}" class="w-full h-48 object-cover rounded-lg mb-4">
+                <img src="{{ $post->featured_image }}" alt="{{ $post->title }}" width="600" height="384" class="w-full h-48 object-cover rounded-lg mb-4" loading="lazy" decoding="async">
                 @endif
                 @if($post->category)
                 <span class="text-xs text-[#F59E0B]">{{ $post->category }}</span>

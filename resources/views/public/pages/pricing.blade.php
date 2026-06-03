@@ -60,7 +60,7 @@
                         <button @click="showDim = false" class="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-[#2A2A2A] border border-[#3A3A3A] flex items-center justify-center text-[#A0A0A0] hover:text-white hover:bg-[#3A3A3A] transition z-10">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
-                        <img src="{{ $card['info']['image'] }}" alt="{{ __(ucfirst($card['size']) . ' Locker dimensions') }}" class="w-full rounded-2xl border border-[#2A2A2A]">
+                        <img src="{{ $card['info']['image'] }}" alt="{{ __(ucfirst($card['size']) . ' Locker dimensions') }}" width="800" height="800" class="w-full rounded-2xl border border-[#2A2A2A]" loading="lazy" decoding="async">
                     </div>
                 </div>
                 @endif

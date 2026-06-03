@@ -53,7 +53,7 @@
         </div>
 
         @if($post->featured_image)
-        <img src="{{ $post->featured_image }}" alt="{{ $post->title }}" class="w-full rounded-xl mt-8">
+        <img src="{{ $post->featured_image }}" alt="{{ $post->title }}" width="1200" height="630" class="w-full rounded-xl mt-8" fetchpriority="high" decoding="async">
         @endif
 
         <div class="blog-content mt-8">

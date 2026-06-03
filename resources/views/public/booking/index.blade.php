@@ -271,7 +271,8 @@
                                 {{-- Image --}}
                                 <div class="relative overflow-hidden rounded-t-xl h-36 bg-[#111111]">
                                     <img src="{{ $card['info']['image'] ?: $card['fallbackImg'] }}" alt="{{ __($card['label']) }} {{ __('Locker') }}"
-                                         class="w-full h-full object-contain bg-[#111111]">
+                                         width="400" height="144"
+                                         class="w-full h-full object-contain bg-[#111111]" loading="lazy" decoding="async">
                                     {{-- Active corner badge when qty > 0 --}}
                                     <div x-show="qtys.{{ $card['size'] }} > 0" x-transition class="absolute top-2 right-2 bg-[#F59E0B] text-black text-xs font-bold rounded-full w-7 h-7 flex items-center justify-center" x-text="qtys.{{ $card['size'] }}"></div>
                                 </div>

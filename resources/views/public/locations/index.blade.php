@@ -17,7 +17,7 @@
             @foreach($locations as $location)
             <div class="rounded-2xl border border-[#2A2A2A] overflow-hidden bg-[#1A1A1A]">
                 <div class="location-card-image">
-                    <img src="/images/locations/{{ $location->slug }}.webp" alt="{{ $location->nameFor(app()->getLocale()) }}">
+                    <img src="/images/locations/{{ $location->slug }}.webp" alt="{{ $location->nameFor(app()->getLocale()) }}" width="1200" height="900" loading="lazy" decoding="async">
                 </div>
 
                 <div class="p-5">
