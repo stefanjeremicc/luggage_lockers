@@ -35,7 +35,7 @@
             <a href="{{ route($prefix . 'home') }}" class="flex items-center relative z-50">
                 <picture>
                     <source srcset="/images/logo.webp" type="image/webp">
-                    <img src="/images/logo.png" alt="{{ \App\Helpers\SiteSettings::siteName() }}" width="200" height="64" class="h-16 w-auto">
+                    <img src="/images/logo.png" alt="{{ \App\Helpers\SiteSettings::siteName() }}" width="115" height="100" class="h-16 w-auto">
                 </picture>
             </a>
 
@@ -97,7 +97,7 @@
             <a href="{{ route($prefix . 'home') }}" @click="mobileOpen = false" class="flex items-center">
                 <picture>
                     <source srcset="/images/logo.webp" type="image/webp">
-                    <img src="/images/logo.png" alt="{{ \App\Helpers\SiteSettings::siteName() }}" width="150" height="48" class="h-12 w-auto">
+                    <img src="/images/logo.png" alt="{{ \App\Helpers\SiteSettings::siteName() }}" width="115" height="100" class="h-12 w-auto">
                 </picture>
             </a>
             <div class="flex items-center gap-3">

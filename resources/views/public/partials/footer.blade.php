@@ -11,7 +11,7 @@
             <div>
                 <picture>
                     <source srcset="/images/logo.webp" type="image/webp">
-                    <img src="/images/logo.png" alt="{{ $siteName }}" width="200" height="64" class="h-16 w-auto" loading="lazy" decoding="async">
+                    <img src="/images/logo.png" alt="{{ $siteName }}" width="115" height="100" class="h-16 w-auto" loading="lazy" decoding="async">
                 </picture>
                 <p class="mt-3 text-sm text-[#A0A0A0]">{{ __('24/7 secure luggage storage in Belgrade. Smart lockers, easy booking.') }}</p>
                 @if(count($social))
