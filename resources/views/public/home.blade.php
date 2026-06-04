@@ -51,7 +51,12 @@
 
 @section('title', $landing->meta_title ?? ($settings[$metaTitleKey] ?? ($settings['home_meta_title'] ?? 'Belgrade Luggage Locker — 24/7 Secure Luggage Storage')))
 @section('meta_description', $landing->meta_description ?? ($settings[$metaDescKey] ?? ($settings['home_meta_description'] ?? '')))
-@section('og_image', $landing && !empty($landing->og_image) ? url($landing->og_image) : '')
+{{-- Only emit og_image section when the landing actually has one — yielding
+     an empty string here would override seo-meta's /images/og-default.png
+     fallback, leaving the page with <meta property="og:image" content="">. --}}
+@if($landing && !empty($landing->og_image))
+    @section('og_image', url($landing->og_image))
+@endif
 
 @section('head')
     {{-- Preload the LCP hero image so it paints sooner (Core Web Vitals).

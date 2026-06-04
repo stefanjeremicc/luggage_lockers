@@ -26,8 +26,16 @@
     // the brand (dark theme) and prevents WhatsApp/FB/LinkedIn from rendering
     // the transparent logo.png on a white default — which clients hated.
     // Per-page overrides still win: $seoOg (passed by the controller) or a
-    // @section('og_image') in the Blade view.
-    $ogImage = $seoOg ? url($seoOg) : (View::hasSection('og_image') ? trim((string) View::yieldContent('og_image')) : url('/images/og-default.png'));
+    // @section('og_image') in the Blade view, but only when non-empty.
+    $ogImage = url('/images/og-default.png');
+    if ($seoOg) {
+        $ogImage = url($seoOg);
+    } elseif (View::hasSection('og_image')) {
+        $yielded = trim((string) View::yieldContent('og_image'));
+        if ($yielded !== '') {
+            $ogImage = $yielded;
+        }
+    }
 @endphp
 <meta property="og:image" content="{{ $ogImage }}">
 <meta property="og:image:width" content="1200">
