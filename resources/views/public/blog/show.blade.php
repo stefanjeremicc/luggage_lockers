@@ -6,7 +6,7 @@
 
 @push('schema')
 @php
-    $articleImg = $post->featured_image ? (\Illuminate\Support\Str::startsWith($post->featured_image, 'http') ? $post->featured_image : url($post->featured_image)) : url('/images/logo.png');
+    $articleImg = $post->featured_image ? (\Illuminate\Support\Str::startsWith($post->featured_image, 'http') ? $post->featured_image : url($post->featured_image)) : url('/images/og-default.png');
     $articleDesc = $post->meta_description ?? $post->excerpt;
 @endphp
 <script type="application/ld+json">
@@ -24,7 +24,7 @@
     "publisher": {
         "@@type": "Organization",
         "name": "{{ \App\Helpers\SiteSettings::siteName() }}",
-        "logo": { "@@type": "ImageObject", "url": "{{ url('/images/logo.png') }}" }
+        "logo": { "@@type": "ImageObject", "url": "{{ url('/images/logo-on-black-512.png') }}" }
     }
 }
 </script>

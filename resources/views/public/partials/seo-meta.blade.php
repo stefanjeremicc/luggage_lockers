@@ -21,9 +21,17 @@
 <meta name="twitter:title" content="@yield('og_title', $finalTitle)">
 <meta name="twitter:description" content="@yield('og_description', $finalDesc)">
 @php
-    $ogImage = $seoOg ? url($seoOg) : (View::hasSection('og_image') ? trim((string) View::yieldContent('og_image')) : url('/images/logo.png'));
+    // Default OG/Twitter share image: a dedicated 1200x630 canvas with the
+    // logo centered on a solid #0A0A0A background. This matches the rest of
+    // the brand (dark theme) and prevents WhatsApp/FB/LinkedIn from rendering
+    // the transparent logo.png on a white default — which clients hated.
+    // Per-page overrides still win: $seoOg (passed by the controller) or a
+    // @section('og_image') in the Blade view.
+    $ogImage = $seoOg ? url($seoOg) : (View::hasSection('og_image') ? trim((string) View::yieldContent('og_image')) : url('/images/og-default.png'));
 @endphp
 <meta property="og:image" content="{{ $ogImage }}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta name="twitter:image" content="{{ $ogImage }}">
 
 <link rel="canonical" href="{{ url()->current() }}">

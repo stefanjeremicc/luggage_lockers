@@ -19,7 +19,10 @@
     $geo = SiteSettings::mapCenter();
     $sameAs = array_values(SiteSettings::social());
     $siteName = SiteSettings::siteName();
-    $logoUrl = url('/images/logo.png');
+    // Dedicated 512x512 logo with the brand's #0A0A0A background so Google's
+    // Knowledge Panel and rich results don't render the transparent logo on
+    // their default white card. Square as Google requires.
+    $logoUrl = url('/images/logo-on-black-512.png');
     $heroUrl = url(SiteSettings::heroImage());
     $desc = $isSr
         ? 'Sigurno čuvanje prtljaga u Beogradu 24/7 — pametni ormarići, rezervacija online za 60 sekundi.'
