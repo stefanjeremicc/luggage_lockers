@@ -9,8 +9,34 @@
 
         <template v-else>
             <!-- Stats -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                 <StatCard v-for="s in statCards" :key="s.label" v-bind="s" />
+            </div>
+
+            <!-- Quick-look metrics: surfaced from Analytics for at-a-glance.
+                 Subline gives context so each card stands alone (no need to
+                 click through to Analytics for the basic numbers). -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <QuickCard
+                    label="Tomorrow's check-ins"
+                    :value="data.stats.tomorrow_bookings"
+                    :sub="`${data.stats.tomorrow_bookings === 1 ? 'booking' : 'bookings'} scheduled`"
+                    color="text-white" />
+                <QuickCard
+                    label="Unpaid (this month)"
+                    :value="'€' + Number(data.stats.unpaid_month).toFixed(2)"
+                    sub="still expected to collect"
+                    :color="data.stats.unpaid_month > 0 ? 'text-[#F59E0B]' : 'text-white'" />
+                <QuickCard
+                    label="Avg booking (month)"
+                    :value="'€' + Number(data.stats.avg_booking_month).toFixed(2)"
+                    sub="per paid reservation"
+                    color="text-[#10B981]" />
+                <QuickCard
+                    label="Occupancy now"
+                    :value="data.stats.occupancy_pct + '%'"
+                    :sub="`${data.stats.occupied_lockers}/${data.stats.total_lockers} lockers in use`"
+                    :color="data.stats.occupancy_pct >= 80 ? 'text-[#EF4444]' : (data.stats.occupancy_pct >= 50 ? 'text-[#F59E0B]' : 'text-[#10B981]')" />
             </div>
 
             <!-- Revenue breakdown -->
@@ -155,6 +181,19 @@ const StatCard = {
         h('div', { class: 'bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5' }, [
             h('p', { class: 'text-xs uppercase tracking-wide text-[#A0A0A0]' }, p.label),
             h('p', { class: 'text-2xl font-bold mt-1 ' + (p.color || 'text-white') }, p.value),
+        ]),
+};
+
+// Like StatCard but with an extra subline so quick-look metrics carry their
+// own context ("still expected to collect", "per paid reservation"). Keeps the
+// dashboard scannable without needing a tooltip.
+const QuickCard = {
+    props: ['label', 'value', 'sub', 'color'],
+    setup: (p) => () =>
+        h('div', { class: 'bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5' }, [
+            h('p', { class: 'text-xs uppercase tracking-wide text-[#A0A0A0]' }, p.label),
+            h('p', { class: 'text-2xl font-bold mt-1 ' + (p.color || 'text-white') }, p.value),
+            p.sub ? h('p', { class: 'text-[11px] text-[#6B7280] mt-1.5' }, p.sub) : null,
         ]),
 };
 

@@ -35,6 +35,43 @@ class DashboardController extends Controller
         $revenueMonth = Booking::where('check_in', '>=', $today->copy()->startOfMonth())
             ->where('payment_status', 'paid')->sum('total_eur');
 
+        // Quick-look metrics that surface concrete numbers the Analytics view
+        // hides behind filters. Kept cheap (raw counts/sums, no joins) so the
+        // dashboard endpoint stays under ~50ms even with thousands of rows.
+        $tomorrow = $today->copy()->addDay();
+        $tomorrowBookings = Booking::whereDate('check_in', $tomorrow)
+            ->where('booking_status', '!=', BookingStatus::Cancelled)
+            ->count();
+
+        // Outstanding money (this month): bookings with a check-in date in the
+        // current month that haven't been marked paid AND aren't cancelled.
+        // This is the "still expected to collect" figure.
+        $unpaidMonth = Booking::where('check_in', '>=', $today->copy()->startOfMonth())
+            ->where('payment_status', '!=', 'paid')
+            ->where('booking_status', '!=', BookingStatus::Cancelled)
+            ->sum('total_eur');
+
+        // Average paid booking value (this month). Divide by the count, not by
+        // the SUM — sum / 0 would silently produce 0 and look like "no money".
+        $paidCountMonth = Booking::where('check_in', '>=', $today->copy()->startOfMonth())
+            ->where('payment_status', 'paid')->count();
+        $avgBookingMonth = $paidCountMonth > 0
+            ? round($revenueMonth / $paidCountMonth, 2)
+            : 0;
+
+        // Live occupancy: lockers currently rented (active booking covering now)
+        // vs all bookable lockers. Useful at-a-glance "how full are we right now".
+        $totalActiveLockers = Locker::active()->count();
+        $occupiedLockers = Locker::active()
+            ->whereHas('bookings', function ($q) {
+                $q->whereIn('booking_status', [BookingStatus::Confirmed, BookingStatus::Active])
+                  ->where('check_in', '<=', now())
+                  ->where('check_out', '>=', now());
+            })->count();
+        $occupancyPct = $totalActiveLockers > 0
+            ? (int) round($occupiedLockers / $totalActiveLockers * 100)
+            : 0;
+
         // Marketing attribution breakdown (first-touch) over the last 30 days.
         // Bookings predating attribution tracking have a null source → "unknown".
         $attrSince = $today->copy()->subDays(30);
@@ -88,6 +125,13 @@ class DashboardController extends Controller
                 'revenue_today' => $revenueToday,
                 'revenue_week' => $revenueWeek,
                 'revenue_month' => $revenueMonth,
+                // Quick-look additions surfaced in the dashboard cards
+                'tomorrow_bookings' => $tomorrowBookings,
+                'unpaid_month' => (float) $unpaidMonth,
+                'avg_booking_month' => (float) $avgBookingMonth,
+                'occupancy_pct' => $occupancyPct,
+                'occupied_lockers' => $occupiedLockers,
+                'total_lockers' => $totalActiveLockers,
             ],
             'attribution' => [
                 'total' => $attrTotal,
