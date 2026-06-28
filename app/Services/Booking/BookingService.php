@@ -467,25 +467,103 @@ class BookingService
             if (!empty($update)) $booking->update($update);
         });
 
-        // Push new end-date to TTLock for any locker holding a one-time code
-        // (permanent-PIN lockers carry ttlock_keyboard_pwd_id = null → skipped).
-        // Mirrors extend(); the start-date in TTLock keeps the original, which is
-        // safe (locker keeps working from the earlier window-start until the new end).
-        // Per-item end: a mixed-duration booking (1×6h + 2×24h) needs the SHORT
-        // locker to keep its short window and the LONG ones to keep theirs.
-        // Item.check_out is the source of truth (mirrored on items above).
+        // Push new end-date to TTLock per locker.
+        //
+        // Three branches per booking_locker, evaluated in order:
+        //
+        //   1. locker.permanent_pin is set
+        //        → permanent-PIN mode. The customer's PIN is the locker's
+        //          permanent code, registered ONCE manually by ops and never
+        //          touched by booking flow. SKIP. Never touch the keypad.
+        //
+        //   2. ttlock_keyboard_pwd_id is set
+        //        → one-time code still active on the cloud. Update window via
+        //          updateAccessCodeTime (changeType=2 pushes through gateway).
+        //
+        //   3. ttlock_keyboard_pwd_id is NULL but pin_code_encrypted exists
+        //        → DeleteExpiredBookingPins cron already cleaned the cloud
+        //          code (booking had passed its window). The original PIN is
+        //          still preserved encrypted in the DB. Re-register a fresh
+        //          access code with the SAME PIN so the customer's printed/
+        //          emailed code keeps working. Save the new pwd_id.
+        //
+        // Item.check_out is the source of truth (mirrored on items above), so
+        // a mixed-duration booking (1×6h + 2×24h) keeps each locker on its own
+        // window even after edit.
         if ($timeChanged) {
             $booking->refresh();
-            foreach ($booking->bookingLockers()->with('bookingItem')->whereNotNull('ttlock_keyboard_pwd_id')->get() as $bl) {
-                $itemEnd = $bl->bookingItem?->check_out ?: $booking->check_out;
+            $lockService = app(\App\Services\Lock\LockServiceInterface::class);
+            $buffer = \App\Jobs\CreateTTLockAccessCode::TTLOCK_BUFFER_MINUTES;
+
+            foreach ($booking->bookingLockers()->with(['locker', 'bookingItem'])->get() as $bl) {
+                // Branch 1: permanent-PIN locker → never touch TTLock.
+                if (!empty($bl->locker?->permanent_pin)) {
+                    continue;
+                }
+                // Defensive: no TTLock hardware mapped at all → nothing we can do.
+                if (!$bl->locker?->ttlock_lock_id) {
+                    continue;
+                }
+
+                $itemStart = $bl->bookingItem?->check_in  ?: $booking->check_in;
+                $itemEnd   = $bl->bookingItem?->check_out ?: $booking->check_out;
+
+                // Branch 2: pwd still exists on TTLock → update window.
+                if ($bl->ttlock_keyboard_pwd_id) {
+                    try {
+                        $lockService->updateAccessCodeTime(
+                            $bl->locker->ttlock_lock_id,
+                            $bl->ttlock_keyboard_pwd_id,
+                            $itemEnd->copy()->addMinutes($buffer)
+                        );
+                    } catch (\Throwable $e) {
+                        Log::warning('edit(): updateAccessCodeTime failed', [
+                            'booking_locker_id' => $bl->id, 'error' => $e->getMessage(),
+                        ]);
+                    }
+                    continue;
+                }
+
+                // Branch 3: pwd_id is NULL but encrypted PIN survives → re-register.
+                if (empty($bl->pin_code_encrypted)) {
+                    continue; // no PIN to re-register with; nothing to do
+                }
                 try {
-                    app(\App\Services\Lock\LockServiceInterface::class)->updateAccessCodeTime(
-                        $bl->locker->ttlock_lock_id,
-                        $bl->ttlock_keyboard_pwd_id,
-                        $itemEnd
-                    );
+                    $pin = \Illuminate\Support\Facades\Crypt::decryptString($bl->pin_code_encrypted);
                 } catch (\Throwable $e) {
-                    Log::warning('Failed to push edited check_out to TTLock', [
+                    Log::warning('edit(): PIN decrypt failed, cannot re-register', [
+                        'booking_locker_id' => $bl->id, 'error' => $e->getMessage(),
+                    ]);
+                    continue;
+                }
+                // Start: never in the future (cloud rejects); if the item window
+                // already started, anchor to "now − buffer" so the keypad accepts
+                // the PIN immediately.
+                $startAnchor = $itemStart->isPast() ? now() : $itemStart;
+                $ttlockStart = $startAnchor->copy()->subMinutes($buffer);
+                $ttlockEnd   = $itemEnd->copy()->addMinutes($buffer);
+                try {
+                    $resp = $lockService->createTimedAccessCode(
+                        $bl->locker->ttlock_lock_id,
+                        $pin,
+                        $ttlockStart,
+                        $ttlockEnd
+                    );
+                    $newPwdId = $resp['keyboardPwdId'] ?? null;
+                    if ($newPwdId) {
+                        $bl->update(['ttlock_keyboard_pwd_id' => $newPwdId]);
+                        Log::info('edit(): re-registered TTLock code with original PIN', [
+                            'booking_locker_id' => $bl->id,
+                            'new_pwd_id' => $newPwdId,
+                            'window' => "$ttlockStart → $ttlockEnd",
+                        ]);
+                    } else {
+                        Log::warning('edit(): createTimedAccessCode returned no pwd_id', [
+                            'booking_locker_id' => $bl->id, 'response' => $resp,
+                        ]);
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('edit(): createTimedAccessCode failed', [
                         'booking_locker_id' => $bl->id, 'error' => $e->getMessage(),
                     ]);
                 }

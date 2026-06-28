@@ -15,13 +15,19 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    {{-- Google Analytics 4 (gtag.js) --}}
+    {{-- Google Analytics 4 (gtag.js) + Google Ads conversion tracking.
+         Both share the same gtag() global — Google's documented pattern is one
+         script src (any of the IDs works as the loader) and a config() call per
+         property. We use the GA4 ID as the script-src loader since GA4 fires on
+         every pageview anyway; the Ads property piggy-backs without a second
+         network round-trip. --}}
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-SG2FY87HPF"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
         gtag('config', 'G-SG2FY87HPF');
+        gtag('config', 'AW-17053113929');
     </script>
 
     @include('public.partials.seo-meta')
