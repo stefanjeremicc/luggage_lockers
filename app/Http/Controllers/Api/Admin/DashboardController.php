@@ -22,8 +22,6 @@ class DashboardController extends Controller
         ])->get();
 
         $todayBookings = Booking::whereDate('check_in', $today)->count();
-        $activeBookings = Booking::active()->count();
-        $overdueBookings = Booking::active()->where('check_out', '<', now())->count();
 
         // Revenue is attributed to the booking's CHECK-IN date (the day the
         // stay starts), not created_at or check_out. A booking made on the 23rd
@@ -43,10 +41,14 @@ class DashboardController extends Controller
             ->where('booking_status', '!=', BookingStatus::Cancelled)
             ->count();
 
-        // Outstanding money (this month): bookings with a check-in date in the
-        // current month that haven't been marked paid AND aren't cancelled.
-        // This is the "still expected to collect" figure.
-        $unpaidMonth = Booking::where('check_in', '>=', $today->copy()->startOfMonth())
+        // Outstanding money (this month): bookings with a check-in date inside
+        // the current calendar month that haven't been marked paid AND aren't
+        // cancelled. Both bounds matter — without the upper bound this also sums
+        // every *future* unpaid booking and reads like an all-time figure.
+        $startOfMonth = $today->copy()->startOfMonth();
+        $startOfNextMonth = $startOfMonth->copy()->addMonth();
+        $unpaidMonth = Booking::where('check_in', '>=', $startOfMonth)
+            ->where('check_in', '<', $startOfNextMonth)
             ->where('payment_status', '!=', 'paid')
             ->where('booking_status', '!=', BookingStatus::Cancelled)
             ->sum('total_eur');
@@ -120,8 +122,6 @@ class DashboardController extends Controller
             'locker_grid' => $lockerGrid,
             'stats' => [
                 'today_bookings' => $todayBookings,
-                'active_bookings' => $activeBookings,
-                'overdue_bookings' => $overdueBookings,
                 'revenue_today' => $revenueToday,
                 'revenue_week' => $revenueWeek,
                 'revenue_month' => $revenueMonth,

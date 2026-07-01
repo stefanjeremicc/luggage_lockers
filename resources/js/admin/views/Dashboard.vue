@@ -141,8 +141,6 @@ const statCards = computed(() => {
     const s = data.value.stats;
     return [
         { label: "Today's bookings", value: s.today_bookings, color: 'text-white' },
-        { label: 'Active now', value: s.active_bookings, color: 'text-[#10B981]' },
-        { label: 'Overdue', value: s.overdue_bookings, color: s.overdue_bookings > 0 ? 'text-[#EF4444]' : 'text-white' },
         { label: 'Revenue (month)', value: '€' + Number(s.revenue_month).toFixed(2), color: 'text-[#F59E0B]' },
     ];
 });
