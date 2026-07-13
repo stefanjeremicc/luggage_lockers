@@ -1,0 +1,15 @@
+---
+# cPanel Git Version Control deployment tasks.
+# Runs when you click "Deploy HEAD Commit" in cPanel → Git Version Control.
+# The repo checkout at /home/webbyrs/luggage_lockers IS the live app (public/ is
+# the docroot symlink), so no file copying is needed — just rebuild Laravel caches
+# on alt-php-82 (the serving runtime). "Update from Remote" already pulls the code.
+deployment:
+  tasks:
+    - /opt/alt/php82/usr/bin/php /home/webbyrs/luggage_lockers/artisan config:clear
+    - /opt/alt/php82/usr/bin/php /home/webbyrs/luggage_lockers/artisan route:clear
+    - /opt/alt/php82/usr/bin/php /home/webbyrs/luggage_lockers/artisan view:clear
+    - /opt/alt/php82/usr/bin/php /home/webbyrs/luggage_lockers/artisan config:cache
+    - /opt/alt/php82/usr/bin/php /home/webbyrs/luggage_lockers/artisan route:cache
+    - /opt/alt/php82/usr/bin/php /home/webbyrs/luggage_lockers/artisan view:cache
+    - /opt/alt/php82/usr/bin/php /home/webbyrs/luggage_lockers/artisan migrate --force
