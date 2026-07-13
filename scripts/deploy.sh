@@ -47,9 +47,13 @@ npx vite build > /tmp/vite_build.log 2>&1
 ok "vite build"
 
 # -- 2. Tarball ---------------------------------------------------------------
-step "Packing vendor + public/build"
+step "Packing vendor + public/build + server-side source"
 TARBALL=/tmp/luggage-deploy-$(date +%s).tar.gz
-tar -czf "$TARBALL" vendor public/build
+# Include the server-side source (Blade/PHP) in the FTP tarball, not just built
+# assets. The on-server git fetch has been observed to go stale (server stuck on
+# an old commit), so server-rendered code changes never arrived. Extracted over
+# the checkout in on-server-deploy.sh, so the live source always matches local HEAD.
+tar -czf "$TARBALL" vendor public/build app resources routes config database lang composer.json composer.lock
 ok "$(ls -lh "$TARBALL" | awk '{print $5, $9}')"
 
 # -- 3. FTP upload ------------------------------------------------------------

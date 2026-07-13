@@ -30,22 +30,6 @@
 <meta name="robots" content="noindex, nofollow">
 @endpush
 
-{{-- Google Ads conversion — fires when the booking "thank you" page loads, i.e. the
-     point a booking is definitively complete. transaction_id = booking UUID dedupes
-     page refreshes and repeat views; value is the booking total in EUR (Google Ads
-     converts to the account currency). The base gtag + AW-17053113929 config already
-     load in layouts.public <head>, so gtag() is defined by the time this runs. --}}
-@push('scripts')
-<script>
-    gtag('event', 'conversion', {
-        'send_to': 'AW-17053113929/ymJ6CIrulc4cEMm8x8M_',
-        'value': {{ (float) $booking->total_eur }},
-        'currency': 'EUR',
-        'transaction_id': '{{ $booking->uuid }}',
-    });
-</script>
-@endpush
-
 @section('content')
 <section class="py-8 sm:py-16 lg:py-24">
     <div class="max-w-lg mx-auto px-4 sm:px-6 lg:px-8">
@@ -179,4 +163,18 @@
         </div>
     </div>
 </section>
+
+{{-- Google Ads conversion — fires when the booking "thank you" page loads. Placed
+     inline in the content (renders via @yield('content'), independent of the layout's
+     @stack) so a stale layout can't drop it. transaction_id (booking UUID) dedupes
+     refreshes; value is the booking total in EUR. gtag() loads in layouts.public <head>. --}}
+<!-- CONV-INLINE-v2 -->
+<script>
+    gtag('event', 'conversion', {
+        'send_to': 'AW-17053113929/ymJ6CIrulc4cEMm8x8M_',
+        'value': {{ (float) $booking->total_eur }},
+        'currency': 'EUR',
+        'transaction_id': '{{ $booking->uuid }}',
+    });
+</script>
 @endsection
