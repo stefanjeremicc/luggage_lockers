@@ -7,6 +7,14 @@
 # alt-php-82 ships cURL + intl + mbstring + pdo_mysql by default.
 PHP=/opt/alt/php82/usr/bin/php
 
+# Self-guard + self-log. The cron that triggers this is kept to a bare
+# "/bin/bash /home/webbyrs/deploy.sh" (no conditionals/redirects) because the
+# cPanel cron API mangles special chars ([ ! -f ], &&, >) into a malformed cron
+# line that never fires — the root cause of deploys silently not running.
+# So the guard (skip if already done) and the log redirect live here instead.
+[ -f /home/webbyrs/.deploy_done ] && exit 0
+exec > /home/webbyrs/deploy_run.log 2>&1
+
 cd /home/webbyrs/luggage_lockers || exit 1
 
 # 0-1. Force-align to origin/master (origin is the single source of truth).

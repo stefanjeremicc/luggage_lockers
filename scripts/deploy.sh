@@ -97,7 +97,10 @@ let d="";process.stdin.on("data",c=>d+=c);process.stdin.on("end",()=>{
     [ -n "$lk" ] && curl_api "/json-api/cpanel?cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Cron&cpanel_jsonapi_func=remove_line&linekey=$lk" >/dev/null
 done
 
-CMD='[ ! -f /home/webbyrs/.deploy_done ] && /bin/bash /home/webbyrs/deploy.sh > /home/webbyrs/deploy_run.log 2>&1'
+# Bare command — no special chars. The cPanel cron API mangles conditionals and
+# redirects, producing a malformed cron that never fires. The guard (skip if
+# .deploy_done exists) and the log redirect now live inside on-server-deploy.sh.
+CMD='/bin/bash /home/webbyrs/deploy.sh'
 curl_api "/json-api/cpanel?cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Cron&cpanel_jsonapi_func=add_line" \
     --data-urlencode "command=$CMD" \
     --data-urlencode "minute=*/2" --data-urlencode "hour=*" --data-urlencode "day=*" --data-urlencode "month=*" --data-urlencode "weekday=*" >/dev/null
