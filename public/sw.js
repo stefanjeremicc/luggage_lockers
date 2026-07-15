@@ -1,68 +1,33 @@
-const CACHE_NAME = 'bll-v7';
-const STATIC_ASSETS = ['/', '/faq', '/about', '/contact'];
+// KILL SWITCH — this service worker exists only to undo the previous one.
+//
+// The old SW cached scripts/styles "cache-first", which could leave a browser
+// pinned to a stale admin bundle after a deploy → white screen for that user.
+// We're removing service-worker caching entirely: on activation this purges
+// EVERY cache, unregisters itself, and reloads open tabs so every client lands
+// on fresh content. The page no longer registers a SW, so it won't come back.
+//
+// Assets are already fast without it: /build/ files are content-hashed and
+// served immutable (1-year) by .htaccess, over HTTP/2. Reliability > a bit of
+// SW caching.
 
-self.addEventListener('install', event => {
-    event.waitUntil(
-        caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
-    );
-    self.skipWaiting();
-});
+self.addEventListener('install', () => self.skipWaiting());
 
 self.addEventListener('activate', event => {
-    event.waitUntil(
-        caches.keys().then(keys => Promise.all(
-            keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-        ))
-    );
-    self.clients.claim();
+    event.waitUntil((async () => {
+        // 1. Purge every cache this origin ever created.
+        for (const key of await caches.keys()) {
+            await caches.delete(key);
+        }
+        // 2. Remove this service worker registration.
+        await self.registration.unregister();
+        // 3. Reload any open tabs so they re-fetch everything from the network.
+        for (const client of await self.clients.matchAll({ type: 'window' })) {
+            try { client.navigate(client.url); } catch (e) { /* ignore */ }
+        }
+    })());
 });
 
+// While this SW is briefly alive, never serve from cache — straight to network.
 self.addEventListener('fetch', event => {
-    const { request } = event;
-
-    // Only ever handle GET. The Cache API rejects non-GET requests, so POST/
-    // PUT/DELETE (bookings, cancel, remove-locker, login, …) must go straight
-    // to the network untouched — never intercepted, never cached.
-    if (request.method !== 'GET') {
-        return;
-    }
-
-    const url = new URL(request.url);
-
-    // Never cache anything that contains PII or auth state.
-    // /booking/{uuid}/*  → contains customer name/email/PIN
-    // /api/*             → all API responses are user-scoped
-    // /admin/*           → admin SPA + auth
-    if (
-        url.pathname.startsWith('/api/') ||
-        url.pathname.startsWith('/booking/') ||
-        url.pathname.startsWith('/admin')
-    ) {
-        event.respondWith(fetch(request));
-        return;
-    }
-
-    // Static assets: cache first
-    if (request.destination === 'image' || request.destination === 'font' || request.destination === 'style' || request.destination === 'script') {
-        event.respondWith(
-            caches.match(request).then(cached => cached || fetch(request).then(response => {
-                const clone = response.clone();
-                caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
-                return response;
-            }))
-        );
-        return;
-    }
-
-    // HTML: stale while revalidate (only for non-PII, non-API pages above filters)
-    event.respondWith(
-        caches.match(request).then(cached => {
-            const fetchPromise = fetch(request).then(response => {
-                const clone = response.clone();
-                caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
-                return response;
-            });
-            return cached || fetchPromise;
-        })
-    );
+    event.respondWith(fetch(event.request));
 });

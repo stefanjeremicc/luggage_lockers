@@ -66,10 +66,9 @@
 
     @yield('scripts')
     @stack('scripts')
-    <script>
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js');
-    }
-    </script>
+    {{-- Service worker registration removed on purpose. /sw.js is now a kill
+         switch that purges caches + unregisters itself for any client that still
+         has the old caching SW (it caused stale-bundle white screens). Do NOT
+         re-add register('/sw.js') unless the SW is redesigned. --}}
 </body>
 </html>
