@@ -59,6 +59,16 @@ class SyncUnlockRecords implements ShouldQueue
                 foreach ($list as $r) {
                     $ts = (int) ($r['lockDate'] ?? 0);
                     if ($ts > $latestMs) $latestMs = $ts;
+
+                    // Attribute the open to the booking whose PIN was used (only
+                    // successful passcode unlocks match; admin/remote/app do not).
+                    if ($ts > 0 && (int) ($r['success'] ?? 1) === 1 && !empty($r['keyboardPwd'])) {
+                        BookingLocker::recordCustomerUnlock(
+                            $locker->ttlock_lock_id,
+                            (string) $r['keyboardPwd'],
+                            Carbon::createFromTimestampMs($ts)
+                        );
+                    }
                 }
 
                 if ($latestMs > 0) {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\BookingLocker;
 use App\Models\Locker;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -36,7 +37,8 @@ class TtlockCallbackController extends Controller
                 ]];
             }
 
-            // Keep the latest unlock timestamp per lock.
+            // Keep the latest unlock timestamp per lock (lock-health display), and
+            // attribute customer opens to the specific booking whose PIN was used.
             $latestByLock = [];
             foreach ($records as $r) {
                 if (!is_array($r)) continue;
@@ -44,6 +46,16 @@ class TtlockCallbackController extends Controller
                 $ms = (int) ($r['lockDate'] ?? $r['serverDate'] ?? 0);
                 if ($lockId > 0 && $ms > 0) {
                     $latestByLock[$lockId] = max($latestByLock[$lockId] ?? 0, $ms);
+
+                    // Only SUCCESSFUL passcode unlocks count as a customer open;
+                    // recordCustomerUnlock ignores anything without a matching PIN.
+                    if ((int) ($r['success'] ?? 1) === 1) {
+                        BookingLocker::recordCustomerUnlock(
+                            $lockId,
+                            $r['keyboardPwd'] ?? null,
+                            Carbon::createFromTimestampMs($ms)
+                        );
+                    }
                 }
             }
 

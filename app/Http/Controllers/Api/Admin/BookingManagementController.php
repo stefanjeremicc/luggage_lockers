@@ -122,31 +122,27 @@ class BookingManagementController extends Controller
 
     private function decryptedPins(Booking $booking): array
     {
-        // A locker counts as "opened during this booking" if TTLock recorded an
-        // unlock at/after this booking's check-in. locker.last_used_at is kept
-        // fresh by the SyncUnlockRecords job (TTLock unlock records), so we don't
-        // hit the lock here. Previous bookings end before this one's check_in, so
-        // last_used_at >= check_in reliably belongs to THIS stay.
-        $checkIn = $booking->check_in;
-
-        return BookingLocker::with('locker:id,number,size,last_used_at')
+        // "opened" reflects the CUSTOMER'S OWN PIN opening this locker, stamped on
+        // booking_lockers.opened_at by the TTLock webhook / SyncUnlockRecords job
+        // (matched by passcode). Admin remote-unlock, gateway/app opens and
+        // master/staff codes no longer count — they carry no matching customer PIN.
+        return BookingLocker::with('locker:id,number,size')
             ->where('booking_id', $booking->id)
             ->get()
-            ->map(function ($bl) use ($checkIn) {
+            ->map(function ($bl) {
                 try {
                     $pin = Crypt::decryptString($bl->pin_code_encrypted);
                 } catch (\Throwable) {
                     $pin = null;
                 }
-                $lastUsed = $bl->locker?->last_used_at;
                 return [
                     'booking_locker_id' => $bl->id,
                     'locker_number' => $bl->locker?->number,
                     'size' => $bl->locker?->size?->value,
                     'pin' => $pin,
                     'ttlock_registered' => !empty($bl->ttlock_keyboard_pwd_id),
-                    'opened' => $lastUsed && $checkIn && $lastUsed->gte($checkIn),
-                    'opened_at' => ($lastUsed && $checkIn && $lastUsed->gte($checkIn)) ? $lastUsed->toIso8601String() : null,
+                    'opened' => !is_null($bl->opened_at),
+                    'opened_at' => $bl->opened_at?->toIso8601String(),
                 ];
             })
             ->values()
