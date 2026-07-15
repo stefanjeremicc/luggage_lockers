@@ -8,6 +8,12 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Idempotent: skip if the column already exists. This deploy runs migrate
+        // through an unusual path (no SSH), so guard against a double-add.
+        if (Schema::hasColumn('booking_lockers', 'opened_at')) {
+            return;
+        }
+
         Schema::table('booking_lockers', function (Blueprint $table) {
             // When the CUSTOMER'S OWN PIN opened this locker, per TTLock unlock
             // records (matched by passcode). NULL = not opened by the customer.
@@ -22,6 +28,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (!Schema::hasColumn('booking_lockers', 'opened_at')) {
+            return;
+        }
+
         Schema::table('booking_lockers', function (Blueprint $table) {
             $table->dropColumn('opened_at');
         });
