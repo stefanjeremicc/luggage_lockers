@@ -21,6 +21,8 @@
     $i18nForJs = [
         'lockers_available' => __(':count lockers available'),
         'no_lockers' => __('No lockers available'),
+        'lockers_low' => __('Only :count left — almost fully booked!'),
+        'lockers_limited' => __('Limited availability'),
         'standard' => __('Standard'),
         'large' => __('Large'),
         'errors' => [
@@ -313,7 +315,7 @@
                                     <div class="flex items-center justify-between pt-3 border-t border-[#2A2A2A]">
                                         <div class="text-xs">
                                             <span x-show="resolvedDate && time && itemDurations['{{ $card['size'] }}']"
-                                                  :class="availability['{{ $card['size'] }}']?.available > 3 ? 'text-[#10B981]' : (availability['{{ $card['size'] }}']?.available > 0 ? 'text-[#F59E0B]' : 'text-[#EF4444]')"
+                                                  :class="availability['{{ $card['size'] }}']?.available <= 3 ? 'text-[#EF4444]' : 'text-[#F59E0B]'"
                                                   x-text="availabilityLabelFor('{{ $card['size'] }}')"></span>
                                             <span x-show="!(resolvedDate && time && itemDurations['{{ $card['size'] }}'])" class="text-[#6B7280]">{{ __('How many?') }}</span>
                                         </div>

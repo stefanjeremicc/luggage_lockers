@@ -58,6 +58,8 @@ export default () => ({
     i18n: {
         lockers_available: ':count lockers available',
         no_lockers: 'No lockers available',
+        lockers_low: 'Only :count left — almost fully booked!',
+        lockers_limited: 'Limited availability',
         standard: 'Regular',
         large: 'Big',
         errors: {
@@ -143,10 +145,16 @@ export default () => ({
     },
 
     availabilityLabelFor(size) {
+        // Scarcity display: never expose the raw count when there's plenty — a
+        // high number kills urgency. Show a hard "only N left" only when it's
+        // genuinely low (true scarcity), a soft "limited" in the middle band,
+        // and nothing when there's ample stock.
         const a = this.availability[size]?.available;
         if (a === undefined || a === null) return '';
-        if (!a || a <= 0) return this.i18n.no_lockers;
-        return this.i18n.lockers_available.replace(':count', a);
+        if (a <= 0) return this.i18n.no_lockers;
+        if (a <= 3) return this.i18n.lockers_low.replace(':count', a);
+        if (a <= 7) return this.i18n.lockers_limited;
+        return '';
     },
 
     sizeLabelFor(size) {

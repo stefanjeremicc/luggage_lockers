@@ -28,6 +28,8 @@
     "From": "Od",
     ":count lockers available": ":count ormarića dostupno",
     "No lockers available": "Nema dostupnih ormarića",
+    "Only :count left — almost fully booked!": "Samo još :count — skoro popunjeno!",
+    "Limited availability": "Ograničena dostupnost",
     "Locker|Lockers": "Ormarić|Ormarića",
     "{1} :count locker|[2,*] :count lockers": "{1} :count ormarić|{2,3,4} :count ormarića|[5,*] :count ormarića",
     "Cancel Booking": "Otkaži rezervaciju",
