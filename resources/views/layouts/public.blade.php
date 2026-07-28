@@ -28,6 +28,10 @@
         gtag('js', new Date());
         gtag('config', 'G-SG2FY87HPF');
         gtag('config', 'AW-17053113929');
+        // Client's own GA4 property — piggy-backs on the same gtag loader above
+        // (one script src, extra config() call). Do NOT paste the client's full
+        // snippet: it ships a duplicate gtag/js loader.
+        gtag('config', 'G-LDMVH3BRCB');
     </script>
 
     @include('public.partials.seo-meta')
