@@ -42,6 +42,8 @@ class SettingsSeeder extends Seeder
             ['key' => 'hero_headline_sr', 'value' => 'Garderoba za Prtljag u Beogradu', 'type' => 'string', 'group' => 'homepage'],
             ['key' => 'hero_subhead_en', 'value' => 'Secure smart lockers in the heart of Belgrade. Book in 60 seconds, pay cash on arrival.', 'type' => 'string', 'group' => 'homepage'],
             ['key' => 'hero_subhead_sr', 'value' => 'Sigurni pametni ormančići u centru Beograda. Rezerviši za 60 sekundi, plati gotovinom.', 'type' => 'string', 'group' => 'homepage'],
+            ['key' => 'hero_tagline_en', 'value' => '2,000+ Happy Travelers — And Growing Every Day', 'type' => 'string', 'group' => 'homepage'],
+            ['key' => 'hero_tagline_sr', 'value' => '2.000+ zadovoljnih putnika — i svakim danom sve više', 'type' => 'string', 'group' => 'homepage'],
 
             // --- SEO ---
             ['key' => 'home_meta_title', 'value' => 'Belgrade Luggage Locker — 24/7 Secure Luggage Storage', 'type' => 'string', 'group' => 'seo'],

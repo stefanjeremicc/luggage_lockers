@@ -130,6 +130,15 @@ class SiteSettings
             : ($a['hero_subhead_en'] ?? null);
     }
 
+    /** Small social-proof line shown under the hero buttons. */
+    public static function heroTagline(string $locale = 'en'): ?string
+    {
+        $a = static::all();
+        return $locale === 'sr'
+            ? ($a['hero_tagline_sr'] ?? null)
+            : ($a['hero_tagline_en'] ?? null);
+    }
+
     /**
      * Locker capacity / dimensions / image — admin-editable per size.
      * Returns ['capacity' => ..., 'dimensions' => ..., 'image' => ...].

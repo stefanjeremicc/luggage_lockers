@@ -31,6 +31,8 @@ class SettingsController extends Controller
         'hero_headline_sr' => 'nullable|string|max:120',
         'hero_subhead_en' => 'nullable|string|max:300',
         'hero_subhead_sr' => 'nullable|string|max:300',
+        'hero_tagline_en' => 'nullable|string|max:120',
+        'hero_tagline_sr' => 'nullable|string|max:120',
         'home_meta_title' => 'nullable|string|max:60',
         'home_meta_description' => 'nullable|string|max:150',
         'home_meta_title_sr' => 'nullable|string|max:60',
