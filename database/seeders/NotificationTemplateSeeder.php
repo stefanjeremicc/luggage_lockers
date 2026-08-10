@@ -39,7 +39,7 @@ class NotificationTemplateSeeder extends Seeder
 
     private function templates(): array
     {
-        $commonVars = ['customer_name', 'location_name', 'location_address', 'check_in', 'check_in_time', 'check_in_full', 'check_out', 'check_out_time', 'check_out_full', 'locker_qty', 'locker_size', 'items_summary', 'duration_label', 'total_eur', 'eur_rsd_rate', 'cancel_url', 'directions_url', 'support_phone', 'support_email', 'site_name', 'pin_code', 'locker_number', 'codes_block', 'entry_door_code', 'tolerance_minutes'];
+        $commonVars = ['customer_name', 'location_name', 'location_address', 'check_in', 'check_in_time', 'check_in_full', 'check_out', 'check_out_time', 'check_out_full', 'locker_qty', 'locker_size', 'items_summary', 'duration_label', 'total_eur', 'eur_rsd_rate', 'total_rsd', 'cancel_url', 'directions_url', 'support_phone', 'support_email', 'site_name', 'pin_code', 'locker_number', 'codes_block', 'entry_door_code', 'tolerance_minutes'];
         $reviewUrl = 'https://search.google.com/local/writereview?placeid=ChIJq3Y86Jl7WkcRJRP0r-8Tg5M';
 
         return [

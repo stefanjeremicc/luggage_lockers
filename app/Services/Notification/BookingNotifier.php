@@ -521,6 +521,7 @@ class BookingNotifier
             'items_summary' => $itemsSummary,
             'total_eur' => number_format((float) $booking->total_eur, 2),
             'eur_rsd_rate' => Setting::getValue('eur_rsd_rate', 117),
+            'total_rsd' => (string) (int) round((float) $booking->total_eur * (float) Setting::getValue('eur_rsd_rate', 117)),
             'entry_door_code' => Setting::getValue('entry_door_code', '0717#'),
             'tolerance_minutes' => Setting::getValue('booking_tolerance_minutes', 20),
             'cancel_url' => url("/booking/{$booking->uuid}/cancel?token=".hash_hmac('sha256', $booking->uuid.'|'.$booking->customer_id, config('app.key'))),
