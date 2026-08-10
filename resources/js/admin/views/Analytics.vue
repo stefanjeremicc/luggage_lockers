@@ -53,9 +53,9 @@
             <!-- Presets (left) + Filters toggle (right). Stacks on mobile;
                  natural-width + spread on larger screens. -->
             <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-                <div class="flex gap-1.5 sm:gap-2">
+                <div class="grid grid-cols-3 gap-1.5 sm:flex sm:gap-2">
                     <button v-for="p in presets" :key="p.key" @click="setPreset(p.key)"
-                        class="flex-1 sm:flex-none px-1 sm:px-4 py-2 rounded-lg text-[11px] sm:text-sm font-medium whitespace-nowrap transition"
+                        class="sm:flex-none px-1 sm:px-4 py-2 rounded-lg text-[11px] sm:text-sm font-medium whitespace-nowrap transition"
                         :class="activePreset === p.key ? 'bg-[#F59E0B] text-black' : 'bg-[#111] border border-[#2A2A2A] text-[#A0A0A0] hover:text-white'">
                         {{ p.label }}
                     </button>
@@ -759,6 +759,7 @@ const presets = [
     { key: '7', label: '7 days' },
     { key: 'month', label: 'This month' },
     { key: 'last_month', label: 'Last month' },
+    { key: 'all', label: 'All time' },
 ];
 const activePreset = ref('month');
 // Human label for the active range — preset name, or the custom dd.mm→dd.mm.
@@ -776,6 +777,11 @@ const setPreset = (key) => {
     else if (key === 'last_month') {
         filters.from = iso(new Date(t.getFullYear(), t.getMonth() - 1, 1)); // 1st of previous month
         filters.to = iso(new Date(t.getFullYear(), t.getMonth(), 0));       // day 0 = last day of previous month
+    }
+    else if (key === 'all') {
+        filters.from = '2020-01-01';  // safely before the first booking — covers everything
+        filters.to = iso(t);
+        filters.group = 'month';      // day-grouping over years is unreadable; month is sane
     }
     activePreset.value = key;
     load();
