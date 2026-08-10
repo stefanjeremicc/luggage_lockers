@@ -455,16 +455,13 @@ onBeforeUnmount(() => {
     transform: translateY(-4px);
 }
 
-/* Mobile: full-width dropdown so it doesn't overflow the screen. */
+/* Mobile: full-width dropdown so it doesn't overflow the screen.
+   positionPop() pins an inline left:16px on mobile; only widen here. Do NOT
+   set left:50%/translateX(-50%) — the inline left wins, but the transform would
+   still apply and shove the popup ~half a viewport off the LEFT edge. */
 @media (max-width: 640px) {
     .ll-dp-pop {
         width: calc(100vw - 32px);
-        left: 50%;
-        transform: translateX(-50%);
-    }
-    .ll-dp-fade-enter-from, .ll-dp-fade-leave-to {
-        opacity: 0;
-        transform: translateX(-50%) translateY(-4px);
     }
 }
 </style>

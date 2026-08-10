@@ -27,11 +27,18 @@ class DashboardController extends Controller
         // stay starts), not created_at or check_out. A booking made on the 23rd
         // for arrival on the 23rd counts on the 23rd even if it ends the 24th.
         $revenueToday = Booking::whereDate('check_in', $today)
-            ->where('payment_status', 'paid')->sum('total_eur');
+            ->where('payment_status', 'paid')
+            ->where('booking_status', '!=', BookingStatus::Cancelled)->sum('total_eur');
         $revenueWeek = Booking::where('check_in', '>=', $today->copy()->startOfWeek())
-            ->where('payment_status', 'paid')->sum('total_eur');
-        $revenueMonth = Booking::where('check_in', '>=', $today->copy()->startOfMonth())
-            ->where('payment_status', 'paid')->sum('total_eur');
+            ->where('payment_status', 'paid')
+            ->where('booking_status', '!=', BookingStatus::Cancelled)->sum('total_eur');
+        // Month-to-date revenue: bounded [start of month … end of today] and
+        // excludes cancelled — the SAME definition as the Analytics "This month"
+        // Paid figure, so the Dashboard and Analytics screens always reconcile.
+        // (Previously unbounded + cancelled-inclusive, which drifted from Analytics.)
+        $revenueMonth = Booking::whereBetween('check_in', [$today->copy()->startOfMonth(), $today->copy()->endOfDay()])
+            ->where('payment_status', 'paid')
+            ->where('booking_status', '!=', BookingStatus::Cancelled)->sum('total_eur');
 
         // Quick-look metrics that surface concrete numbers the Analytics view
         // hides behind filters. Kept cheap (raw counts/sums, no joins) so the

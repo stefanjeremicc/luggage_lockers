@@ -574,7 +574,11 @@ const tipX = ref(0);
 const tipY = ref(0);
 
 const today = new Date();
-const iso = (d) => d.toISOString().slice(0, 10);
+// Local-date ISO (YYYY-MM-DD). Must NOT use toISOString() — that converts to
+// UTC and shifts the date back a day in UTC+ timezones (e.g. local 1 Aug 00:00
+// → 31 Jul 22:00Z), which made "This month" start on 31.07 and mismatched the
+// Dashboard's server-side start-of-month.
+const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const filters = reactive({
     from: iso(new Date(today.getFullYear(), today.getMonth(), 1)), // 1st of this month
     to: iso(today),
@@ -754,6 +758,7 @@ const presets = [
     { key: 'yesterday', label: 'Yesterday' },
     { key: '7', label: '7 days' },
     { key: 'month', label: 'This month' },
+    { key: 'last_month', label: 'Last month' },
 ];
 const activePreset = ref('month');
 // Human label for the active range — preset name, or the custom dd.mm→dd.mm.
@@ -768,6 +773,10 @@ const setPreset = (key) => {
     else if (key === '7') { filters.from = iso(new Date(t.getTime() - 6 * 86400000)); filters.to = iso(t); }
     else if (key === '30') { filters.from = iso(new Date(t.getTime() - 29 * 86400000)); filters.to = iso(t); }
     else if (key === 'month') { filters.from = iso(new Date(t.getFullYear(), t.getMonth(), 1)); filters.to = iso(t); }
+    else if (key === 'last_month') {
+        filters.from = iso(new Date(t.getFullYear(), t.getMonth() - 1, 1)); // 1st of previous month
+        filters.to = iso(new Date(t.getFullYear(), t.getMonth(), 0));       // day 0 = last day of previous month
+    }
     activePreset.value = key;
     load();
 };
