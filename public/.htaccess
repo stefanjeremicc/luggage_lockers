@@ -46,6 +46,13 @@
     SetEnvIf Request_URI "^/images/" LL_IMG_CACHE
 </IfModule>
 <IfModule mod_headers.c>
+    # Cache kill-switch (DEFAULT): no-store every response — the HTML app shell,
+    # /sw.js, API — so returning visitors, including installed/mobile users, can
+    # never be pinned to a stale cached bundle. The two rules AFTER this re-apply
+    # a long cache for versioned assets; they run later so they win for their
+    # paths (LiteSpeed honours positive env= but not env=!negation, so ordering
+    # — not negation — is what keeps /build/ immutable).
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
     Header set Cache-Control "public, max-age=31536000, immutable" env=LL_IMMUTABLE_ASSET
     Header set Cache-Control "public, max-age=2592000" env=LL_IMG_CACHE
 
