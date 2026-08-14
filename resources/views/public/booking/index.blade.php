@@ -513,16 +513,7 @@
                                     <p class="text-[#A0A0A0] text-xs mt-1 leading-relaxed">{{ __('We accept cash payments only in our store. No card payments.') }}</p>
                                 </div>
                             </div>
-                            <div class="flex items-start gap-4 mt-4 pt-4 border-t border-[#2A2A2A]">
-                                <div class="w-9 h-9 rounded-xl bg-[#F59E0B]/10 flex items-center justify-center shrink-0">
-                                    <svg class="w-4 h-4 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-                                </div>
-                                <div>
-                                    <p class="font-semibold text-[#F59E0B]">{{ __('No change') }}</p>
-                                    <p class="text-[#A0A0A0] text-xs mt-1 leading-relaxed">{{ __('We don\'t offer change. Please bring the exact amount.') }}</p>
-                                    <p class="text-[#6B7280] text-xs mt-1.5">{{ __('Thank you for supporting our self-service business.') }}</p>
-                                </div>
-                            </div>
+                            <p class="text-[#A0A0A0] text-xs mt-4 pt-4 border-t border-[#2A2A2A] leading-relaxed">{{ __('We\'re a self-service business, so we can\'t provide change. Thanks for understanding!') }}</p>
                         </div>
                     </div>
 
