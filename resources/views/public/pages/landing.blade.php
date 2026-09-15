@@ -255,8 +255,8 @@
         if (!el || typeof L === 'undefined') return;
         var lat = parseFloat(el.dataset.lat), lng = parseFloat(el.dataset.lng);
         var map = L.map('landingMap', { center: [lat, lng], zoom: 15, scrollWheelZoom: false });
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains: 'abcd', maxZoom: 20
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors', maxZoom: 20
         }).addTo(map);
         var pts = [];
         var locMarker = L.marker([lat, lng]).addTo(map);

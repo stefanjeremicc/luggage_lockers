@@ -59,8 +59,8 @@ document.addEventListener('DOMContentLoaded', function() {
     @php $mc = \App\Helpers\SiteSettings::mapCenter(); @endphp
     var map = L.map('locations-map', { scrollWheelZoom: false }).setView([{{ $mc['lat'] }}, {{ $mc['lng'] }}], {{ $mc['zoom'] }});
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 19
     }).addTo(map);
 

@@ -103,8 +103,8 @@ class SiteSettings
     {
         $a = static::all();
         return [
-            'lat' => (float) ($a['map_default_lat'] ?? 44.812),
-            'lng' => (float) ($a['map_default_lng'] ?? 20.460),
+            'lat' => (float) ($a['map_default_lat'] ?? 44.8088877),
+            'lng' => (float) ($a['map_default_lng'] ?? 20.4630613),
             'zoom' => (int) ($a['map_default_zoom'] ?? 14),
         ];
     }
