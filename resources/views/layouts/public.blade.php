@@ -53,10 +53,16 @@
 
     @vite(['resources/css/public.css', 'resources/js/public/app.js'])
 
-    {{-- Maps use the free Esri Dark Gray basemap (no API key) — already dark, so
-         no CSS filter; just a dark background behind tiles while they load. --}}
+    {{-- Maps: free Esri Dark Gray basemap (no API key). Only the BASE layer is
+         darkened (.ll-base-dark) for a near-black look; the label layer stays
+         bright so streets remain readable. Permanent marker labels (.ll-label)
+         make it obvious which pin is the store vs a nearby landmark. --}}
     <style>
         .leaflet-container { background: #0A0A0A; }
+        .ll-base-dark { filter: brightness(0.58) contrast(1.1); }
+        .leaflet-tooltip.ll-label { background:#0A0A0A; border:1px solid #F59E0B; color:#fff; font-weight:600; font-size:12px; padding:3px 8px; border-radius:6px; box-shadow:0 2px 8px rgba(0,0,0,.55); white-space:nowrap; }
+        .leaflet-tooltip.ll-label-muted { border-color:#4B5563; color:#D1D5DB; font-weight:500; }
+        .leaflet-tooltip.ll-label::before { display:none; }
     </style>
 
     @yield('head')

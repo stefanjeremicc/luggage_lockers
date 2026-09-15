@@ -164,7 +164,7 @@
         </div>
 
         @if($mapLat && $mapLng)
-        <div id="landingMap" class="mt-4 h-64 rounded-xl overflow-hidden border border-[#2A2A2A]"
+        <div id="landingMap" class="mt-4 h-[420px] rounded-xl overflow-hidden border border-[#2A2A2A]"
              data-lat="{{ $mapLat }}" data-lng="{{ $mapLng }}"
              @if(!empty($geo['lat']) && !empty($geo['lng'])) data-poi-lat="{{ $geo['lat'] }}" data-poi-lng="{{ $geo['lng'] }}" data-poi-name="{{ $poiName }}" @endif
              @if($loc) data-loc-name="{{ $loc->nameFor($locale) }}" @endif></div>
@@ -254,24 +254,30 @@
         var el = document.getElementById('landingMap');
         if (!el || typeof L === 'undefined') return;
         var lat = parseFloat(el.dataset.lat), lng = parseFloat(el.dataset.lng);
-        var map = L.map('landingMap', { center: [lat, lng], zoom: 15, scrollWheelZoom: false });
+        var map = L.map('landingMap', { center: [lat, lng], zoom: 15, scrollWheelZoom: true });
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri', maxNativeZoom: 16, maxZoom: 19
+            attribution: 'Tiles &copy; Esri', className: 'll-base-dark', maxNativeZoom: 16, maxZoom: 19
         }).addTo(map);
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
             maxNativeZoom: 16, maxZoom: 19
         }).addTo(map);
         var pts = [];
-        var locMarker = L.marker([lat, lng]).addTo(map);
-        if (el.dataset.locName) locMarker.bindPopup(el.dataset.locName);
+        // The store: amber pin with an always-on label so it's unmistakable.
+        var storeIcon = L.divIcon({ className: 'll-pin', iconSize: [30, 42], iconAnchor: [15, 42], popupAnchor: [0, -40],
+            html: '<svg width="30" height="42" viewBox="0 0 30 42" xmlns="http://www.w3.org/2000/svg"><path d="M15 0C6.7 0 0 6.7 0 15c0 10.5 15 27 15 27s15-16.5 15-27C30 6.7 23.3 0 15 0z" fill="#F59E0B" stroke="#0A0A0A" stroke-width="2"/><circle cx="15" cy="15" r="5.5" fill="#0A0A0A"/></svg>' });
+        var locMarker = L.marker([lat, lng], { icon: storeIcon }).addTo(map);
+        locMarker.bindTooltip(el.dataset.locName || 'Belgrade Luggage Locker', { permanent: true, direction: 'top', offset: [0, -42], className: 'll-label' });
         pts.push([lat, lng]);
         if (el.dataset.poiLat && el.dataset.poiLng) {
             var pLat = parseFloat(el.dataset.poiLat), pLng = parseFloat(el.dataset.poiLng);
-            var poi = L.circleMarker([pLat, pLng], { radius: 7, color: '#F59E0B', fillColor: '#F59E0B', fillOpacity: .9 }).addTo(map);
-            if (el.dataset.poiName) poi.bindPopup(el.dataset.poiName);
+            // Dashed connector from the landmark to the store, then a distinct grey landmark dot.
+            L.polyline([[lat, lng], [pLat, pLng]], { color: '#F59E0B', weight: 3, opacity: .85, dashArray: '2,9', lineCap: 'round' }).addTo(map);
+            var poi = L.circleMarker([pLat, pLng], { radius: 8, color: '#0A0A0A', weight: 3, fillColor: '#9CA3AF', fillOpacity: 1 }).addTo(map);
+            if (el.dataset.poiName) poi.bindTooltip(el.dataset.poiName, { permanent: true, direction: 'bottom', offset: [0, 10], className: 'll-label ll-label-muted' });
             pts.push([pLat, pLng]);
         }
-        if (pts.length > 1) map.fitBounds(pts, { padding: [40, 40] });
+        if (pts.length > 1) map.fitBounds(pts, { padding: [60, 60] });
+        else map.setView([lat, lng], 16);
     });
 </script>
 @endif

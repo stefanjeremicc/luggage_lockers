@@ -154,7 +154,7 @@
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                         </a>
                     </div>
-                    <div id="locationMap" style="height: 420px;"></div>
+                    <div id="locationMap" style="height: 500px;"></div>
                 </div>
 
                 {{-- About --}}
@@ -276,16 +276,16 @@ document.addEventListener('DOMContentLoaded', function () {
     if (typeof L === 'undefined' || !document.getElementById('locationMap')) return;
     const lat = {{ $location->lat }};
     const lng = {{ $location->lng }};
-    const map = L.map('locationMap', { center: [lat, lng], zoom: 16, scrollWheelZoom: false });
+    const map = L.map('locationMap', { center: [lat, lng], zoom: 16, scrollWheelZoom: true });
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri', maxNativeZoom: 16, maxZoom: 19,
+        attribution: 'Tiles &copy; Esri', className: 'll-base-dark', maxNativeZoom: 16, maxZoom: 19,
     }).addTo(map);
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
         maxNativeZoom: 16, maxZoom: 19,
     }).addTo(map);
     const icon = L.divIcon({
-        html: '<div style="width:32px;height:32px;background:#F59E0B;border-radius:50%;border:3px solid #0A0A0A;box-shadow:0 2px 8px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>',
-        className: '', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -36],
+        html: '<svg width="30" height="42" viewBox="0 0 30 42" xmlns="http://www.w3.org/2000/svg"><path d="M15 0C6.7 0 0 6.7 0 15c0 10.5 15 27 15 27s15-16.5 15-27C30 6.7 23.3 0 15 0z" fill="#F59E0B" stroke="#0A0A0A" stroke-width="2"/><circle cx="15" cy="15" r="5.5" fill="#0A0A0A"/></svg>',
+        className: '', iconSize: [30, 42], iconAnchor: [15, 42], popupAnchor: [0, -40],
     });
     L.marker([lat, lng], { icon }).addTo(map)
         .bindPopup(
