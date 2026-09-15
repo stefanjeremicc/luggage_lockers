@@ -53,11 +53,9 @@
 
     @vite(['resources/css/public.css', 'resources/js/public/app.js'])
 
-    {{-- Dark map tiles: we use FREE OpenStreetMap raster tiles (no API key) and
-         darken them with a CSS filter on the tile pane only, so markers/popups
-         keep their colour. Applies to every Leaflet map on the public site. --}}
+    {{-- Maps use the free Esri Dark Gray basemap (no API key) — already dark, so
+         no CSS filter; just a dark background behind tiles while they load. --}}
     <style>
-        .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9); }
         .leaflet-container { background: #0A0A0A; }
     </style>
 

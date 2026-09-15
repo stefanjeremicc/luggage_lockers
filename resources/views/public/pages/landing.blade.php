@@ -255,8 +255,11 @@
         if (!el || typeof L === 'undefined') return;
         var lat = parseFloat(el.dataset.lat), lng = parseFloat(el.dataset.lng);
         var map = L.map('landingMap', { center: [lat, lng], zoom: 15, scrollWheelZoom: false });
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors', maxZoom: 20
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri', maxNativeZoom: 16, maxZoom: 19
+        }).addTo(map);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+            maxNativeZoom: 16, maxZoom: 19
         }).addTo(map);
         var pts = [];
         var locMarker = L.marker([lat, lng]).addTo(map);

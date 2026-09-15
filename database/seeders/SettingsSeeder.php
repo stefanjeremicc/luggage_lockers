@@ -52,8 +52,8 @@ class SettingsSeeder extends Seeder
             ['key' => 'home_meta_description_sr', 'value' => 'Sigurna garderoba za prtljag 24/7 u centru Beograda. Pametni ormančići na 2 lokacije. Rezerviši online za 60 sekundi.', 'type' => 'string', 'group' => 'seo'],
 
             // --- Map ---
-            ['key' => 'map_default_lat', 'value' => '44.8088877', 'type' => 'float', 'group' => 'map'],
-            ['key' => 'map_default_lng', 'value' => '20.4630613', 'type' => 'float', 'group' => 'map'],
+            ['key' => 'map_default_lat', 'value' => '44.8089062', 'type' => 'float', 'group' => 'map'],
+            ['key' => 'map_default_lng', 'value' => '20.4630598', 'type' => 'float', 'group' => 'map'],
             ['key' => 'map_default_zoom', 'value' => '14', 'type' => 'int', 'group' => 'map'],
 
             // --- Social ---

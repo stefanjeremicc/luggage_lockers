@@ -142,9 +142,11 @@
                 scrollWheelZoom: false
             }).setView([{{ $mc['lat'] }}, {{ $mc['lng'] }}], {{ $mc['zoom'] }});
 
-            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                maxZoom: 19
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri', maxNativeZoom: 16, maxZoom: 19
+            }).addTo(map);
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+                maxNativeZoom: 16, maxZoom: 19
             }).addTo(map);
 
             const markerIcon = L.divIcon({

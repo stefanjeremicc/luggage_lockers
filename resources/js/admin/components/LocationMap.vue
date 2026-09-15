@@ -40,8 +40,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 const props = defineProps({
-    lat: { type: [Number, String], default: 44.8088877 },
-    lng: { type: [Number, String], default: 20.4630613 },
+    lat: { type: [Number, String], default: 44.8089062 },
+    lng: { type: [Number, String], default: 20.4630598 },
     address: { type: String, default: '' },
 });
 const emit = defineEmits(['update:lat', 'update:lng', 'address-resolved']);
@@ -54,8 +54,8 @@ const error = ref('');
 let map = null;
 let marker = null;
 
-const initialLat = () => Number(props.lat) || 44.8088877;
-const initialLng = () => Number(props.lng) || 20.4630613;
+const initialLat = () => Number(props.lat) || 44.8089062;
+const initialLng = () => Number(props.lng) || 20.4630598;
 
 const customIcon = L.divIcon({
     html: `<div style="background:#F59E0B;border:2px solid #0A0A0A;width:18px;height:18px;border-radius:50%;box-shadow:0 0 0 3px rgba(245,158,11,0.35);"></div>`,
@@ -71,10 +71,12 @@ onMounted(() => {
         zoomControl: true,
     });
 
-    // Free OpenStreetMap raster tiles (no API key); darkened via the CSS filter below.
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19,
+    // Free Esri Dark Gray basemap (no API key) — already dark, no filter needed.
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri', maxNativeZoom: 16, maxZoom: 19,
+    }).addTo(map);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+        maxNativeZoom: 16, maxZoom: 19,
     }).addTo(map);
 
     marker = L.marker([initialLat(), initialLng()], {
@@ -158,8 +160,6 @@ const geocode = async () => {
     background: #0A0A0A;
     font-family: inherit;
 }
-/* Darken the free OSM tiles (tile pane only — the amber marker stays colour). */
-.leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9); }
 .leaflet-control-attribution {
     background: rgba(15, 15, 15, 0.85) !important;
     color: #6B7280 !important;
