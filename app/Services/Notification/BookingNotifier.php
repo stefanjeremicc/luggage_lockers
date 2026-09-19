@@ -2,6 +2,7 @@
 
 namespace App\Services\Notification;
 
+use App\Helpers\EmailTheme;
 use App\Models\Booking;
 use App\Models\BookingLocker;
 use App\Models\NotificationLog;
@@ -61,9 +62,9 @@ class BookingNotifier
 
     /**
      * Notify the customer that one or more lockers were removed from their
-     * booking. Renders each removed locker in its OWN isolated block (same
-     * `.highlight` style as the confirmation email's locker cards), instead of
-     * a plain comma list, so it's clear and precise.
+     * booking. Renders each removed locker in its OWN isolated panel (the same
+     * EmailTheme::panel used by the confirmation email's locker cards), instead
+     * of a plain comma list, so it's clear and precise.
      *
      * @param  string[]  $removedNumbers  e.g. ['R-10', 'B-03']
      */
@@ -73,22 +74,34 @@ class BookingNotifier
 
         $booking->loadMissing(['customer', 'location']);
         $locale = $booking->customer->locale ?? 'en';
-        $label = $locale === 'sr' ? 'UKLONJEN ORMARIĆ' : 'REMOVED LOCKER';
-        $note  = $locale === 'sr' ? 'Šifra za ovaj ormarić više ne radi.' : 'The code for this locker no longer works.';
-
-        $blocks = '';
-        foreach ($removedNumbers as $num) {
-            $blocks .= '<div class="highlight">'
-                .'<p style="margin:0 0 4px;color:#A0A0A0;font-size:12px;text-transform:uppercase;letter-spacing:1px">'.e($label).'</p>'
-                .'<p style="margin:0;font-size:34px;color:#fff;font-weight:bold;letter-spacing:2px">'.e($num).'</p>'
-                .'<p style="margin:8px 0 0;color:#EF4444;font-size:12px">'.e($note).'</p>'
-                .'</div>';
-        }
 
         self::send($booking, 'booking_locker_removed', [
             'removed_lockers' => implode(', ', $removedNumbers),
-            'removed_lockers_block' => $blocks,
+            'removed_lockers_block' => self::removedLockersBlock($removedNumbers, $locale),
         ]);
+    }
+
+    /**
+     * One panel per removed locker. Split out from sendLockerRemoved() so the
+     * email-rendering tests can exercise it without a live booking.
+     *
+     * @param  string[]  $removedNumbers
+     */
+    private static function removedLockersBlock(array $removedNumbers, string $locale): string
+    {
+        $label = $locale === 'sr' ? 'UKLONJEN ORMARIĆ' : 'REMOVED LOCKER';
+        $note = $locale === 'sr' ? 'Šifra za ovaj ormarić više ne radi.' : 'The code for this locker no longer works.';
+
+        $blocks = '';
+        foreach ($removedNumbers as $num) {
+            $blocks .= EmailTheme::panel(
+                '<p style="margin:0 0 4px;color:'.EmailTheme::MUTED.';font-size:12px;text-transform:uppercase;letter-spacing:1px">'.e($label).'</p>'
+                .'<p style="margin:0;font-size:34px;color:'.EmailTheme::TEXT.';font-weight:bold;letter-spacing:2px">'.e($num).'</p>'
+                .'<p style="margin:8px 0 0;color:'.EmailTheme::DANGER.';font-size:12px">'.e($note).'</p>'
+            );
+        }
+
+        return $blocks;
     }
 
     /**
@@ -272,19 +285,24 @@ class BookingNotifier
             $firstPin ??= $pin;
             $firstNumber ??= $bl->locker->number ?? '';
             $number = $bl->locker->number ?? '';
-            $blocks[] = '<div class="highlight">'
-                .'<p style="margin:0 0 4px;color:#A0A0A0;font-size:12px;text-transform:uppercase;letter-spacing:1px">'.e($labelLocker).'</p>'
-                .'<p style="margin:0 0 12px;font-size:34px;color:#fff;font-weight:bold;letter-spacing:2px">'.e($number).'</p>'
-                .'<p style="margin:0 0 4px;color:#A0A0A0;font-size:12px">'.e($accessLabel).'</p>'
-                .'<p style="margin:0;font-size:28px;color:#F59E0B;font-weight:bold;letter-spacing:6px">'.e($pin).'#</p>'
-                .'</div>';
+            // The locker number is the single most important line in the whole
+            // email. It is rendered white, so its dark background MUST be inline
+            // on the same panel (EmailTheme::panel) — never a CSS class, or a
+            // client that drops <style> shows white-on-white and the customer
+            // sees an empty gap where their locker number should be.
+            $blocks[] = EmailTheme::panel(
+                '<p style="margin:0 0 4px;color:'.EmailTheme::MUTED.';font-size:12px;text-transform:uppercase;letter-spacing:1px">'.e($labelLocker).'</p>'
+                .'<p style="margin:0 0 12px;font-size:34px;color:'.EmailTheme::TEXT.';font-weight:bold;letter-spacing:2px">'.e($number).'</p>'
+                .'<p style="margin:0 0 4px;color:'.EmailTheme::MUTED.';font-size:12px">'.e($accessLabel).'</p>'
+                .'<p style="margin:0;font-size:28px;color:'.EmailTheme::ACCENT.';font-weight:bold;letter-spacing:6px">'.e($pin).'#</p>'
+            );
         }
 
         // Entry door block goes first, then one block per locker.
-        $entryBlock = '<div class="highlight">'
-            .'<p style="margin:0 0 6px;color:#A0A0A0;font-size:13px">'.e($labelEntry).'</p>'
-            .'<p style="margin:0;font-size:28px;color:#F59E0B;font-weight:bold;letter-spacing:6px">'.e($entryCode).'#</p>'
-            .'</div>';
+        $entryBlock = EmailTheme::panel(
+            '<p style="margin:0 0 6px;color:'.EmailTheme::MUTED.';font-size:13px">'.e($labelEntry).'</p>'
+            .'<p style="margin:0;font-size:28px;color:'.EmailTheme::ACCENT.';font-weight:bold;letter-spacing:6px">'.e($entryCode).'#</p>'
+        );
 
         return [
             'pin_code' => $firstPin ? $firstPin.'#' : '',
