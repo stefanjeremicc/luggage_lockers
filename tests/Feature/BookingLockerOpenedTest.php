@@ -71,4 +71,38 @@ class BookingLockerOpenedTest extends TestCase
         BookingLocker::recordCustomerUnlock($this->lockId, '1234', now());
         $this->assertNull(BookingLocker::find($id)->opened_at, 'cancelled booking must never flag as opened');
     }
+
+    /**
+     * Customers are invited to arrive early and the passcode is registered on the
+     * lock with a ±TTLOCK_BUFFER_MINUTES buffer, so the keypad genuinely opens
+     * before check_in. Those opens were being dropped — the booking was filtered
+     * out before its passcode was compared — so the locker showed as never opened.
+     */
+    public function test_early_arrival_within_the_lock_buffer_is_stamped(): void
+    {
+        $id = $this->makeBookingLocker('1234');
+        $checkIn = BookingLocker::find($id)->booking->check_in;
+
+        // 15 minutes early — inside the 30-minute window the lock itself honours.
+        $at = $checkIn->copy()->subMinutes(15);
+        BookingLocker::recordCustomerUnlock($this->lockId, '1234', $at);
+
+        $opened = BookingLocker::find($id)->opened_at;
+        $this->assertNotNull($opened, 'an early arrival the lock accepted must still be recorded as opened');
+        $this->assertSame($at->toDateTimeString(), $opened->toDateTimeString());
+    }
+
+    /** Beyond the lock's own buffer the passcode would not work, so nothing may be stamped. */
+    public function test_unlock_long_before_check_in_is_not_stamped(): void
+    {
+        $id = $this->makeBookingLocker('1234');
+        $checkIn = BookingLocker::find($id)->booking->check_in;
+
+        BookingLocker::recordCustomerUnlock($this->lockId, '1234', $checkIn->copy()->subMinutes(120));
+
+        $this->assertNull(
+            BookingLocker::find($id)->opened_at,
+            'an unlock far outside the passcode window must not be attributed to this booking'
+        );
+    }
 }

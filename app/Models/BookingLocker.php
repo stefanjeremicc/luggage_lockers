@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\BookingStatus;
+use App\Jobs\CreateTTLockAccessCode;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -67,14 +68,26 @@ class BookingLocker extends Model
         }
 
         // Only booking-lockers on THIS lock, not yet stamped, whose (non-cancelled)
-        // booking had started by the unlock time. The passcode is unique per
-        // booking and is deleted after checkout, so a match is unambiguous.
+        // booking was already open for business at the unlock time. The passcode
+        // is unique per booking and is deleted after checkout, so a match is
+        // unambiguous.
+        //
+        // The window must be the SAME one the lock itself honours. CreateTTLockAccessCode
+        // registers the passcode with a ±TTLOCK_BUFFER_MINUTES buffer, so the keypad
+        // opens for a customer who arrives early — and customers are explicitly invited
+        // to ("you're welcome to arrive up to N minutes early"). Comparing against a
+        // bare check_in therefore threw away every early arrival before the passcode
+        // was even compared, leaving opened_at NULL and the locker showing as never
+        // opened. Allowing the unlock to precede check_in by the same buffer keeps the
+        // two windows in step.
+        $earliest = $at->copy()->addMinutes(CreateTTLockAccessCode::TTLOCK_BUFFER_MINUTES);
+
         $candidates = self::with('booking:id,check_in,booking_status')
             ->where('locker_id', $locker->id)
             ->whereNull('opened_at')
             ->whereHas('booking', fn ($q) => $q
                 ->where('booking_status', '!=', BookingStatus::Cancelled)
-                ->where('check_in', '<=', $at))
+                ->where('check_in', '<=', $earliest))
             ->get();
 
         foreach ($candidates as $bl) {
