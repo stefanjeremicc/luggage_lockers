@@ -47,13 +47,9 @@ npx vite build > /tmp/vite_build.log 2>&1
 ok "vite build"
 
 # -- 2. Tarball ---------------------------------------------------------------
-step "Packing vendor + public/build + server-side source"
+step "Packing vendor + public/build"
 TARBALL=/tmp/luggage-deploy-$(date +%s).tar.gz
-# Include the server-side source (Blade/PHP) in the FTP tarball, not just built
-# assets. The on-server git fetch has been observed to go stale (server stuck on
-# an old commit), so server-rendered code changes never arrived. Extracted over
-# the checkout in on-server-deploy.sh, so the live source always matches local HEAD.
-tar -czf "$TARBALL" vendor public/build app resources routes config database lang composer.json composer.lock
+tar -czf "$TARBALL" vendor public/build
 ok "$(ls -lh "$TARBALL" | awk '{print $5, $9}')"
 
 # -- 3. FTP upload ------------------------------------------------------------
@@ -97,10 +93,7 @@ let d="";process.stdin.on("data",c=>d+=c);process.stdin.on("end",()=>{
     [ -n "$lk" ] && curl_api "/json-api/cpanel?cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Cron&cpanel_jsonapi_func=remove_line&linekey=$lk" >/dev/null
 done
 
-# Bare command — no special chars. The cPanel cron API mangles conditionals and
-# redirects, producing a malformed cron that never fires. The guard (skip if
-# .deploy_done exists) and the log redirect now live inside on-server-deploy.sh.
-CMD='/bin/bash /home/webbyrs/deploy.sh'
+CMD='[ ! -f /home/webbyrs/.deploy_done ] && /bin/bash /home/webbyrs/deploy.sh > /home/webbyrs/deploy_run.log 2>&1'
 curl_api "/json-api/cpanel?cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Cron&cpanel_jsonapi_func=add_line" \
     --data-urlencode "command=$CMD" \
     --data-urlencode "minute=*/2" --data-urlencode "hour=*" --data-urlencode "day=*" --data-urlencode "month=*" --data-urlencode "weekday=*" >/dev/null

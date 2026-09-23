@@ -40,8 +40,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 const props = defineProps({
-    lat: { type: [Number, String], default: 44.8089062 },
-    lng: { type: [Number, String], default: 20.4630598 },
+    lat: { type: [Number, String], default: 44.8125 },
+    lng: { type: [Number, String], default: 20.4612 },
     address: { type: String, default: '' },
 });
 const emit = defineEmits(['update:lat', 'update:lng', 'address-resolved']);
@@ -54,8 +54,8 @@ const error = ref('');
 let map = null;
 let marker = null;
 
-const initialLat = () => Number(props.lat) || 44.8089062;
-const initialLng = () => Number(props.lng) || 20.4630598;
+const initialLat = () => Number(props.lat) || 44.8125;
+const initialLng = () => Number(props.lng) || 20.4612;
 
 const customIcon = L.divIcon({
     html: `<div style="background:#F59E0B;border:2px solid #0A0A0A;width:18px;height:18px;border-radius:50%;box-shadow:0 0 0 3px rgba(245,158,11,0.35);"></div>`,
@@ -71,12 +71,11 @@ onMounted(() => {
         zoomControl: true,
     });
 
-    // Free Esri Dark Gray basemap (no API key) — already dark, no filter needed.
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri', maxNativeZoom: 16, maxZoom: 19,
-    }).addTo(map);
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
-        maxNativeZoom: 16, maxZoom: 19,
+    // Dark tile layer (CARTO Dark Matter — free)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20,
     }).addTo(map);
 
     marker = L.marker([initialLat(), initialLng()], {

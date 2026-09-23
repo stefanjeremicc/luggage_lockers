@@ -53,9 +53,9 @@
             <!-- Presets (left) + Filters toggle (right). Stacks on mobile;
                  natural-width + spread on larger screens. -->
             <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-                <div class="grid grid-cols-3 gap-1.5 sm:flex sm:gap-2">
+                <div class="flex gap-1.5 sm:gap-2">
                     <button v-for="p in presets" :key="p.key" @click="setPreset(p.key)"
-                        class="sm:flex-none px-1 sm:px-4 py-2 rounded-lg text-[11px] sm:text-sm font-medium whitespace-nowrap transition"
+                        class="flex-1 sm:flex-none px-1 sm:px-4 py-2 rounded-lg text-[11px] sm:text-sm font-medium whitespace-nowrap transition"
                         :class="activePreset === p.key ? 'bg-[#F59E0B] text-black' : 'bg-[#111] border border-[#2A2A2A] text-[#A0A0A0] hover:text-white'">
                         {{ p.label }}
                     </button>
@@ -574,11 +574,7 @@ const tipX = ref(0);
 const tipY = ref(0);
 
 const today = new Date();
-// Local-date ISO (YYYY-MM-DD). Must NOT use toISOString() — that converts to
-// UTC and shifts the date back a day in UTC+ timezones (e.g. local 1 Aug 00:00
-// → 31 Jul 22:00Z), which made "This month" start on 31.07 and mismatched the
-// Dashboard's server-side start-of-month.
-const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const iso = (d) => d.toISOString().slice(0, 10);
 const filters = reactive({
     from: iso(new Date(today.getFullYear(), today.getMonth(), 1)), // 1st of this month
     to: iso(today),
@@ -758,8 +754,6 @@ const presets = [
     { key: 'yesterday', label: 'Yesterday' },
     { key: '7', label: '7 days' },
     { key: 'month', label: 'This month' },
-    { key: 'last_month', label: 'Last month' },
-    { key: 'all', label: 'All time' },
 ];
 const activePreset = ref('month');
 // Human label for the active range — preset name, or the custom dd.mm→dd.mm.
@@ -774,15 +768,6 @@ const setPreset = (key) => {
     else if (key === '7') { filters.from = iso(new Date(t.getTime() - 6 * 86400000)); filters.to = iso(t); }
     else if (key === '30') { filters.from = iso(new Date(t.getTime() - 29 * 86400000)); filters.to = iso(t); }
     else if (key === 'month') { filters.from = iso(new Date(t.getFullYear(), t.getMonth(), 1)); filters.to = iso(t); }
-    else if (key === 'last_month') {
-        filters.from = iso(new Date(t.getFullYear(), t.getMonth() - 1, 1)); // 1st of previous month
-        filters.to = iso(new Date(t.getFullYear(), t.getMonth(), 0));       // day 0 = last day of previous month
-    }
-    else if (key === 'all') {
-        filters.from = '2020-01-01';  // safely before the first booking — covers everything
-        filters.to = iso(t);
-        filters.group = 'month';      // day-grouping over years is unreadable; month is sane
-    }
     activePreset.value = key;
     load();
 };
