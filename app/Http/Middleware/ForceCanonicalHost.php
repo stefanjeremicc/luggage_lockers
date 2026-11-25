@@ -25,8 +25,12 @@ class ForceCanonicalHost
 
     public function handle(Request $request, Closure $next): Response
     {
-        // Never redirect in local dev or for console/health checks.
-        if (app()->environment('local')) {
+        // Never redirect in local dev or under test. Tests drive the app on
+        // "localhost", so without the testing exemption every feature test that
+        // hits a route got a 301 instead of the response it asserted on — the
+        // suite could not cover HTTP behaviour at all. Production runs as
+        // staging/production, so this changes nothing there.
+        if (app()->environment(['local', 'testing'])) {
             return $next($request);
         }
 

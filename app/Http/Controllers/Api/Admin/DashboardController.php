@@ -21,7 +21,12 @@ class DashboardController extends Controller
             'lockers.currentBookings.customer:id,full_name,email',
         ])->get();
 
-        $todayBookings = Booking::whereDate('check_in', $today)->count();
+        // Excludes cancelled, same as tomorrow_bookings below and as every other
+        // figure on this screen. The two cards sit side by side, so counting
+        // cancelled bookings in one and not the other made them disagree.
+        $todayBookings = Booking::whereDate('check_in', $today)
+            ->where('booking_status', '!=', BookingStatus::Cancelled)
+            ->count();
 
         // Revenue is attributed to the booking's CHECK-IN date (the day the
         // stay starts), not created_at or check_out. A booking made on the 23rd
@@ -29,7 +34,11 @@ class DashboardController extends Controller
         $revenueToday = Booking::whereDate('check_in', $today)
             ->where('payment_status', 'paid')
             ->where('booking_status', '!=', BookingStatus::Cancelled)->sum('total_eur');
-        $revenueWeek = Booking::where('check_in', '>=', $today->copy()->startOfWeek())
+        // Week-to-date, bounded at both ends like the month figure below. With
+        // only a lower bound this summed every paid booking from Monday onwards
+        // with no end at all — a guest paying today for a stay three weeks out
+        // landed in "this week".
+        $revenueWeek = Booking::whereBetween('check_in', [$today->copy()->startOfWeek(), $today->copy()->endOfDay()])
             ->where('payment_status', 'paid')
             ->where('booking_status', '!=', BookingStatus::Cancelled)->sum('total_eur');
         // Month-to-date revenue: bounded [start of month … end of today] and
@@ -62,8 +71,15 @@ class DashboardController extends Controller
 
         // Average paid booking value (this month). Divide by the count, not by
         // the SUM — sum / 0 would silently produce 0 and look like "no money".
-        $paidCountMonth = Booking::where('check_in', '>=', $today->copy()->startOfMonth())
-            ->where('payment_status', 'paid')->count();
+        //
+        // The count MUST carry the same filters as $revenueMonth above, or the
+        // average divides a bounded, cancelled-excluded sum by an unbounded,
+        // cancelled-inclusive count and comes out too low. Previously it had
+        // neither the upper bound nor the cancelled exclusion.
+        $paidCountMonth = Booking::whereBetween('check_in', [$today->copy()->startOfMonth(), $today->copy()->endOfDay()])
+            ->where('payment_status', 'paid')
+            ->where('booking_status', '!=', BookingStatus::Cancelled)
+            ->count();
         $avgBookingMonth = $paidCountMonth > 0
             ? round($revenueMonth / $paidCountMonth, 2)
             : 0;
@@ -91,11 +107,22 @@ class DashboardController extends Controller
 
         $channels = ['google_ads', 'facebook', 'organic', 'referral', 'qr', 'direct', 'other', 'unknown'];
         $attrTotal = (int) $sourceCounts->sum();
+        // Fold the actual values found into the known channels, routing anything
+        // unrecognised into "other". Mapping over the hardcoded list alone meant a
+        // marketing_source the list doesn't name (say "instagram") vanished from
+        // the breakdown while still counting towards the total, so the percentages
+        // silently added up to less than 100.
+        $tallies = array_fill_keys($channels, 0);
+        foreach ($sourceCounts as $src => $count) {
+            $key = in_array($src, $channels, true) ? $src : 'other';
+            $tallies[$key] += (int) $count;
+        }
+
         $attribution = collect($channels)
             ->map(fn($key) => [
                 'key' => $key,
-                'count' => (int) ($sourceCounts[$key] ?? 0),
-                'pct' => $attrTotal > 0 ? round(($sourceCounts[$key] ?? 0) / $attrTotal * 100) : 0,
+                'count' => $tallies[$key],
+                'pct' => $attrTotal > 0 ? round($tallies[$key] / $attrTotal * 100) : 0,
             ])
             ->filter(fn($r) => $r['count'] > 0)
             ->sortByDesc('count')
