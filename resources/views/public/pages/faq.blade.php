@@ -4,23 +4,27 @@
 @section('meta_description', 'Frequently asked questions about luggage storage in Belgrade. How it works, pricing, security, and more.')
 
 @push('schema')
+{{-- Built with json_encode, never by hand. The previous version interpolated
+     addslashes() output through Blade's {{ }}: addslashes put a backslash in
+     front of the apostrophe in "I'm", then Blade's HTML-escaping turned that
+     apostrophe into &#039;, leaving the sequence \& — not a valid JSON escape.
+     Google rejected the whole FAQPage block ("Bad escape sequence in string",
+     reported in Search Console from 2026-07-22). json_encode escapes correctly
+     for JSON, and {!! !!} keeps Blade from HTML-escaping it afterwards. Same
+     pattern as home.blade.php. --}}
 <script type="application/ld+json">
-{
-    "@@context": "https://schema.org",
-    "@@type": "FAQPage",
-    "mainEntity": [
-        @foreach($faqs as $faq)
-        {
-            "@@type": "Question",
-            "name": "{{ addslashes($faq->question) }}",
-            "acceptedAnswer": {
-                "@@type": "Answer",
-                "text": "{{ addslashes($faq->answer) }}"
-            }
-        }@if(!$loop->last),@endif
-        @endforeach
-    ]
-}
+{!! json_encode([
+    '@context' => 'https://schema.org',
+    '@type' => 'FAQPage',
+    'mainEntity' => collect($faqs)->map(fn ($faq) => [
+        '@type' => 'Question',
+        'name' => strip_tags(html_entity_decode((string) $faq->question, ENT_QUOTES | ENT_HTML5, 'UTF-8')),
+        'acceptedAnswer' => [
+            '@type' => 'Answer',
+            'text' => strip_tags(html_entity_decode((string) $faq->answer, ENT_QUOTES | ENT_HTML5, 'UTF-8')),
+        ],
+    ])->values()->all(),
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
 </script>
 @endpush
 
